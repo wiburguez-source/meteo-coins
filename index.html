@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<style>html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Météo des Coins</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#2f5a35">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane { z-index: 400; } .leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane { z-index: 500; } .leaflet-marker-pane { z-index: 600; } .leaflet-tooltip-pane { z-index: 650; } .leaflet-popup-pane { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition: -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition: transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor: -moz-grab; cursor: grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor: -moz-grabbing; cursor: grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }</style>
+<style>
+/* Layout : une colonne pensée pour le téléphone en forêt ; tableau de bord des coins, carte pour placer coins et accès, onglets en bas d'écran. */
+:root {
+  --bg: #eef2ea;
+  --surface: #ffffff;
+  --sunk: #e2e8dc;
+  --fg: #1c2419;
+  --muted: #5b6656;
+  --line: #cdd6c6;
+  --accent: #2f5a35;        /* mousse */
+  --accent-fg: #ffffff;
+  --bark: #8a5a2b;          /* écorce : accès, chemins */
+  --rain: #3d6f9e;          /* pluviomètre */
+  --rain-soft: #a9c3dc;
+  --s0: #8a9385;            /* calme */
+  --s1: #b07d1f;            /* possible */
+  --s2: #4f8a3c;            /* favorable */
+  --s3: #1f5f2e;            /* très favorable */
+  --warn-bg: #fbefd6;
+  --warn-fg: #6a4708;
+  --danger: #a2321f;
+  --me: #2b6fd6;
+  --font-display: "Bricolage Grotesque", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
+    --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
+    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
+  --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
+  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body {
+  color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 96px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 0.86rem; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--sunk); color: var(--muted); letter-spacing: 0.02em; }
+.chip.live::before, .chip.demo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
+.chip.live::before { background: var(--s2); }
+.chip.demo::before { background: var(--s1); }
+
+.banner { background: var(--warn-bg); color: var(--warn-fg); border-radius: var(--r); padding: 12px 14px; font-size: 0.92rem; display: flex; flex-direction: column; gap: 8px; }
+.banner button { align-self: flex-start; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.access { color: var(--bark); border-color: var(--bark); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--danger); }
+.btn.small { padding: 6px 10px; font-size: 0.86rem; }
+.btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.today { display: flex; flex-direction: column; gap: 4px; }
+.today strong { font-family: var(--font-display); font-size: 1.15rem; }
+
+/* Carte d'un coin (tableau de bord) */
+.coin { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.coin-head { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.coin-head > div { min-width: 0; }
+.coin-name { overflow-wrap: anywhere; }
+.tagline { font-size: 0.86rem; color: var(--muted); }
+.example-tag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--warn-fg); background: var(--warn-bg); padding: 2px 6px; border-radius: 6px; margin-left: 6px; vertical-align: middle; }
+.score { text-align: right; }
+.score .big { font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.score .lab { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.lvl0 { color: var(--s0); } .lvl1 { color: var(--s1); } .lvl2 { color: var(--s2); } .lvl3 { color: var(--s3); }
+.why { font-size: 0.95rem; }
+.access-line { font-size: 0.88rem; color: var(--bark); font-weight: 700; }
+
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--muted); }
+.day .bar { width: 100%; height: 56px; background: var(--sunk); border-radius: 6px; position: relative; overflow: hidden; }
+.day .bar i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 6px; }
+.day .v { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+.day.best .v, .day.best .d { color: var(--accent); font-weight: 700; }
+.bg0 { background: var(--s0); } .bg1 { background: var(--s1); } .bg2 { background: var(--s2); } .bg3 { background: var(--s3); }
+
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fact { background: var(--sunk); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.fact b { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+details.more { border-top: 1px solid var(--line); padding-top: 10px; }
+details.more summary { cursor: pointer; font-weight: 700; color: var(--accent); list-style: none; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::after { content: " ▾"; }
+details.more[open] summary::after { content: " ▴"; }
+.more-body { display: flex; flex-direction: column; gap: 14px; padding-top: 12px; }
+.sp-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.sp-table th, .sp-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.sp-table td.n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.sp-table th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+.chart-box { overflow-x: auto; display: flex; flex-direction: column; gap: 4px; }
+.chart-box svg { display: block; width: 100%; height: auto; min-width: 300px; }
+
+/* Carte */
+.map-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: none; padding: 7px 11px; font-size: 0.86rem; font-weight: 700; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.map-frame { position: relative; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); }
+#map { height: max(340px, calc(100dvh - 380px)); background: var(--sunk); }
+.map-note { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 500; background: var(--surface); color: var(--fg); font-size: 0.82rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); }
+.mode-bar { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 500; background: var(--bark); color: var(--surface); font-weight: 700; font-size: 0.9rem; padding: 8px 12px; border-radius: 10px; }
+.leaflet-container { font-family: var(--font-body); }
+.pin { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); border: 3px solid var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.pin span { transform: rotate(45deg); color: var(--surface); font-weight: 800; font-size: 0.82rem; font-family: var(--font-display); }
+.pin.sel { outline: 3px solid var(--fg); outline-offset: 1px; }
+.pin.new { background: var(--accent); }
+.park { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; background: var(--bark); color: var(--surface); font-weight: 800; border: 2px solid var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.35); font-family: var(--font-display); }
+.me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--me); border: 3px solid #fff; box-shadow: 0 0 0 6px color-mix(in srgb, var(--me) 25%, transparent); }
+.vtx { width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 3px solid var(--bark); }
+
+/* Formulaires et panneaux */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 0.9rem; }
+label.f .hint { font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+}
+textarea { min-height: 110px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8rem; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.checks label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 0.9rem; background: var(--bg); }
+.msg { font-size: 0.88rem; color: var(--muted); }
+.msg.err { color: var(--danger); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 0.92rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Carnet */
+.log { display: flex; flex-direction: column; gap: 8px; }
+.log-item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.log-item > div { min-width: 0; overflow-wrap: anywhere; }
+.res { font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--sunk); white-space: nowrap; }
+.res.r0 { color: var(--s0); } .res.r1 { color: var(--s1); } .res.r2 { color: var(--s2); } .res.r3 { color: var(--s3); }
+.empty { color: var(--muted); padding: 18px; border: 1px dashed var(--line); border-radius: var(--r); text-align: center; }
+.safety { font-size: 0.86rem; color: var(--muted); border-left: 3px solid var(--bark); padding-left: 12px; }
+
+/* Onglets du bas */
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+nav.tabs .in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+nav.tabs button { background: none; border: 0; padding: 12px 2px 14px; font-weight: 700; color: var(--muted); border-top: 3px solid transparent; font-size: 0.95rem; }
+nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
+
+@media (max-width: 420px) {
+  .score .big { font-size: 2.2rem; }
+  .grid3 { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .day .bar i { transition: height .4s ease; }
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <h1>Météo des Coins</h1>
+      <span id="dataChip" class="chip">Chargement…</span>
+    </div>
+    <p class="muted small" id="todayLine"></p>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <!-- Onglet COINS -->
+  <section id="tab-coins" class="stack">
+    <div class="today" id="summary"></div>
+    <div id="coinList" class="stack"></div>
+    <button class="btn primary" type="button" id="addFromList" style="align-self:flex-start">Ajouter un coin sur la carte</button>
+  </section>
+
+  <!-- Onglet CARTE -->
+  <section id="tab-carte" class="stack" hidden>
+    <div class="map-tools">
+      <div class="seg" role="group" aria-label="Fond de carte">
+        <button type="button" data-base="plan" aria-pressed="true">Plan IGN</button>
+        <button type="button" data-base="photo" aria-pressed="false">Photo</button>
+        <button type="button" data-base="topo" aria-pressed="false">Relief</button>
+      </div>
+      <button class="btn small" type="button" id="locateBtn" aria-pressed="false">Me localiser</button>
+    </div>
+    <div class="map-frame">
+      <div id="map" aria-label="Carte des coins"></div>
+      <div id="modeBar" class="mode-bar" hidden></div>
+      <div id="mapNote" class="map-note" hidden></div>
+    </div>
+    <div id="sheet" class="panel"></div>
+  </section>
+
+  <!-- Onglet CARNET -->
+  <section id="tab-carnet" class="stack" hidden>
+    <div class="today">
+      <h2>Carnet de sorties</h2>
+      <p class="muted small">Note chaque sortie, même bredouille. En comparant ce que tu trouves au score du jour, tu sauras s'il faut ajuster les réglages.</p>
+    </div>
+    <form id="logForm" class="panel" autocomplete="off">
+      <div class="grid2">
+        <label class="f">Date <input type="date" id="logDate" required></label>
+        <label class="f">Coin <select id="logCoin" required></select></label>
+      </div>
+      <div class="grid2">
+        <label class="f">Espèce <select id="logSpecies"></select></label>
+        <label class="f">Résultat
+          <select id="logResult">
+            <option value="0">Rien</option>
+            <option value="1">Quelques-uns</option>
+            <option value="2">Bonne récolte</option>
+            <option value="3">Grosse poussée</option>
+          </select>
+        </label>
+      </div>
+      <label class="f">Note <input type="text" id="logNote" maxlength="140" placeholder="Ex. surtout en lisière, chapeaux encore petits"></label>
+      <div class="row"><button class="btn primary" type="submit">Ajouter au carnet</button><span class="msg" id="logMsg"></span></div>
+    </form>
+    <div id="logList" class="log"></div>
+  </section>
+
+  <!-- Onglet RÉGLAGES -->
+  <section id="tab-reglages" class="stack" hidden>
+    <div class="today">
+      <h2>Réglages du score</h2>
+      <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie tombé entre 5 et 14 jours avant, qu'il faut pour un score plein. « Températures idéales » : moyenne des 7 derniers jours.</p>
+    </div>
+    <form id="setForm" class="stack"></form>
+    <div class="row">
+      <button class="btn primary" type="button" id="setSave">Enregistrer les réglages</button>
+      <button class="btn ghost" type="button" id="setReset">Revenir aux valeurs de départ</button>
+      <span class="msg" id="setMsg"></span>
+    </div>
+
+    <div class="panel">
+      <h2>Sauvegarde</h2>
+      <p class="small muted">Tes coins, accès et carnet restent dans ce téléphone. Copie-les de temps en temps dans une note ou un mail pour ne rien perdre.</p>
+      <div class="row">
+        <button class="btn" type="button" id="exportBtn">Copier mes données</button>
+        <button class="btn" type="button" id="importBtn">Restaurer</button>
+        <span class="msg" id="backupMsg"></span>
+      </div>
+      <textarea id="backupText" aria-label="Données de sauvegarde" placeholder="Colle ici une sauvegarde, puis appuie sur Restaurer."></textarea>
+    </div>
+
+    <p class="safety">Ce score dit si les conditions sont réunies, pas ce que tu as ramassé. Ne mange rien que tu ne connais pas parfaitement : fais contrôler par un pharmacien ou une société mycologique. Urgence vitale : 15 ou 112. Centre antipoison de Bordeaux : 05 56 96 40 80.</p>
+  </section>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="in" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="coins">Coins</button>
+    <button role="tab" aria-selected="false" data-tab="carte">Carte</button>
+    <button role="tab" aria-selected="false" data-tab="carnet">Carnet</button>
+    <button role="tab" aria-selected="false" data-tab="reglages">Réglages</button>
+  </div>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+"use strict";
+
+/* ---------- 1. Mes espèces et leurs réglages de départ ----------
+   rain : pluie déclenchante (mm entre J-14 et J-5) pour un score plein
+   t    : [début, idéal mini, idéal maxi, fin] de la température moyenne sur 7 jours (°C)
+   season : poids de la saison, de janvier (index 0) à décembre (index 11) */
+const DEFAULTS = {
+  cepe:    { label: "Cèpes",    rain: 50, t: [8, 12, 20, 25], season: [0,0,0,0,.15,.3,.4,.6,1,1,.6,.1] },
+  girolle: { label: "Girolles", rain: 35, t: [10, 14, 22, 27], season: [0,0,0,0,.3,.8,1,1,1,.8,.4,0] },
+  morille: { label: "Morilles", rain: 25, t: [4, 8, 15, 20],  season: [0,.1,.6,1,.7,.1,0,0,0,0,0,0] }
+};
+const RESULTS = ["Rien", "Quelques-uns", "Bonne récolte", "Grosse poussée"];
+const LEVELS = [
+  { min: 0,  label: "Calme" },
+  { min: 25, label: "Possible" },
+  { min: 50, label: "Favorable" },
+  { min: 75, label: "Très favorable" }
+];
+const HOME = { lat: 43.115, lon: -0.545, zoom: 14, label: "Bois du Bager" };
+const LITTER_CAP = 30;   // réserve en eau de la litière (mm)
+const ET_FACTOR = 0.7;   // part de l'évapotranspiration qui sèche la litière sous couvert forestier
+const WALK_KMH = 3.5;    // allure en sous-bois
+const CACHE_HOURS = 3;
+const STORE_KEY = "meteo-coins-v1";
+
+/* ---------- 2. Stockage local (dans le navigateur du téléphone) ---------- */
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+}
+function save(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (e) { return false; }
+}
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function exampleCoin() {
+  return {
+    id: uid(), name: "Exemple · sous les chênes", lat: 43.1158, lon: -0.5437, species: ["cepe", "girolle"],
+    note: "Coin d'exemple, à supprimer quand tu auras placé les tiens", example: true,
+    parking: { lat: 43.12348, lon: -0.53938 },
+    path: [[43.12348, -0.53938], [43.1218, -0.5401], [43.1196, -0.5412], [43.1179, -0.5425], [43.1158, -0.5437]]
+  };
+}
+let state = load(STORE_KEY, null);
+if (!state) state = { version: 2, coins: [exampleCoin()], logs: [], settings: {} };
+if (state.version !== 2) {           // passage à la version 2 : mes espèces, accès, secteur du Bager
+  state.coins = state.coins.filter(c => !c.example);
+  state.coins.forEach(c => {
+    c.species = c.species.filter(k => DEFAULTS[k]);
+    if (!c.species.length) c.species = ["cepe"];
+    c.parking = c.parking || null; c.path = c.path || [];
+  });
+  if (!state.coins.length) state.coins.push(exampleCoin());
+  Object.keys(state.settings).forEach(k => { if (!DEFAULTS[k]) delete state.settings[k]; });
+  state.version = 2;
+}
+function persist() { save(STORE_KEY, state); }
+function spConf(key) {
+  const d = DEFAULTS[key], s = state.settings[key] || {};
+  return { label: d.label, season: d.season, rain: s.rain ?? d.rain, t: s.t ?? d.t };
+}
+function coinById(id) { return state.coins.find(c => c.id === id); }
+
+/* ---------- 3. Dates et distances ---------- */
+function isoLocal(d) { return d.toLocaleDateString("sv-SE"); }
+const TODAY = isoLocal(new Date());
+const DAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+function dayName(iso) { return DAYS[new Date(iso + "T12:00:00").getDay()]; }
+function longDate(iso) { return new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); }
+function dist(a, b) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * toR, dLon = (b[1] - a[1]) * toR;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function pathLength(p) { let s = 0; for (let i = 1; i < p.length; i++) s += dist(p[i - 1], p[i]); return s; }
+function fmtDist(m) { return m < 1000 ? Math.round(m / 10) * 10 + " m" : (m / 1000).toFixed(1).replace(".", ",") + " km"; }
+function walkMin(m) { return Math.max(1, Math.round(m / 1000 / WALK_KMH * 60)); }
+function accessLine(c) {
+  const parts = [];
+  if (c.parking) parts.push("Parking noté");
+  if (c.path && c.path.length > 1) { const len = pathLength(c.path); parts.push("chemin " + fmtDist(len) + ", environ " + walkMin(len) + " min à pied"); }
+  return parts.join(" · ");
+}
+
+/* ---------- 4. Google Maps ---------- */
+function gmDirections(lat, lon) { return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`; }
+function gmPlace(lat, lon) { return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`; }
+function goTarget(c) { return c.parking || { lat: c.lat, lon: c.lon }; }
+
+/* ---------- 5. Météo : Open-Meteo (gratuit, sans clé) ---------- */
+let DEMO = false;
+function wkey(c) { return c.lat.toFixed(3) + "," + c.lon.toFixed(3); }
+
+async function fetchWeather(coins) {
+  const cache = load("meteo-coins-cache", { at: 0, day: "", data: {} });
+  const fresh = Date.now() - cache.at < CACHE_HOURS * 3600e3 && cache.day === TODAY;
+  if (fresh && coins.every(c => cache.data[wkey(c)])) return cache.data;
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + coins.map(c => c.lat).join(",") +
+    "&longitude=" + coins.map(c => c.lon).join(",") +
+    "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
+    "&past_days=30&forecast_days=7&timezone=Europe%2FParis";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  let json = await res.json();
+  if (!Array.isArray(json)) json = [json];
+  const data = {};
+  json.forEach((j, i) => {
+    data[wkey(coins[i])] = {
+      dates: j.daily.time,
+      rain: j.daily.precipitation_sum.map(v => v ?? 0),
+      tmean: j.daily.temperature_2m_mean.map(v => v ?? 10),
+      tmin: j.daily.temperature_2m_min.map(v => v ?? 5),
+      et0: j.daily.et0_fao_evapotranspiration.map(v => v ?? 1),
+      elevation: j.elevation
+    };
+  });
+  save("meteo-coins-cache", { at: Date.now(), day: TODAY, data });
+  return data;
+}
+
+/* Météo d'exemple, utilisée seulement quand la vraie météo ne se charge pas. */
+function demoWeather(coins) {
+  const data = {};
+  coins.forEach((c, k) => {
+    const dates = [], rain = [], tmean = [], tmin = [], et0 = [];
+    const base = new Date(TODAY + "T12:00:00");
+    let seed = Math.round(Math.abs(c.lat * 1000 + c.lon * 777)) + k * 31;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let i = -30; i <= 6; i++) {
+      const d = new Date(base); d.setDate(d.getDate() + i);
+      dates.push(isoLocal(d));
+      const n = i + 30;
+      let r = rnd() < 0.25 ? +(rnd() * 3).toFixed(1) : 0;
+      if (n === 18) r = 24; if (n === 19) r = 15; if (n === 20) r = 7; if (n === 25) r = 5;
+      if (n === 33) r = 11; if (n === 34) r = 8;
+      rain.push(r);
+      const tm = 16 - n * 0.14 + (rnd() - 0.5) * 2;
+      tmean.push(+tm.toFixed(1));
+      tmin.push(+(tm - 4 - rnd() * 2).toFixed(1));
+      et0.push(+(1.4 - n * 0.015).toFixed(2));
+    }
+    data[wkey(c)] = { dates, rain, tmean, tmin, et0, elevation: null };
+  });
+  return data;
+}
+
+/* ---------- 6. Le modèle de pousse ---------- */
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function trapeze(x, t) {
+  const [a, b, c, d] = t;
+  if (x <= a || x >= d) return 0;
+  if (x < b) return (x - a) / (b - a);
+  if (x <= c) return 1;
+  return (d - x) / (d - c);
+}
+function litterSeries(w) {
+  const R = []; let r = LITTER_CAP * 0.5;
+  for (let i = 0; i < w.rain.length; i++) {
+    r = Math.min(LITTER_CAP, r + w.rain[i]) - ET_FACTOR * w.et0[i];
+    r = Math.max(0, r);
+    R.push(r);
+  }
+  return R;
+}
+function sum(arr, from, to) { let s = 0; for (let i = Math.max(0, from); i <= to; i++) s += arr[i] || 0; return s; }
+function avg(arr, from, to) { let s = 0, n = 0; for (let i = Math.max(0, from); i <= to; i++) { s += arr[i]; n++; } return n ? s / n : 0; }
+
+function scoreAt(w, R, i, spKey) {
+  const sp = spConf(spKey);
+  const month = Number(w.dates[i].slice(5, 7)) - 1;
+  const season = sp.season[month];
+  const trigMm = sum(w.rain, i - 14, i - 5);
+  const trig = clamp(trigMm / sp.rain, 0, 1);
+  const moist = R[i] / LITTER_CAP;
+  const t7 = avg(w.tmean, i - 6, i);
+  const temp = trapeze(t7, sp.t);
+  const frost = Math.min(...w.tmin.slice(Math.max(0, i - 2), i + 1)) < -1 ? 0.4 : 1;
+  const raw = season * temp * frost * (0.55 * trig + 0.45 * moist);
+  return { score: Math.round(100 * raw), season, trig, trigMm, moist, t7, temp, frost };
+}
+function level(s) { let l = 0; LEVELS.forEach((L, k) => { if (s >= L.min) l = k; }); return l; }
+
+function analyse(coin, w) {
+  const R = litterSeries(w);
+  let ti = w.dates.indexOf(TODAY);
+  if (ti < 0) ti = Math.min(30, w.dates.length - 1);
+  const perSp = coin.species.map(k => {
+    const week = [];
+    for (let i = ti; i < Math.min(w.dates.length, ti + 7); i++) week.push({ date: w.dates[i], ...scoreAt(w, R, i, k) });
+    const best = week.reduce((a, b) => (b.score > a.score ? b : a), week[0]);
+    return { key: k, label: spConf(k).label, today: week[0], week, best };
+  });
+  const week = perSp[0].week.map((_, d) => {
+    let top = perSp[0].week[d], who = perSp[0];
+    perSp.forEach(p => { if (p.week[d].score > top.score) { top = p.week[d]; who = p; } });
+    return { ...top, sp: who.label };
+  });
+  const lead = perSp.reduce((a, b) => (b.today.score > a.today.score ? b : a), perSp[0]);
+  return { R, ti, perSp, week, lead, rain14: sum(w.rain, ti - 13, ti), t7: avg(w.tmean, ti - 6, ti), moistNow: R[ti] / LITTER_CAP };
+}
+
+function explain(a) {
+  const t = a.lead.today, sp = a.lead.label.toLowerCase();
+  let txt = Math.round(t.trigMm) + " mm tombés il y a 5 à 14 jours, litière " +
+    (t.moist > 0.6 ? "bien humide" : t.moist > 0.3 ? "moyennement humide" : "sèche") + ", " +
+    t.t7.toFixed(0) + " °C de moyenne sur 7 jours.";
+  if (t.season === 0) txt += " Hors saison pour les " + sp + ".";
+  else if (t.frost < 1) txt += " Gelée récente : la pousse est freinée.";
+  else if (t.temp === 0) txt += " Trop " + (t.t7 < spConf(a.lead.key).t[0] ? "froid" : "chaud") + " pour les " + sp + ".";
+  const bestDay = a.week.reduce((x, y) => (y.score > x.score ? y : x), a.week[0]);
+  if (bestDay.date !== TODAY && bestDay.score >= a.week[0].score + 8) {
+    txt += " Meilleure fenêtre : " + longDate(bestDay.date) + " (" + bestDay.sp.toLowerCase() + ", " + bestDay.score + ").";
+  }
+  return txt;
+}
+
+/* ---------- 7. Tableau de bord ---------- */
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
+
+let WEATHER = {};
+let ANALYSES = {};
+
+function rainChart(w, a) {
+  const from = Math.max(0, a.ti - 20), to = Math.min(w.dates.length - 1, a.ti + 6);
+  const vals = w.rain.slice(from, to + 1);
+  const max = Math.max(10, Math.ceil(Math.max(...vals) / 10) * 10);
+  const W = 560, H = 150, padL = 30, padB = 22, padT = 10, plotW = W - padL - 6, plotH = H - padB - padT;
+  const bw = plotW / vals.length;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Pluie journalière sur 21 jours et prévision 7 jours">`;
+  [0, max / 2, max].forEach(v => {
+    const y = padT + plotH - (v / max) * plotH;
+    s += `<line x1="${padL}" x2="${W - 6}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  });
+  const w0 = a.ti - 14 - from, w1 = a.ti - 5 - from;
+  if (w1 >= 0) {
+    const x0 = padL + Math.max(0, w0) * bw, x1 = padL + (w1 + 1) * bw;
+    s += `<rect x="${x0}" y="${padT}" width="${x1 - x0}" height="${plotH}" fill="var(--rain-soft)" opacity="0.35"/>`;
+    s += `<text x="${(x0 + x1) / 2}" y="${padT + 12}" text-anchor="middle" font-size="10" fill="var(--muted)">pluie déclenchante</text>`;
+  }
+  vals.forEach((v, k) => {
+    const i = from + k, h = (v / max) * plotH, x = padL + k * bw + 1.5, y = padT + plotH - h;
+    s += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 3)}" height="${h}" rx="2" fill="${i > a.ti ? "var(--rain-soft)" : "var(--rain)"}"/>`;
+    if (i === a.ti) s += `<line x1="${x + bw / 2 - 1.5}" x2="${x + bw / 2 - 1.5}" y1="${padT}" y2="${padT + plotH}" stroke="var(--fg)" stroke-dasharray="3 3"/>`;
+    if (i === a.ti || i === from || i === to) {
+      const lab = i === a.ti ? "auj." : i < a.ti ? "J" + (i - a.ti) : "J+" + (i - a.ti);
+      s += `<text x="${x + bw / 2 - 1.5}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${lab}</text>`;
+    }
+  });
+  return s + `</svg><p class="small muted">Pluie par jour en mm. Barres claires : prévision.</p>`;
+}
+
+function coinCard(c) {
+  const w = WEATHER[wkey(c)], a = ANALYSES[c.id];
+  const ex = c.example ? `<span class="example-tag">Exemple</span>` : "";
+  const acc = accessLine(c);
+  const t = goTarget(c);
+  const actions = `<div class="row">
+      <a class="btn small access" href="${gmDirections(t.lat, t.lon)}" target="_blank" rel="noopener">${c.parking ? "Aller au parking" : "Y aller"} (Google Maps)</a>
+      <button class="btn small" type="button" data-show="${c.id}">Voir sur la carte</button>
+    </div>`;
+  if (!w || !a) {
+    return `<article class="coin"><div class="coin-head"><div><h3 class="coin-name">${esc(c.name)}${ex}</h3><p class="tagline">Météo indisponible pour ce coin.</p></div></div>${actions}</article>`;
+  }
+  const s = a.lead.today.score, lv = level(s);
+  const bestIdx = a.week.reduce((bi, d, k, arr) => (d.score > arr[bi].score ? k : bi), 0);
+  const days = a.week.map((d, k) => `
+    <div class="day${k === bestIdx && d.score > 0 ? " best" : ""}" title="${esc(d.sp)} : ${d.score}">
+      <span class="v">${d.score}</span>
+      <div class="bar"><i class="bg${level(d.score)}" style="height:${Math.max(4, d.score)}%"></i></div>
+      <span class="d">${k === 0 ? "auj." : dayName(d.date)}</span>
+    </div>`).join("");
+  const rows = a.perSp.map(p => `<tr><td>${esc(p.label)}</td><td class="n lvl${level(p.today.score)}">${p.today.score}</td><td>${p.best.date === TODAY ? "aujourd'hui" : dayName(p.best.date) + " " + Number(p.best.date.slice(8))} · ${p.best.score}</td></tr>`).join("");
+  const elev = w.elevation != null ? ` · ${Math.round(w.elevation)} m` : "";
+  return `
+  <article class="coin">
+    <div class="coin-head">
+      <div>
+        <h3 class="coin-name">${esc(c.name)}${ex}</h3>
+        <p class="tagline">${esc(a.lead.label)} en tête${elev}${c.note ? " · " + esc(c.note) : ""}</p>
+      </div>
+      <div class="score">
+        <div class="big lvl${lv}">${s}</div>
+        <div class="lab lvl${lv}">${LEVELS[lv].label}</div>
+      </div>
+    </div>
+    <p class="why">${esc(explain(a))}</p>
+    <div class="week" aria-label="Score des 7 prochains jours">${days}</div>
+    <div class="facts">
+      <div class="fact"><b>${Math.round(a.rain14)} mm</b><span>Pluie 14 j</span></div>
+      <div class="fact"><b>${a.t7.toFixed(1)} °C</b><span>Moy. 7 j</span></div>
+      <div class="fact"><b>${Math.round(a.moistNow * 100)} %</b><span>Litière</span></div>
+    </div>
+    ${acc ? `<p class="access-line">${esc(acc)}</p>` : `<p class="small muted">Pas encore d'accès noté : place le parking et trace le chemin depuis la carte.</p>`}
+    ${actions}
+    <details class="more">
+      <summary>Détail par espèce et pluviomètre</summary>
+      <div class="more-body">
+        <table class="sp-table"><thead><tr><th>Espèce</th><th style="text-align:right">Auj.</th><th>Meilleur jour</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="chart-box">${rainChart(w, a)}</div>
+      </div>
+    </details>
+  </article>`;
+}
+
+function renderCoins() {
+  const list = $("coinList");
+  if (!state.coins.length) {
+    list.innerHTML = `<p class="empty">Aucun coin pour l'instant. Touche « Ajouter un coin sur la carte » puis l'endroit dans le bois.</p>`;
+    $("summary").innerHTML = "";
+    return;
+  }
+  const sorted = [...state.coins].sort((x, y) => ((ANALYSES[y.id]?.lead.today.score ?? -1) - (ANALYSES[x.id]?.lead.today.score ?? -1)));
+  list.innerHTML = sorted.map(coinCard).join("");
+  const top = sorted[0], ta = ANALYSES[top.id];
+  $("summary").innerHTML = ta
+    ? `<h2>Aujourd'hui</h2><p><strong class="lvl${level(ta.lead.today.score)}">${esc(top.name)}</strong> est ton coin le mieux placé (${esc(ta.lead.label.toLowerCase())}, ${ta.lead.today.score}/100).</p>`
+    : "";
+}
+
+/* ---------- 8. Carte : coins, parkings, chemins ---------- */
+let map = null, layers = {}, overlay = null, meMarker = null, meWatch = null, tileFailed = false;
+let ui = { mode: null, sel: null, draft: null, path: [], rec: null, wake: null };
+// mode : null | "add" | "edit" | "parking" | "path" | "record"
+
+function initMap() {
+  if (map || typeof L === "undefined") {
+    if (typeof L === "undefined") { $("map").innerHTML = `<p class="empty" style="margin:16px">La carte n'a pas pu se charger. Vérifie la connexion puis recharge la page.</p>`; }
+    return;
+  }
+  map = L.map("map", { zoomControl: true, attributionControl: true }).setView([HOME.lat, HOME.lon], HOME.zoom);
+  const ign = (layer, fmt) => `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=normal&FORMAT=${fmt}&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
+  layers = {
+    plan: L.tileLayer(ign("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", "image/png"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" }),
+    photo: L.tileLayer(ign("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" }),
+    topo: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", { subdomains: "abc", maxNativeZoom: 17, maxZoom: 20, attribution: "© OpenStreetMap, © OpenTopoMap" })
+  };
+  Object.values(layers).forEach(l => l.on("tileerror", () => { if (!tileFailed) { tileFailed = true; showMapNote(); } }));
+  layers.plan.addTo(map);
+  overlay = L.layerGroup().addTo(map);
+  map.on("click", onMapClick);
+  drawMap();
+  if (state.coins.length) fitAll();
+}
+
+function showMapNote() {
+  const n = $("mapNote");
+  n.hidden = !tileFailed;
+  n.textContent = "Le fond de carte ne se charge pas ici. Il s'affichera une fois l'appli ouverte depuis son adresse à toi. Les coins et chemins restent utilisables.";
+}
+
+function fitAll() {
+  const pts = [];
+  state.coins.forEach(c => { pts.push([c.lat, c.lon]); if (c.parking) pts.push([c.parking.lat, c.parking.lon]); (c.path || []).forEach(p => pts.push(p)); });
+  if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+}
+
+function coinIcon(c, selected) {
+  const a = ANALYSES[c.id], s = a ? a.lead.today.score : null;
+  const cls = s == null ? "bg0" : "bg" + level(s);
+  return L.divIcon({ className: "", iconSize: [36, 36], iconAnchor: [18, 36],
+    html: `<div class="pin ${cls}${selected ? " sel" : ""}"><span>${s == null ? "?" : s}</span></div>` });
+}
+const parkIcon = () => L.divIcon({ className: "", iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="park">P</div>` });
+const vtxIcon = () => L.divIcon({ className: "", iconSize: [12, 12], iconAnchor: [6, 6], html: `<div class="vtx"></div>` });
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function drawMap() {
+  if (!map) return;
+  overlay.clearLayers();
+  const bark = css("--bark") || "#8a5a2b";
+  state.coins.forEach(c => {
+    const editingPath = ui.sel === c.id && (ui.mode === "path" || ui.mode === "record");
+    const path = editingPath ? ui.path : (c.path || []);
+    if (path.length > 1) L.polyline(path, { color: bark, weight: 4, dashArray: editingPath ? null : "8 6", opacity: 0.95 }).addTo(overlay);
+    if (editingPath && ui.mode === "path") path.forEach(p => L.marker(p, { icon: vtxIcon(), interactive: false }).addTo(overlay));
+    if (c.parking) {
+      L.marker([c.parking.lat, c.parking.lon], { icon: parkIcon(), title: "Parking · " + c.name })
+        .on("click", () => selectCoin(c.id)).addTo(overlay);
+    }
+    const draggable = ui.mode === "edit" && ui.sel === c.id;
+    const m = L.marker([c.lat, c.lon], { icon: coinIcon(c, ui.sel === c.id), title: c.name, draggable });
+    m.on("click", () => { if (!ui.mode || ui.mode === "edit") selectCoin(c.id); });
+    if (draggable) m.on("dragend", e => { const p = e.target.getLatLng(); ui.draft.lat = +p.lat.toFixed(5); ui.draft.lon = +p.lng.toFixed(5); $("edCoords").value = ui.draft.lat + ", " + ui.draft.lon; });
+    m.addTo(overlay);
+  });
+  if (ui.mode === "add" && ui.draft && ui.draft.lat != null) {
+    L.marker([ui.draft.lat, ui.draft.lon], { draggable: true,
+      icon: L.divIcon({ className: "", iconSize: [36, 36], iconAnchor: [18, 36], html: `<div class="pin new"><span>+</span></div>` }) })
+      .on("dragend", e => { const p = e.target.getLatLng(); ui.draft.lat = +p.lat.toFixed(5); ui.draft.lon = +p.lng.toFixed(5); $("edCoords").value = ui.draft.lat + ", " + ui.draft.lon; })
+      .addTo(overlay);
+  }
+  const bar = $("modeBar");
+  const MODE_TXT = {
+    add: "Touche la carte à l'emplacement du coin (tu peux ensuite déplacer le repère).",
+    parking: "Touche la carte là où tu gares la voiture.",
+    path: "Touche la carte point par point, du parking jusqu'au coin.",
+    record: "Enregistrement en cours : marche jusqu'au coin, l'écran reste allumé."
+  };
+  bar.hidden = !MODE_TXT[ui.mode];
+  bar.textContent = MODE_TXT[ui.mode] || "";
+}
+
+function onMapClick(e) {
+  const p = [+e.latlng.lat.toFixed(5), +e.latlng.lng.toFixed(5)];
+  if (ui.mode === "add") {
+    ui.draft.lat = p[0]; ui.draft.lon = p[1];
+    const f = $("edCoords"); if (f) f.value = p[0] + ", " + p[1];
+    drawMap();
+  } else if (ui.mode === "parking") {
+    const c = coinById(ui.sel); c.parking = { lat: p[0], lon: p[1] };
+    if (c.path && c.path.length > 1) c.path[0] = p;
+    persist(); ui.mode = null; afterChange("Parking enregistré.");
+  } else if (ui.mode === "path") {
+    ui.path.push(p); drawMap(); renderSheet();
+  }
+}
+
+function selectCoin(id, zoom) {
+  stopRecording(false);
+  ui.mode = null; ui.sel = id; ui.draft = null;
+  drawMap(); renderSheet();
+  if (zoom && map) {
+    const c = coinById(id), pts = [[c.lat, c.lon]];
+    if (c.parking) pts.push([c.parking.lat, c.parking.lon]);
+    (c.path || []).forEach(p => pts.push(p));
+    map.fitBounds(pts, { padding: [50, 50], maxZoom: 17 });
+  }
+}
+
+function afterChange(msg) {
+  computeAll(); renderCoins(); renderLogForm(); renderStatus(); drawMap(); renderSheet(msg);
+}
+
+/* Panneau sous la carte, selon ce qu'on est en train de faire */
+function speciesChecks(sel) {
+  return Object.keys(DEFAULTS).map(k => `<label><input type="checkbox" value="${k}" ${sel.includes(k) ? "checked" : ""}> ${DEFAULTS[k].label}</label>`).join("");
+}
+function editorHTML(d, isNew) {
+  return `
+    <h2>${isNew ? "Nouveau coin" : "Modifier le coin"}</h2>
+    <label class="f">Nom du coin <input type="text" id="edName" maxlength="60" value="${esc(d.name)}" placeholder="Ex. Les chênes après la barrière"></label>
+    <label class="f">Position
+      <span class="hint">Touche la carte, déplace le repère, ou colle des coordonnées copiées dans Google Maps (appui long sur l'endroit).</span>
+      <input type="text" id="edCoords" inputmode="decimal" value="${d.lat != null ? d.lat + ", " + d.lon : ""}" placeholder="43.1158, -0.5437">
+    </label>
+    <div class="row"><button class="btn small" type="button" id="edGeo">Utiliser ma position</button><span class="msg" id="edGeoMsg"></span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><span style="font-weight:700;font-size:.9rem">Espèces cherchées ici</span><div class="checks" id="edSpecies">${speciesChecks(d.species)}</div></div>
+    <label class="f">Note <span class="hint">Facultatif : essences, exposition, repère…</span><input type="text" id="edNote" maxlength="120" value="${esc(d.note || "")}"></label>
+    <div class="row">
+      <button class="btn primary" type="button" id="edSave">${isNew ? "Enregistrer le coin" : "Enregistrer"}</button>
+      <button class="btn ghost" type="button" id="edCancel">Annuler</button>
+      <span class="msg" id="edMsg"></span>
+    </div>`;
+}
+
+function renderSheet(msg) {
+  const sh = $("sheet");
+  const m = ui.mode, c = ui.sel ? coinById(ui.sel) : null;
+
+  if (m === "add" || m === "edit") {
+    sh.innerHTML = editorHTML(ui.draft, m === "add");
+    $("edSave").onclick = saveEditor;
+    $("edCancel").onclick = () => { ui.mode = null; ui.draft = null; drawMap(); renderSheet(); };
+    $("edCoords").onchange = () => { const p = parseCoords($("edCoords").value); if (p) { Object.assign(ui.draft, p); drawMap(); map && map.panTo([p.lat, p.lon]); } };
+    $("edGeo").onclick = () => locateOnce(p => { Object.assign(ui.draft, p); $("edCoords").value = p.lat + ", " + p.lon; drawMap(); map && map.setView([p.lat, p.lon], 17); }, $("edGeoMsg"));
+    return;
+  }
+  if (!c) {
+    sh.innerHTML = `
+      <h2>${esc(HOME.label)}</h2>
+      <p class="small muted">Touche un coin sur la carte pour voir son score et ses accès, ou ajoute-en un.</p>
+      ${msg ? `<p class="msg">${esc(msg)}</p>` : ""}
+      <div class="row"><button class="btn primary" type="button" id="shAdd">Ajouter un coin</button><button class="btn small" type="button" id="shFit">Voir tous mes coins</button></div>`;
+    $("shAdd").onclick = startAdd;
+    $("shFit").onclick = () => map && (state.coins.length ? fitAll() : map.setView([HOME.lat, HOME.lon], HOME.zoom));
+    return;
+  }
+  if (m === "parking") {
+    sh.innerHTML = `<h2>Parking · ${esc(c.name)}</h2><p class="small muted">Touche la carte à l'endroit où tu te gares. Google Maps te guidera jusque-là.</p>
+      <div class="row"><button class="btn" type="button" id="pkGeo">Je suis garé ici</button><button class="btn ghost" type="button" id="pkCancel">Annuler</button><span class="msg" id="pkMsg"></span></div>`;
+    $("pkCancel").onclick = () => { ui.mode = null; drawMap(); renderSheet(); };
+    $("pkGeo").onclick = () => locateOnce(p => { c.parking = p; persist(); ui.mode = null; afterChange("Parking enregistré à ta position."); }, $("pkMsg"));
+    return;
+  }
+  if (m === "path" || m === "record") {
+    const plen = pathLength(ui.path);
+    const info = ui.path.length > 1 ? `${fmtDist(plen)} · environ ${walkMin(plen)} min à pied` : "Aucun tronçon pour l'instant.";
+    sh.innerHTML = `<h2>Chemin · ${esc(c.name)}</h2>
+      <p class="access-line">${info}</p>
+      ${m === "path"
+        ? `<p class="small muted">${c.parking ? "Le chemin part de ton parking." : "Commence au point de départ de la marche."} Termine sur le coin.</p>
+           <div class="row"><button class="btn" type="button" id="ptUndo" ${ui.path.length ? "" : "disabled"}>Retirer le dernier point</button><button class="btn ghost danger" type="button" id="ptClear">Tout effacer</button></div>`
+        : `<p class="small muted">Garde l'appli ouverte pendant la marche. Les points s'ajoutent tous les 10 mètres environ.</p>`}
+      <div class="row"><button class="btn primary" type="button" id="ptDone">${m === "record" ? "Arrêter et enregistrer" : "Enregistrer le chemin"}</button><button class="btn ghost" type="button" id="ptCancel">Annuler</button></div>`;
+    if (m === "path") {
+      $("ptUndo").onclick = () => { ui.path.pop(); drawMap(); renderSheet(); };
+      $("ptClear").onclick = () => { ui.path = c.parking ? [[c.parking.lat, c.parking.lon]] : []; drawMap(); renderSheet(); };
+    }
+    $("ptDone").onclick = () => {
+      stopRecording(false);
+      const p = ui.path.slice();
+      const last = p[p.length - 1];
+      if (p.length > 1 && last && dist(last, [c.lat, c.lon]) > 15) p.push([c.lat, c.lon]);
+      c.path = p.length > 1 ? p : [];
+      if (!c.parking && c.path.length > 1) c.parking = { lat: c.path[0][0], lon: c.path[0][1] };
+      persist(); ui.mode = null; afterChange(c.path.length ? "Chemin enregistré." : "Chemin vide, rien d'enregistré.");
+    };
+    $("ptCancel").onclick = () => { stopRecording(false); ui.mode = null; drawMap(); renderSheet(); };
+    return;
+  }
+
+  // Coin sélectionné
+  const a = ANALYSES[c.id];
+  const s = a ? a.lead.today.score : null;
+  const t = goTarget(c);
+  const len = c.path && c.path.length > 1 ? pathLength(c.path) : 0;
+  sh.innerHTML = `
+    <div class="coin-head">
+      <div><h2 class="coin-name">${esc(c.name)}</h2><p class="tagline">${c.species.map(k => DEFAULTS[k].label).join(", ")}${c.note ? " · " + esc(c.note) : ""}</p></div>
+      ${s != null ? `<div class="score"><div class="big lvl${level(s)}">${s}</div><div class="lab lvl${level(s)}">${LEVELS[level(s)].label}</div></div>` : ""}
+    </div>
+    ${msg ? `<p class="msg">${esc(msg)}</p>` : ""}
+    <dl class="kv">
+      <dt>Parking</dt><dd>${c.parking ? "noté" : "pas encore"}</dd>
+      <dt>Chemin</dt><dd>${len ? fmtDist(len) + " · environ " + walkMin(len) + " min" : "pas encore tracé"}</dd>
+    </dl>
+    <div class="row">
+      <a class="btn access" href="${gmDirections(t.lat, t.lon)}" target="_blank" rel="noopener">${c.parking ? "Aller au parking" : "Y aller"} (Google Maps)</a>
+      <a class="btn small" href="${gmPlace(c.lat, c.lon)}" target="_blank" rel="noopener">Voir le coin dans Google Maps</a>
+    </div>
+    <div class="row">
+      <button class="btn small" type="button" id="cParking">${c.parking ? "Déplacer le parking" : "Placer le parking"}</button>
+      <button class="btn small" type="button" id="cPath">${len ? "Retracer le chemin" : "Tracer le chemin"}</button>
+      <button class="btn small" type="button" id="cRecord">Enregistrer le chemin en marchant</button>
+    </div>
+    <div class="row">
+      <button class="btn small" type="button" id="cEdit">Modifier / déplacer le coin</button>
+      <button class="btn small danger" type="button" id="cDel">Supprimer</button>
+      <button class="btn small ghost" type="button" id="cClose">Fermer</button>
+    </div>`;
+  $("cParking").onclick = () => { ui.mode = "parking"; drawMap(); renderSheet(); };
+  $("cPath").onclick = () => { ui.mode = "path"; ui.path = c.parking ? [[c.parking.lat, c.parking.lon]] : []; drawMap(); renderSheet(); };
+  $("cRecord").onclick = () => startRecording(c);
+  $("cEdit").onclick = () => { ui.mode = "edit"; ui.draft = { name: c.name, lat: c.lat, lon: c.lon, species: c.species.slice(), note: c.note || "" }; drawMap(); renderSheet(); };
+  $("cClose").onclick = () => { ui.sel = null; drawMap(); renderSheet(); };
+  let armed = false;
+  $("cDel").onclick = () => {
+    if (!armed) { armed = true; $("cDel").textContent = "Confirmer la suppression"; setTimeout(() => { armed = false; const b = $("cDel"); if (b) b.textContent = "Supprimer"; }, 4000); return; }
+    state.coins = state.coins.filter(x => x.id !== c.id); persist(); ui.sel = null; afterChange("Coin supprimé.");
+  };
+}
+
+function startAdd() {
+  stopRecording(false);
+  ui.mode = "add"; ui.sel = null;
+  ui.draft = { name: "", lat: null, lon: null, species: ["cepe"], note: "" };
+  drawMap(); renderSheet();
+}
+
+function saveEditor() {
+  const msg = $("edMsg");
+  const coords = parseCoords($("edCoords").value) || (ui.draft.lat != null ? { lat: ui.draft.lat, lon: ui.draft.lon } : null);
+  const species = [...$("edSpecies").querySelectorAll("input:checked")].map(i => i.value);
+  if (!coords) { msg.className = "msg err"; msg.textContent = "Place le coin : touche la carte ou colle des coordonnées."; return; }
+  if (!species.length) { msg.className = "msg err"; msg.textContent = "Coche au moins une espèce."; return; }
+  const data = { name: $("edName").value.trim() || "Coin sans nom", ...coords, species, note: $("edNote").value.trim() };
+  if (ui.mode === "edit") {
+    const c = coinById(ui.sel);
+    const moved = c.lat !== data.lat || c.lon !== data.lon;
+    Object.assign(c, data, { example: false });
+    if (moved && c.path && c.path.length > 1) c.path[c.path.length - 1] = [data.lat, data.lon];
+    persist(); ui.mode = null; ui.draft = null;
+    refresh(false, "Coin modifié.");
+  } else {
+    const c = { id: uid(), ...data, parking: null, path: [] };
+    state.coins.push(c); persist();
+    ui.mode = null; ui.draft = null; ui.sel = c.id;
+    refresh(false, "Coin ajouté. Place maintenant le parking et trace le chemin.");
+  }
+}
+
+/* Position GPS */
+function locateOnce(cb, msgEl) {
+  if (!navigator.geolocation) { if (msgEl) { msgEl.className = "msg err"; msgEl.textContent = "Position indisponible sur cet appareil."; } return; }
+  if (msgEl) { msgEl.className = "msg"; msgEl.textContent = "Recherche de la position…"; }
+  navigator.geolocation.getCurrentPosition(
+    p => { if (msgEl) msgEl.textContent = "Position trouvée (précision " + Math.round(p.coords.accuracy) + " m)."; cb({ lat: +p.coords.latitude.toFixed(5), lon: +p.coords.longitude.toFixed(5) }); },
+    () => { if (msgEl) { msgEl.className = "msg err"; msgEl.textContent = "Position refusée ou indisponible ici. Touche la carte à la place."; } },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+function setMe(lat, lon) {
+  if (!map) return;
+  if (!meMarker) meMarker = L.marker([lat, lon], { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: "", iconSize: [18, 18], iconAnchor: [9, 9], html: `<div class="me-dot"></div>` }) }).addTo(map);
+  else meMarker.setLatLng([lat, lon]);
+}
+
+$("locateBtn").onclick = () => {
+  const b = $("locateBtn");
+  if (meWatch != null) {
+    navigator.geolocation.clearWatch(meWatch); meWatch = null; b.setAttribute("aria-pressed", "false");
+    if (meMarker) { map.removeLayer(meMarker); meMarker = null; }
+    return;
+  }
+  if (!navigator.geolocation) return;
+  let first = true;
+  meWatch = navigator.geolocation.watchPosition(
+    p => { setMe(p.coords.latitude, p.coords.longitude); if (first) { map.setView([p.coords.latitude, p.coords.longitude], 17); first = false; } },
+    () => { navigator.geolocation.clearWatch(meWatch); meWatch = null; b.setAttribute("aria-pressed", "false"); $("mapNote").hidden = false; $("mapNote").textContent = "Position refusée ou indisponible ici."; },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+  );
+  b.setAttribute("aria-pressed", "true");
+};
+
+async function startRecording(c) {
+  if (!navigator.geolocation) return;
+  ui.mode = "record"; ui.path = [];
+  try { ui.wake = await navigator.wakeLock?.request("screen"); } catch (e) { ui.wake = null; }
+  ui.rec = navigator.geolocation.watchPosition(
+    p => {
+      const pt = [+p.coords.latitude.toFixed(5), +p.coords.longitude.toFixed(5)];
+      if (p.coords.accuracy > 40) return;
+      const last = ui.path[ui.path.length - 1];
+      if (!last || dist(last, pt) >= 10) { ui.path.push(pt); setMe(pt[0], pt[1]); drawMap(); renderSheet(); }
+    },
+    () => { stopRecording(false); ui.mode = null; drawMap(); renderSheet("Position refusée ou indisponible : trace le chemin à la main."); },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+  );
+  drawMap(); renderSheet();
+}
+function stopRecording() {
+  if (ui.rec != null) { navigator.geolocation.clearWatch(ui.rec); ui.rec = null; }
+  if (ui.wake) { try { ui.wake.release(); } catch (e) {} ui.wake = null; }
+}
+
+/* ---------- 9. Carnet, réglages, statut ---------- */
+function renderLogForm() {
+  const cur = $("logCoin").value;
+  $("logCoin").innerHTML = state.coins.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  if (cur && coinById(cur)) $("logCoin").value = cur;
+  $("logSpecies").innerHTML = Object.keys(DEFAULTS).map(k => `<option value="${k}">${DEFAULTS[k].label}</option>`).join("");
+  if (!$("logDate").value) $("logDate").value = TODAY;
+}
+
+function renderLogs() {
+  const el = $("logList");
+  if (!state.logs.length) { el.innerHTML = `<p class="empty">Pas encore de sortie notée. La première servira de point de repère pour le score.</p>`; return; }
+  const items = [...state.logs].sort((a, b) => b.date.localeCompare(a.date));
+  el.innerHTML = items.map(l => {
+    const c = coinById(l.coin);
+    const sc = l.score != null ? `score ce jour-là : ${l.score}` : "score inconnu (hors période météo)";
+    return `<div class="log-item">
+      <div><b>${esc(longDate(l.date))}</b> · ${esc(c ? c.name : "coin supprimé")}<br><span class="small muted">${esc(DEFAULTS[l.sp]?.label || l.sp)} · ${sc}${l.note ? " · " + esc(l.note) : ""}</span></div>
+      <div class="row" style="justify-content:flex-end"><span class="res r${l.result}">${RESULTS[l.result]}</span><button class="btn small ghost danger" type="button" data-logdel="${l.id}" aria-label="Supprimer cette sortie">✕</button></div>
+    </div>`;
+  }).join("");
+}
+
+function renderSettings() {
+  $("setForm").innerHTML = Object.keys(DEFAULTS).map(k => {
+    const s = spConf(k);
+    return `<fieldset class="panel" style="margin:0">
+      <legend class="small muted" style="padding:0 6px">${s.label}</legend>
+      <div class="grid3">
+        <label class="f">Pluie déclenchante (mm)<input type="number" min="5" max="200" step="1" id="set-${k}-rain" value="${s.rain}"></label>
+        <label class="f">Idéal dès (°C)<input type="number" min="-5" max="30" step="0.5" id="set-${k}-t1" value="${s.t[1]}"></label>
+        <label class="f">Idéal jusqu'à (°C)<input type="number" min="0" max="35" step="0.5" id="set-${k}-t2" value="${s.t[2]}"></label>
+      </div>
+    </fieldset>`;
+  }).join("");
+}
+
+function renderStatus() {
+  const chip = $("dataChip"), b = $("banner");
+  $("todayLine").textContent = HOME.label + " · " + longDate(TODAY);
+  if (DEMO) {
+    chip.className = "chip demo"; chip.textContent = "Météo d'exemple";
+    b.hidden = false;
+    b.innerHTML = `<p><b>Les scores affichés sont calculés sur une météo d'exemple.</b> La météo réelle et les fonds de carte ne peuvent pas se charger dans cet aperçu. Ils fonctionneront une fois l'appli ouverte depuis son adresse à toi.</p><button class="btn small" type="button" id="retryBtn">Réessayer</button>`;
+    $("retryBtn").onclick = () => refresh(true);
+  } else {
+    chip.className = "chip live"; chip.textContent = "Météo réelle";
+    b.hidden = !state.coins.some(c => c.example);
+    if (!b.hidden) b.innerHTML = `<p>Le coin marqué « Exemple » montre le fonctionnement, avec un parking et un chemin. Place les tiens depuis l'onglet Carte, puis supprime-le.</p>`;
+  }
+}
+
+function computeAll() {
+  ANALYSES = {};
+  state.coins.forEach(c => { const w = WEATHER[wkey(c)]; if (w && c.species.length) ANALYSES[c.id] = analyse(c, w); });
+}
+function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLogForm(); renderLogs(); drawMap(); renderSheet(msg); }
+
+async function refresh(force, msg) {
+  if (force) save("meteo-coins-cache", { at: 0, day: "", data: {} });
+  if (!state.coins.length) { DEMO = false; WEATHER = {}; renderAll(msg); return; }
+  try { WEATHER = await fetchWeather(state.coins); DEMO = false; }
+  catch (e) { WEATHER = demoWeather(state.coins); DEMO = true; }
+  renderAll(msg);
+}
+
+function parseCoords(txt) {
+  const m = String(txt).replace(/,(?=\d)/g, ".").match(/-?\d+(?:\.\d+)?/g);
+  if (!m || m.length < 2) return null;
+  const lat = parseFloat(m[0]), lon = parseFloat(m[1]);
+  if (!(lat > 41 && lat < 52 && lon > -6 && lon < 10)) return null;
+  return { lat: +lat.toFixed(5), lon: +lon.toFixed(5) };
+}
+
+/* ---------- 10. Actions ---------- */
+function showTab(name) {
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false"));
+  ["coins", "carte", "carnet", "reglages"].forEach(t => { $("tab-" + t).hidden = t !== name; });
+  if (name === "carte") { initMap(); setTimeout(() => map && map.invalidateSize(), 50); }
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("nav.tabs button").forEach(btn => { btn.onclick = () => showTab(btn.dataset.tab); });
+
+document.querySelectorAll("[data-base]").forEach(b => {
+  b.onclick = () => {
+    if (!map) return;
+    document.querySelectorAll("[data-base]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    Object.values(layers).forEach(l => map.removeLayer(l));
+    layers[b.dataset.base].addTo(map);
+  };
+});
+
+$("addFromList").onclick = () => { showTab("carte"); startAdd(); };
+$("coinList").addEventListener("click", ev => {
+  const s = ev.target.closest("[data-show]");
+  if (s) { showTab("carte"); setTimeout(() => selectCoin(s.dataset.show, true), 80); }
+});
+
+$("logForm").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const coin = coinById($("logCoin").value);
+  if (!coin) { $("logMsg").className = "msg err"; $("logMsg").textContent = "Ajoute d'abord un coin."; return; }
+  const date = $("logDate").value, sp = $("logSpecies").value;
+  let score = null;
+  const w = WEATHER[wkey(coin)];
+  if (w && !DEMO) { const i = w.dates.indexOf(date); if (i >= 0) score = scoreAt(w, litterSeries(w), i, sp).score; }
+  state.logs.push({ id: uid(), date, coin: coin.id, sp, result: Number($("logResult").value), note: $("logNote").value.trim(), score });
+  persist(); $("logNote").value = "";
+  $("logMsg").className = "msg"; $("logMsg").textContent = "Sortie ajoutée.";
+  renderLogs();
+});
+$("logList").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-logdel]"); if (!b) return;
+  state.logs = state.logs.filter(l => l.id !== b.dataset.logdel); persist(); renderLogs();
+});
+
+$("setSave").onclick = () => {
+  Object.keys(DEFAULTS).forEach(k => {
+    const rain = Number($("set-" + k + "-rain").value), t1 = Number($("set-" + k + "-t1").value), t2 = Number($("set-" + k + "-t2").value);
+    if (rain > 0 && t2 > t1) state.settings[k] = { rain, t: [t1 - 4, t1, t2, t2 + 5] };
+  });
+  persist(); $("setMsg").className = "msg"; $("setMsg").textContent = "Réglages enregistrés, scores recalculés.";
+  renderSettings(); renderAll();
+};
+let resetArmed = false;
+$("setReset").onclick = () => {
+  if (!resetArmed) { resetArmed = true; $("setReset").textContent = "Confirmer le retour aux valeurs de départ"; setTimeout(() => { resetArmed = false; $("setReset").textContent = "Revenir aux valeurs de départ"; }, 4000); return; }
+  resetArmed = false; state.settings = {}; persist(); renderSettings(); renderAll();
+  $("setReset").textContent = "Revenir aux valeurs de départ"; $("setMsg").textContent = "Valeurs de départ rétablies.";
+};
+
+$("exportBtn").onclick = async () => {
+  const txt = JSON.stringify({ version: 2, coins: state.coins, logs: state.logs, settings: state.settings });
+  const ta = $("backupText"); ta.value = txt;
+  try { await navigator.clipboard.writeText(txt); $("backupMsg").textContent = "Copié. Colle-le dans une note ou un mail."; }
+  catch (e) { ta.focus(); ta.select(); $("backupMsg").textContent = "Texte sélectionné : copie-le à la main."; }
+};
+let importArmed = false;
+$("importBtn").onclick = () => {
+  const m = $("backupMsg");
+  let data;
+  try { data = JSON.parse($("backupText").value); } catch (e) { m.className = "msg err"; m.textContent = "Ce texte n'est pas une sauvegarde valide."; return; }
+  if (!Array.isArray(data.coins)) { m.className = "msg err"; m.textContent = "Sauvegarde incomplète : aucun coin trouvé."; return; }
+  if (!importArmed) { importArmed = true; $("importBtn").textContent = "Confirmer : remplacer mes données"; setTimeout(() => { importArmed = false; $("importBtn").textContent = "Restaurer"; }, 5000); return; }
+  importArmed = false; $("importBtn").textContent = "Restaurer";
+  data.coins.forEach(c => { c.species = (c.species || []).filter(k => DEFAULTS[k]); if (!c.species.length) c.species = ["cepe"]; c.parking = c.parking || null; c.path = c.path || []; });
+  state = { version: 2, coins: data.coins, logs: data.logs || [], settings: data.settings || {} };
+  persist(); m.className = "msg"; m.textContent = "Données restaurées.";
+  ui.sel = null; renderSettings(); refresh(true);
+};
+
+/* ---------- 11. Démarrage ---------- */
+persist();
+renderSettings();
+renderSheet();
+refresh(false);
+</script>
+
+</body>
+</html>
