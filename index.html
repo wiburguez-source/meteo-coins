@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Météo des Coins</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -446,20 +449,29 @@ function gmPlace(lat, lon) { return `https://www.google.com/maps/search/?api=1&q
 function goTarget(c) { return c.parking || { lat: c.lat, lon: c.lon }; }
 
 /* ---------- 5. Météo : Open-Meteo (gratuit, sans clé) ---------- */
-let DEMO = false;
+let DEMO = false, OFFLINE = false;
 function wkey(c) { return c.lat.toFixed(3) + "," + c.lon.toFixed(3); }
 
-async function fetchWeather(coins) {
+async function fetchWeather(coins, force) {
   const cache = load("meteo-coins-cache", { at: 0, day: "", data: {} });
   const fresh = Date.now() - cache.at < CACHE_HOURS * 3600e3 && cache.day === TODAY;
-  if (fresh && coins.every(c => cache.data[wkey(c)])) { WEATHER_AT = cache.at; return cache.data; }
+  const haveAll = coins.every(c => cache.data[wkey(c)] && cache.data[wkey(c)].dates.includes(TODAY));
+  if (!force && fresh && haveAll) { WEATHER_AT = cache.at; OFFLINE = false; return cache.data; }
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + coins.map(c => c.lat).join(",") +
     "&longitude=" + coins.map(c => c.lon).join(",") +
     "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
     "&past_days=30&forecast_days=7&timezone=Europe%2FParis";
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  let json = await res.json();
+  let json;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    json = await res.json();
+  } catch (err) {
+    // Pas de réseau (en forêt, par exemple) : on garde la dernière météo connue
+    if (haveAll) { WEATHER_AT = cache.at; OFFLINE = true; return cache.data; }
+    throw err;
+  }
+  OFFLINE = false;
   if (!Array.isArray(json)) json = [json];
   const data = {};
   json.forEach((j, i) => {
@@ -1563,14 +1575,21 @@ function renderSettings() {
 
 function renderStatus() {
   const chip = $("dataChip"), b = $("banner");
-  const at = !DEMO && WEATHER_AT ? " · météo de " + new Date(WEATHER_AT).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") : "";
+  const wd = new Date(WEATHER_AT), hh = wd.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+  const at = !DEMO && WEATHER_AT ? (isoLocal(wd) === TODAY ? " · météo de " + hh : " · météo du " + wd.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " à " + hh) : "";
   $("todayLine").textContent = HOME.label + " · " + longDate(TODAY) + at;
   if (DEMO) {
     chip.className = "chip demo"; chip.textContent = "Météo d'exemple";
     b.hidden = false;
-    b.innerHTML = `<p><b>Les scores affichés sont calculés sur une météo d'exemple.</b> La météo réelle et les fonds de carte ne peuvent pas se charger dans cet aperçu. Ils fonctionneront une fois l'appli ouverte depuis son adresse à toi.</p><button class="btn small" type="button" id="retryBtn">Réessayer</button>`;
+    b.innerHTML = `<p><b>Les scores affichés sont calculés sur une météo d'exemple.</b> La météo réelle n'a pas pu se charger : pas de réseau, ou aperçu Claude. Elle s'affichera dès que la connexion revient, depuis l'adresse de ton appli.</p><button class="btn small" type="button" id="retryBtn">Réessayer</button>`;
     $("retryBtn").onclick = () => refresh(true);
   } else {
+    if (OFFLINE) {
+      chip.className = "chip demo"; chip.textContent = "Hors connexion";
+      b.hidden = false;
+      b.innerHTML = `<p><b>Pas de réseau.</b> Les scores sont calculés avec la dernière météo connue. Ils se mettront à jour quand la connexion reviendra.</p>`;
+      return;
+    }
     chip.className = "chip live"; chip.textContent = "Météo réelle";
     b.hidden = !state.coins.some(c => c.example);
     if (!b.hidden) b.innerHTML = `<p>Le coin marqué « Exemple » montre le fonctionnement, avec un parking et un chemin. Place les tiens depuis l'onglet Carte, puis supprime-le.</p>`;
@@ -1586,9 +1605,8 @@ function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLog
 async function refresh(force, msg) {
   const now = isoLocal(new Date());
   if (now !== TODAY) { TODAY = now; if (ZONES) { hideZones(); zMsg("Nouveau jour : relance le calcul des zones pour les données du jour."); } }
-  if (force) save("meteo-coins-cache", { at: 0, day: "", data: {} });
   if (!state.coins.length) { DEMO = false; WEATHER = {}; renderAll(msg); return; }
-  try { WEATHER = await fetchWeather(state.coins); DEMO = false; }
+  try { WEATHER = await fetchWeather(state.coins, force); DEMO = false; }
   catch (e) { WEATHER = demoWeather(state.coins); DEMO = true; }
   renderAll(msg);
 }
@@ -1704,5 +1722,6 @@ renderSheet();
 refresh(false);
 </script>
 
+<script>if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); }); }</script>
 </body>
 </html>
