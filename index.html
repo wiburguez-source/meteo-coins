@@ -33,6 +33,8 @@
   --warn-fg: #6a4708;
   --danger: #a2321f;
   --me: #2b6fd6;
+  --trail: #e06a12;         /* sentiers et pistes */
+  --route: #6a2bd6;         /* chemin proposé */
   --font-display: "Bricolage Grotesque", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
   --r: 14px;
@@ -41,14 +43,14 @@
   :root:not([data-theme="light"]) {
     --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
     --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff;
+    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
   --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff;
+  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff;
   color-scheme: dark;
 }
 
@@ -145,6 +147,15 @@ details.more[open] summary::after { content: " ▴"; }
 .map-note { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 500; background: var(--surface); color: var(--fg); font-size: 0.82rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); }
 .mode-bar { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 500; background: var(--bark); color: var(--surface); font-weight: 700; font-size: 0.9rem; padding: 8px 12px; border-radius: 10px; }
 .leaflet-container { font-family: var(--font-body); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.84rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 16px; height: 12px; border-radius: 3px; opacity: .8; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.zone-pop { font-family: var(--font-body); font-size: 0.88rem; line-height: 1.4; }
+.tgt { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--route); color: var(--surface); font-weight: 800; font-family: var(--font-display); font-size: .82rem; border: 3px solid var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.sw.trail { background: var(--trail); height: 4px; border-radius: 2px; opacity: 1; }
+.sw.route { background: var(--route); height: 5px; border-radius: 3px; opacity: 1; }
+.zone-pop b { font-family: var(--font-display); font-size: 1.05rem; }
 .pin { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); border: 3px solid var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
 .pin span { transform: rotate(45deg); color: var(--surface); font-weight: 800; font-size: 0.82rem; font-family: var(--font-display); }
 .pin.sel { outline: 3px solid var(--fg); outline-offset: 1px; }
@@ -207,7 +218,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
   <header class="top">
     <div class="top-row">
       <h1>Météo des Coins</h1>
-      <span id="dataChip" class="chip">Chargement…</span>
+      <div class="row"><span id="dataChip" class="chip">Chargement…</span><button class="btn small" type="button" id="refreshBtn">Actualiser</button></div>
     </div>
     <p class="muted small" id="todayLine"></p>
   </header>
@@ -235,6 +246,44 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div id="map" aria-label="Carte des coins"></div>
       <div id="modeBar" class="mode-bar" hidden></div>
       <div id="mapNote" class="map-note" hidden></div>
+    </div>
+    <div id="zonesPanel" class="panel">
+      <div class="row" style="justify-content:space-between">
+        <h3>Zones favorables</h3>
+        <div class="row">
+          <button class="btn small ghost" type="button" id="zonesHide" hidden>Masquer</button>
+          <button class="btn small primary" type="button" id="zonesBtn">Calculer sur cette vue</button>
+        </div>
+      </div>
+      <p class="small muted" id="zonesIntro">Colore les endroits de la vue où la météo, l'altitude, l'exposition et la forêt sont réunies. Cadre le secteur qui t'intéresse, puis calcule.</p>
+      <div class="grid3" id="zonesCtrls" hidden>
+        <label class="f">Espèce
+          <select id="zonesSp">
+            <option value="all">Toutes</option>
+            <option value="cepe">Cèpes</option>
+            <option value="girolle">Girolles</option>
+            <option value="morille">Morilles</option>
+          </select>
+        </label>
+        <label class="f">Jour <select id="zonesDay"></select></label>
+        <label class="f">Opacité <input type="range" id="zonesOp" min="0.15" max="0.9" step="0.05" value="0.6"></label>
+      </div>
+      <div class="legend" id="zonesLegend" hidden>
+        <span><i class="sw bg1"></i>Possible</span>
+        <span><i class="sw bg2"></i>Favorable</span>
+        <span><i class="sw bg3"></i>Très favorable</span>
+      </div>
+      <p class="msg" id="zonesMsg" aria-live="polite"></p>
+    </div>
+    <div id="trailsPanel" class="panel">
+      <div class="row" style="justify-content:space-between">
+        <h3>Chemins</h3>
+        <button class="btn small" type="button" id="trailsBtn" aria-pressed="false">Afficher les chemins</button>
+      </div>
+      <p class="small muted">Sentiers, pistes forestières et chemins connus d'OpenStreetMap, en orange. Les chemins privés sont en pointillés et ne sont jamais proposés. Une fois les zones calculées, l'appli trouve le chemin qui t'y mène.</p>
+      <div class="legend"><span><i class="sw trail"></i>Chemin</span><span><i class="sw route"></i>Chemin proposé</span></div>
+      <div class="row"><button class="btn primary small" type="button" id="routeBtn">Trouver un chemin vers les zones</button></div>
+      <p class="msg" id="trailsMsg" aria-live="polite"></p>
     </div>
     <div id="sheet" class="panel"></div>
   </section>
@@ -370,7 +419,8 @@ function coinById(id) { return state.coins.find(c => c.id === id); }
 
 /* ---------- 3. Dates et distances ---------- */
 function isoLocal(d) { return d.toLocaleDateString("sv-SE"); }
-const TODAY = isoLocal(new Date());
+let TODAY = isoLocal(new Date());
+let WEATHER_AT = 0;
 const DAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
 function dayName(iso) { return DAYS[new Date(iso + "T12:00:00").getDay()]; }
 function longDate(iso) { return new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); }
@@ -402,7 +452,7 @@ function wkey(c) { return c.lat.toFixed(3) + "," + c.lon.toFixed(3); }
 async function fetchWeather(coins) {
   const cache = load("meteo-coins-cache", { at: 0, day: "", data: {} });
   const fresh = Date.now() - cache.at < CACHE_HOURS * 3600e3 && cache.day === TODAY;
-  if (fresh && coins.every(c => cache.data[wkey(c)])) return cache.data;
+  if (fresh && coins.every(c => cache.data[wkey(c)])) { WEATHER_AT = cache.at; return cache.data; }
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + coins.map(c => c.lat).join(",") +
     "&longitude=" + coins.map(c => c.lon).join(",") +
     "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
@@ -423,6 +473,7 @@ async function fetchWeather(coins) {
     };
   });
   save("meteo-coins-cache", { at: Date.now(), day: TODAY, data });
+  WEATHER_AT = Date.now();
   return data;
 }
 
@@ -646,6 +697,12 @@ function initMap() {
   };
   Object.values(layers).forEach(l => l.on("tileerror", () => { if (!tileFailed) { tileFailed = true; showMapNote(); } }));
   layers.plan.addTo(map);
+  map.createPane("zones");
+  map.getPane("zones").style.zIndex = 350;
+  map.getPane("zones").style.pointerEvents = "none";
+  map.createPane("trails"); map.getPane("trails").style.zIndex = 380; map.getPane("trails").style.pointerEvents = "none";
+  map.createPane("route"); map.getPane("route").style.zIndex = 395; map.getPane("route").style.pointerEvents = "none";
+  map.on("moveend", () => { if (trailsOn) refreshTrailsView(); });
   overlay = L.layerGroup().addTo(map);
   map.on("click", onMapClick);
   drawMap();
@@ -704,7 +761,8 @@ function drawMap() {
     add: "Touche la carte à l'emplacement du coin (tu peux ensuite déplacer le repère).",
     parking: "Touche la carte là où tu gares la voiture.",
     path: "Touche la carte point par point, du parking jusqu'au coin.",
-    record: "Enregistrement en cours : marche jusqu'au coin, l'écran reste allumé."
+    record: "Enregistrement en cours : marche jusqu'au coin, l'écran reste allumé.",
+    route: "Touche ton point de départ : parking, bord de route…"
   };
   bar.hidden = !MODE_TXT[ui.mode];
   bar.textContent = MODE_TXT[ui.mode] || "";
@@ -722,6 +780,10 @@ function onMapClick(e) {
     persist(); ui.mode = null; afterChange("Parking enregistré.");
   } else if (ui.mode === "path") {
     ui.path.push(p); drawMap(); renderSheet();
+  } else if (ui.mode === "route") {
+    routeFrom(p);
+  } else if (!ui.mode && ZONES && zonesLayer) {
+    zonePopup(e.latlng);
   }
 }
 
@@ -775,6 +837,19 @@ function renderSheet(msg) {
     $("edGeo").onclick = () => locateOnce(p => { Object.assign(ui.draft, p); $("edCoords").value = p.lat + ", " + p.lon; drawMap(); map && map.setView([p.lat, p.lon], 17); }, $("edGeoMsg"));
     return;
   }
+  if (m === "route") {
+    const parks = state.coins.filter(x => x.parking);
+    sh.innerHTML = `<h2>Point de départ</h2>
+      <p class="small muted">Touche la carte là où tu te gares ou d'où tu pars à pied. Tu peux aussi :</p>
+      <div class="row"><button class="btn" type="button" id="rtGeo">Partir de ma position</button>
+      ${parks.length ? `<select id="rtPark" style="width:auto;max-width:100%"><option value="">Partir du parking d'un coin…</option>${parks.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select>` : ""}</div>
+      <div class="row"><button class="btn ghost" type="button" id="rtCancel">Annuler</button><span class="msg" id="rtMsg"></span></div>`;
+    $("rtCancel").onclick = () => { ui.mode = null; drawMap(); renderSheet(); };
+    $("rtGeo").onclick = () => locateOnce(p => routeFrom([p.lat, p.lon]), $("rtMsg"));
+    if (parks.length) $("rtPark").onchange = ev => { const x = coinById(ev.target.value); if (x) routeFrom([x.parking.lat, x.parking.lon]); };
+    return;
+  }
+  if (!c && ROUTE) { routeSheet(sh, msg); return; }
   if (!c) {
     sh.innerHTML = `
       <h2>${esc(HOME.label)}</h2>
@@ -944,6 +1019,511 @@ function stopRecording() {
   if (ui.wake) { try { ui.wake.release(); } catch (e) {} ui.wake = null; }
 }
 
+/* ---------- 8 bis. Zones favorables ----------
+   Pour chaque case de la vue (environ 100 m de côté) :
+   météo (interpolée entre 16 points Open-Meteo, température corrigée de l'altitude)
+   × exposition (un versant nord s'assèche moins vite qu'un versant sud)
+   × habitat (forêts, vergers, broussailles d'OpenStreetMap, selon l'espèce). */
+const LAPSE = 0.0065;        // °C perdus par mètre d'altitude
+const MAX_CELLS = 700;
+const HABITAT = {
+  cepe:    { forest: { broadleaved: 1, mixed: 1, needleleaved: 0.7, unknown: 0.9 }, orchard: 0,   scrub: 0.15, none: 0 },
+  girolle: { forest: { broadleaved: 1, mixed: 1, needleleaved: 0.8, unknown: 0.9 }, orchard: 0,   scrub: 0.15, none: 0 },
+  morille: { forest: { broadleaved: 0.6, mixed: 0.6, needleleaved: 0.3, unknown: 0.5 }, orchard: 1, scrub: 0.5, none: 0.1 }
+};
+const LEAF_TXT = { broadleaved: "feuillus", needleleaved: "résineux", mixed: "mixte", unknown: "type non renseigné" };
+const KIND_TXT = { forest: "forêt", orchard: "verger", scrub: "broussailles", none: "terrain découvert" };
+let ZONES = null, zonesLayer = null, zonesBusy = false;
+
+function zMsg(t, err) { const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+
+async function fetchElevations(pts) {
+  const out = [];
+  for (let k = 0; k < pts.length; k += 100) {
+    const chunk = pts.slice(k, k + 100);
+    const url = "https://api.open-meteo.com/v1/elevation?latitude=" + chunk.map(p => p[0].toFixed(5)).join(",") +
+      "&longitude=" + chunk.map(p => p[1].toFixed(5)).join(",");
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("altitude " + r.status);
+    const j = await r.json();
+    out.push(...j.elevation);
+  }
+  return out;
+}
+
+async function fetchWeatherPts(pts) {
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + pts.map(p => p[0].toFixed(4)).join(",") +
+    "&longitude=" + pts.map(p => p[1].toFixed(4)).join(",") +
+    "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
+    "&past_days=30&forecast_days=7&timezone=Europe%2FParis";
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("météo " + r.status);
+  let j = await r.json();
+  if (!Array.isArray(j)) j = [j];
+  return j.map(x => ({
+    dates: x.daily.time, elevation: x.elevation,
+    rain: x.daily.precipitation_sum.map(v => v ?? 0),
+    tmean: x.daily.temperature_2m_mean.map(v => v ?? 10),
+    tmin: x.daily.temperature_2m_min.map(v => v ?? 5),
+    et0: x.daily.et0_fao_evapotranspiration.map(v => v ?? 1)
+  }));
+}
+
+/* Forêts, vergers et broussailles d'OpenStreetMap (service Overpass) */
+async function fetchHabitat(s, w, n, e) {
+  const bb = `(${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)})`;
+  const sel = ['["landuse"="forest"]', '["natural"="wood"]', '["landuse"="orchard"]', '["natural"="scrub"]'];
+  const q = `[out:json][timeout:25];(${sel.map(t => `way${t}${bb};relation${t}${bb};`).join("")});out geom;`;
+  const r = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q)
+  });
+  if (!r.ok) throw new Error("forêts " + r.status);
+  const j = await r.json();
+  const feats = [];
+  const kindOf = t => (t.landuse === "forest" || t.natural === "wood") ? "forest" : t.landuse === "orchard" ? "orchard" : t.natural === "scrub" ? "scrub" : null;
+  const leafOf = t => (["broadleaved", "needleleaved", "mixed"].includes(t.leaf_type) ? t.leaf_type : "unknown");
+  for (const el of j.elements || []) {
+    const t = el.tags || {}, kind = kindOf(t);
+    if (!kind) continue;
+    let rings = [];
+    if (el.type === "way" && el.geometry && el.geometry.length > 3) rings = [el.geometry.map(g => [g.lat, g.lon])];
+    if (el.type === "relation" && el.members) {
+      const segs = el.members.filter(m => m.type === "way" && m.geometry && (m.role === "outer" || m.role === "inner" || m.role === ""))
+        .map(m => m.geometry.map(g => [g.lat, g.lon]));
+      rings = assembleRings(segs);
+    }
+    if (!rings.length) continue;
+    let a = 90, b = 180, c = -90, d = -180;
+    rings.forEach(rg => rg.forEach(([la, lo]) => { a = Math.min(a, la); c = Math.max(c, la); b = Math.min(b, lo); d = Math.max(d, lo); }));
+    feats.push({ kind, leaf: leafOf(t), rings, box: [a, b, c, d] });
+  }
+  return feats;
+}
+function assembleRings(segs) {
+  const rings = [], open = segs.map(s => s.slice());
+  const same = (p, q) => Math.abs(p[0] - q[0]) < 1e-7 && Math.abs(p[1] - q[1]) < 1e-7;
+  while (open.length) {
+    let cur = open.shift();
+    let guard = 0;
+    while (!same(cur[0], cur[cur.length - 1]) && guard++ < 500) {
+      const end = cur[cur.length - 1];
+      const k = open.findIndex(s => same(s[0], end) || same(s[s.length - 1], end));
+      if (k < 0) break;
+      let s = open.splice(k, 1)[0];
+      if (!same(s[0], end)) s = s.reverse();
+      cur = cur.concat(s.slice(1));
+    }
+    if (cur.length > 3) rings.push(cur);
+  }
+  return rings;
+}
+function inRing(lat, lon, ring) {
+  let ins = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [yi, xi] = ring[i], [yj, xj] = ring[j];
+    if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) ins = !ins;
+  }
+  return ins;
+}
+function habitatAt(lat, lon, feats) {
+  const prio = { forest: 3, orchard: 2, scrub: 1 };
+  let best = { kind: "none", leaf: "unknown" };
+  for (const f of feats) {
+    if (lat < f.box[0] || lat > f.box[2] || lon < f.box[1] || lon > f.box[3]) continue;
+    let ins = false;
+    f.rings.forEach(rg => { if (inRing(lat, lon, rg)) ins = !ins; });
+    if (ins && (prio[f.kind] > (prio[best.kind] || 0))) best = { kind: f.kind, leaf: f.leaf };
+  }
+  return best;
+}
+function habitatFactor(sp, h) {
+  const H = HABITAT[sp];
+  return h.kind === "forest" ? H.forest[h.leaf] : H[h.kind];
+}
+
+/* Interpolation bilinéaire d'une série météo sur la grille 4 × 4 */
+function interpSeries(WG, gx, gy, fx, fy, key) {
+  const i0 = Math.min(gx - 2, Math.floor(fx)), j0 = Math.min(gy - 2, Math.floor(fy));
+  const tx = fx - i0, ty = fy - j0;
+  const A = WG[j0 * gx + i0][key], B = WG[j0 * gx + i0 + 1][key], C = WG[(j0 + 1) * gx + i0][key], D = WG[(j0 + 1) * gx + i0 + 1][key];
+  if (key === "elevation") return (A * (1 - tx) + B * tx) * (1 - ty) + (C * (1 - tx) + D * tx) * ty;
+  return A.map((_, k) => (A[k] * (1 - tx) + B[k] * tx) * (1 - ty) + (C[k] * (1 - tx) + D[k] * tx) * ty);
+}
+
+function demoTerrain(pts, nx, ny) {
+  // Relief et boisements fictifs pour l'aperçu
+  const elev = pts.map((p, k) => { const i = k % nx, j = Math.floor(k / nx); return 380 + 160 * Math.sin(i / nx * 3.1) * Math.cos(j / ny * 2.4) + 90 * (j / ny); });
+  const hab = pts.map((p, k) => { const i = k % nx, j = Math.floor(k / nx); const v = Math.sin(i * 0.35) + Math.cos(j * 0.28) + Math.sin((i + j) * 0.17);
+    return v > 0.2 ? { kind: "forest", leaf: v > 1.2 ? "broadleaved" : "mixed" } : v > -0.4 ? { kind: "scrub", leaf: "unknown" } : { kind: "none", leaf: "unknown" }; });
+  return { elev, hab };
+}
+
+async function computeZones() {
+  if (!map || zonesBusy) return;
+  if (map.getZoom() < 13) { zMsg("Zoome davantage : le calcul se fait sur un secteur de quelques kilomètres au plus.", true); return; }
+  zonesBusy = true; $("zonesBtn").disabled = true;
+  try {
+    const b = map.getBounds(), s = b.getSouth(), n = b.getNorth(), w = b.getWest(), e = b.getEast();
+    const mLat = 111320, mLon = 111320 * Math.cos((s + n) / 2 * Math.PI / 180);
+    const hM = (n - s) * mLat, wM = (e - w) * mLon;
+    const cell = Math.max(60, Math.sqrt(hM * wM / MAX_CELLS));
+    const nx = Math.max(6, Math.round(wM / cell)), ny = Math.max(6, Math.round(hM / cell));
+    const pts = [];
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) pts.push([n - (j + 0.5) * (n - s) / ny, w + (i + 0.5) * (e - w) / nx]);
+    const gx = 4, gy = 4, gpts = [];
+    for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) gpts.push([n - j * (n - s) / (gy - 1), w + i * (e - w) / (gx - 1)]);
+
+    let elev, hab, WG, demo = false, forestOk = true;
+    try {
+      zMsg("Relief de la zone…");
+      elev = await fetchElevations(pts);
+      zMsg("Météo de la zone…");
+      WG = await fetchWeatherPts(gpts);
+      zMsg("Forêts et vergers…");
+      try { const feats = await fetchHabitat(s, w, n, e); hab = pts.map(p => habitatAt(p[0], p[1], feats)); }
+      catch (err) { forestOk = false; hab = pts.map(() => ({ kind: "forest", leaf: "unknown" })); }
+    } catch (err) {
+      demo = true;
+      const t = demoTerrain(pts, nx, ny); elev = t.elev; hab = t.hab;
+      const dw = demoWeather([{ lat: (s + n) / 2, lon: (w + e) / 2 }]);
+      const one = Object.values(dw)[0]; one.elevation = 450;
+      WG = gpts.map(() => one);
+    }
+
+    zMsg("Calcul des scores…");
+    const dates = WG[0].dates;
+    let ti = dates.indexOf(TODAY); if (ti < 0) ti = Math.min(30, dates.length - 1);
+    const days = dates.slice(ti, ti + 7);
+    const dx = wM / nx, dy = hM / ny;
+    const species = Object.keys(DEFAULTS);
+    const scores = {}; species.forEach(k => { scores[k] = days.map(() => new Float32Array(nx * ny)); });
+    const info = [];
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const k = j * nx + i, z = elev[k];
+      const zE = elev[j * nx + Math.min(nx - 1, i + 1)], zW = elev[j * nx + Math.max(0, i - 1)];
+      const zN = elev[Math.max(0, j - 1) * nx + i], zS = elev[Math.min(ny - 1, j + 1) * nx + i];
+      const dzdx = (zE - zW) / (dx * ((i > 0 && i < nx - 1) ? 2 : 1)), dzdy = (zN - zS) / (dy * ((j > 0 && j < ny - 1) ? 2 : 1));
+      const slope = Math.atan(Math.hypot(dzdx, dzdy)) * 180 / Math.PI;
+      const aspect = Math.atan2(-dzdx, -dzdy);                 // direction vers laquelle la pente descend, 0 = nord
+      const etMul = 1 + 0.3 * Math.cos(aspect - Math.PI) * Math.min(slope / 20, 1);
+      const fx = (pts[k][1] - w) / (e - w) * (gx - 1), fy = (n - pts[k][0]) / (n - s) * (gy - 1);
+      const zW0 = interpSeries(WG, gx, gy, fx, fy, "elevation");
+      const corr = (zW0 - z) * LAPSE;
+      const cw = {
+        dates,
+        rain: interpSeries(WG, gx, gy, fx, fy, "rain"),
+        tmean: interpSeries(WG, gx, gy, fx, fy, "tmean").map(v => v + corr),
+        tmin: interpSeries(WG, gx, gy, fx, fy, "tmin").map(v => v + corr),
+        et0: interpSeries(WG, gx, gy, fx, fy, "et0").map(v => v * etMul)
+      };
+      const R = litterSeries(cw);
+      species.forEach(sp => {
+        const hf = habitatFactor(sp, hab[k]);
+        days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? scoreAt(cw, R, ti + d, sp).score * hf : 0; });
+      });
+      info.push({ z, slope, aspect, hab: hab[k] });
+    }
+    ZONES = { s, w, n, e, nx, ny, cell, days, scores, info, demo, forestOk };
+    ROUTE = null; drawRoute();
+    $("zonesDay").innerHTML = days.map((d, k) => `<option value="${k}">${k === 0 ? "Aujourd'hui" : longDate(d)}</option>`).join("");
+    $("zonesCtrls").hidden = false; $("zonesLegend").hidden = false; $("zonesHide").hidden = false; $("zonesIntro").hidden = true;
+    drawZones();
+    const txt = demo
+      ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera une fois l'appli en ligne."
+      : forestOk
+        ? "Calculé à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") + " sur " + (nx * ny) + " cases d'environ " + Math.round(cell) + " m. Touche la carte pour le détail d'une case."
+        : "Carte des forêts indisponible pour l'instant : seuls la météo, l'altitude et l'exposition sont pris en compte.";
+    zMsg(txt, false);
+  } catch (err) {
+    zMsg("Le calcul n'a pas abouti. Vérifie la connexion et réessaie.", true);
+  } finally {
+    zonesBusy = false; $("zonesBtn").disabled = false;
+  }
+}
+
+function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const v = parseInt(h, 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
+function zoneGrid() {
+  const sp = $("zonesSp").value, d = Number($("zonesDay").value || 0);
+  const keys = sp === "all" ? Object.keys(DEFAULTS) : [sp];
+  const out = new Float32Array(ZONES.nx * ZONES.ny), who = new Array(out.length);
+  keys.forEach(k => { const a = ZONES.scores[k][d]; for (let i = 0; i < out.length; i++) if (a[i] > out[i]) { out[i] = a[i]; who[i] = k; } });
+  return { out, who };
+}
+function drawZones() {
+  if (!ZONES || !map) return;
+  const { nx, ny } = ZONES, { out } = zoneGrid();
+  const cv = document.createElement("canvas"); cv.width = nx; cv.height = ny;
+  const ctx = cv.getContext("2d"), img = ctx.createImageData(nx, ny);
+  const pal = [css("--s1"), css("--s2"), css("--s3")].map(c => hexRgb(c || "#888888"));
+  for (let k = 0; k < out.length; k++) {
+    const v = out[k], lv = level(Math.round(v));
+    const a = v < 20 ? 0 : Math.min(1, (v - 20) / 45);
+    const c = pal[Math.max(0, lv - 1)];
+    img.data.set([c[0], c[1], c[2], Math.round(a * 255)], k * 4);
+  }
+  ctx.putImageData(img, 0, 0);
+  const url = cv.toDataURL();
+  const bounds = [[ZONES.s, ZONES.w], [ZONES.n, ZONES.e]];
+  if (zonesLayer) map.removeLayer(zonesLayer);
+  zonesLayer = L.imageOverlay(url, bounds, { pane: "zones", opacity: Number($("zonesOp").value), interactive: false }).addTo(map);
+}
+function hideZones() {
+  if (zonesLayer) { map.removeLayer(zonesLayer); zonesLayer = null; }
+  ZONES = null;
+  ROUTE = null; drawRoute(); if (!ui.mode) renderSheet();
+  $("zonesCtrls").hidden = true; $("zonesLegend").hidden = true; $("zonesHide").hidden = true; $("zonesIntro").hidden = false;
+  zMsg("");
+}
+function zonePopup(ll) {
+  const Z = ZONES;
+  if (ll.lat < Z.s || ll.lat > Z.n || ll.lng < Z.w || ll.lng > Z.e) return;
+  const i = Math.min(Z.nx - 1, Math.floor((ll.lng - Z.w) / (Z.e - Z.w) * Z.nx));
+  const j = Math.min(Z.ny - 1, Math.floor((Z.n - ll.lat) / (Z.n - Z.s) * Z.ny));
+  const k = j * Z.nx + i, { out, who } = zoneGrid(), inf = Z.info[k];
+  const v = Math.round(out[k]);
+  const dirs = ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"];
+  const az = ((inf.aspect * 180 / Math.PI) + 360) % 360;
+  const expo = inf.slope < 3 ? "terrain plat" : "versant " + dirs[Math.round(az / 45) % 8] + ", pente " + Math.round(inf.slope) + "°";
+  const hab = KIND_TXT[inf.hab.kind] + (inf.hab.kind === "forest" ? " (" + LEAF_TXT[inf.hab.leaf] + ")" : "");
+  L.popup({ maxWidth: 240 }).setLatLng(ll).setContent(
+    `<div class="zone-pop"><b class="lvl${level(v)}">${v}</b> · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}<br>${Math.round(inf.z)} m · ${expo}<br>${esc(hab)}${Z.demo ? "<br><i>Données fictives</i>" : ""}</div>`
+  ).openOn(map);
+}
+
+/* ---------- 8 ter. Chemins (OpenStreetMap) et itinéraire vers les zones ---------- */
+const TRAIL_KINDS = ["path", "track", "footway", "bridleway", "steps", "cycleway"];
+const ROAD_KINDS = ["unclassified", "residential", "tertiary", "secondary", "service", "living_street", "road"];
+const MAX_WALK = 6000;     // on ne propose pas de marche de plus de 6 km
+let TRAILS = null, trailsLayer = null, trailsOn = false, trailsBusy = false, ROUTE = null, routeLayer = null;
+
+function tMsg(t, err) { const m = $("trailsMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+function covers(T, s, w, n, e) { return T && T.s <= s && T.w <= w && T.n >= n && T.e >= e; }
+
+async function fetchTrails(s, w, n, e) {
+  const re = "^(" + TRAIL_KINDS.concat(ROAD_KINDS).join("|") + ")$";
+  const q = `[out:json][timeout:30];way["highway"~"${re}"](${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)});out body;>;out skel qt;`;
+  const r = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q)
+  });
+  if (!r.ok) throw new Error("chemins " + r.status);
+  const j = await r.json();
+  const nodes = new Map(), ways = [];
+  for (const el of j.elements || []) if (el.type === "node") nodes.set(el.id, [el.lat, el.lon]);
+  for (const el of j.elements || []) if (el.type === "way" && el.nodes) {
+    const t = el.tags || {};
+    const priv = ["private", "no"].includes(t.access) || ["private", "no"].includes(t.foot);
+    ways.push({ nodes: el.nodes.filter(id => nodes.has(id)), trail: TRAIL_KINDS.includes(t.highway), priv, kind: t.highway });
+  }
+  return { s, w, n, e, nodes, ways, demo: false };
+}
+
+function demoTrails(s, w, n, e) {
+  // Réseau de pistes et sentiers fictif, pour l'aperçu seulement
+  const R = 7, C = 7, nodes = new Map(), ways = [], id = [];
+  let k = 1;
+  for (let r = 0; r < R; r++) { id.push([]); for (let c = 0; c < C; c++) {
+    const lat = s + (r + 0.5) / R * (n - s) + Math.sin(c * 1.7 + r) * (n - s) * 0.03;
+    const lon = w + (c + 0.5) / C * (e - w) + Math.cos(r * 1.3 + c) * (e - w) * 0.03;
+    nodes.set(k, [lat, lon]); id[r].push(k++);
+  } }
+  for (let r = 0; r < R; r++) ways.push({ nodes: id[r].slice(), trail: r !== 0, priv: false, kind: r === 0 ? "unclassified" : "track" });
+  for (let c = 0; c < C; c++) if (c % 2 === 0 || c === 3) ways.push({ nodes: id.map(row => row[c]), trail: true, priv: c === 6, kind: "path" });
+  return { s, w, n, e, nodes, ways, demo: true };
+}
+
+function drawTrails() {
+  if (!map) return;
+  if (trailsLayer) { map.removeLayer(trailsLayer); trailsLayer = null; }
+  if (!trailsOn || !TRAILS) return;
+  const open = [], priv = [];
+  TRAILS.ways.forEach(wy => { if (wy.trail && wy.nodes.length > 1) (wy.priv ? priv : open).push(wy.nodes.map(id => TRAILS.nodes.get(id))); });
+  const col = css("--trail") || "#e06a12";
+  const parts = [];
+  if (open.length) parts.push(L.polyline(open, { pane: "trails", color: col, weight: 3.5, opacity: 0.95, interactive: false }));
+  if (priv.length) parts.push(L.polyline(priv, { pane: "trails", color: col, weight: 2.5, opacity: 0.7, dashArray: "4 7", interactive: false }));
+  trailsLayer = L.layerGroup(parts).addTo(map);
+}
+function setTrails(on) {
+  trailsOn = on;
+  const b = $("trailsBtn");
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  b.textContent = on ? "Masquer les chemins" : "Afficher les chemins";
+  if (on && map) map.attributionControl.addAttribution("Chemins © OpenStreetMap");
+  drawTrails();
+}
+async function loadTrails(s, w, n, e) {
+  if (covers(TRAILS, s, w, n, e)) return TRAILS;
+  try { TRAILS = await fetchTrails(s, w, n, e); }
+  catch (err) { if (!DEMO) throw err; TRAILS = demoTrails(s, w, n, e); }
+  return TRAILS;
+}
+async function refreshTrailsView() {
+  if (trailsBusy || !map || map.getZoom() < 13) return;
+  const b = map.getBounds(), s = b.getSouth(), n = b.getNorth(), w = b.getWest(), e = b.getEast();
+  if (covers(TRAILS, s, w, n, e)) return;
+  const dl = (n - s) * 0.25, dg = (e - w) * 0.25;
+  trailsBusy = true; tMsg("Chargement des chemins…");
+  try {
+    await loadTrails(s - dl, w - dg, n + dl, e + dg);
+    tMsg(TRAILS.demo ? "Chemins fictifs (aperçu) : les vrais chemins s'afficheront une fois l'appli en ligne." : "");
+    drawTrails();
+  } catch (err) { tMsg("Les chemins n'ont pas pu se charger. Vérifie la connexion et réessaie.", true); }
+  trailsBusy = false;
+}
+async function toggleTrails() {
+  if (trailsOn) { setTrails(false); return; }
+  if (!map) return;
+  if (map.getZoom() < 13) { tMsg("Zoome davantage pour afficher les chemins.", true); return; }
+  setTrails(true);
+  await refreshTrailsView();
+}
+
+function buildGraph(T) {
+  const idx = new Map(), pts = [], adj = [];
+  const ix = id => { let k = idx.get(id); if (k === undefined) { k = pts.length; idx.set(id, k); pts.push(T.nodes.get(id)); adj.push([]); } return k; };
+  for (const wy of T.ways) {
+    if (wy.priv) continue;
+    for (let i = 1; i < wy.nodes.length; i++) {
+      const a = ix(wy.nodes[i - 1]), b = ix(wy.nodes[i]), d = dist(pts[a], pts[b]);
+      adj[a].push([b, d]); adj[b].push([a, d]);
+    }
+  }
+  return { pts, adj };
+}
+function dijkstra(G, src) {
+  const N = G.pts.length, D = new Float64Array(N).fill(Infinity), P = new Int32Array(N).fill(-1), heap = [[0, src]];
+  D[src] = 0;
+  const push = x => { heap.push(x); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0;
+    for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } }
+    return top; };
+  while (heap.length) {
+    const [d, u] = pop();
+    if (d > D[u]) continue;
+    for (const [v, wt] of G.adj[u]) { const nd = d + wt; if (nd < D[v]) { D[v] = nd; P[v] = u; push([nd, v]); } }
+  }
+  return { D, P };
+}
+function bestCellNear(lat, lon, Zg) {
+  const Z = ZONES;
+  if (lat < Z.s || lat > Z.n || lon < Z.w || lon > Z.e) return null;
+  const i = Math.min(Z.nx - 1, Math.floor((lon - Z.w) / (Z.e - Z.w) * Z.nx)), j = Math.min(Z.ny - 1, Math.floor((Z.n - lat) / (Z.n - Z.s) * Z.ny));
+  const r = Math.max(1, Math.round(120 / Z.cell));   // on regarde jusqu'à ~120 m de part et d'autre du chemin
+  let best = null;
+  for (let jj = Math.max(0, j - r); jj <= Math.min(Z.ny - 1, j + r); jj++)
+    for (let ii = Math.max(0, i - r); ii <= Math.min(Z.nx - 1, i + r); ii++) {
+      const k = jj * Z.nx + ii;
+      if (!best || Zg.out[k] > best.v) best = { k, v: Zg.out[k] };
+    }
+  return best;
+}
+function cellCenter(k) {
+  const Z = ZONES, i = k % Z.nx, j = Math.floor(k / Z.nx);
+  return [+(Z.n - (j + 0.5) * (Z.n - Z.s) / Z.ny).toFixed(5), +(Z.w + (i + 0.5) * (Z.e - Z.w) / Z.nx).toFixed(5)];
+}
+
+async function routeFrom(start) {
+  ui.mode = null; drawMap();
+  const Z = ZONES;
+  let s = Math.min(Z.s, start[0]), n = Math.max(Z.n, start[0]), w = Math.min(Z.w, start[1]), e = Math.max(Z.e, start[1]);
+  const dl = (n - s) * 0.15, dg = (e - w) * 0.15;
+  s -= dl; n += dl; w -= dg; e += dg;
+  tMsg("Recherche des chemins…"); renderSheet();
+  try { await loadTrails(s, w, n, e); }
+  catch (err) { tMsg("Les chemins n'ont pas pu se charger. Vérifie la connexion et réessaie.", true); return; }
+  setTrails(true);
+  const G = buildGraph(TRAILS);
+  if (!G.pts.length) { tMsg("Aucun chemin connu dans ce secteur.", true); return; }
+  let src = 0, sd = Infinity;
+  G.pts.forEach((p, k) => { const d = dist(p, start); if (d < sd) { sd = d; src = k; } });
+  const { D, P } = dijkstra(G, src);
+  const Zg = zoneGrid(), cand = [];
+  G.pts.forEach((p, k) => {
+    if (!(D[k] <= MAX_WALK)) return;
+    const b = bestCellNear(p[0], p[1], Zg);
+    if (b && b.v >= 25) cand.push({ node: k, d: D[k], v: b.v, cellK: b.k });
+  });
+  if (!cand.length) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Aucune zone favorable n'est reliée à ce point de départ par un chemin connu.", true); return; }
+  const th = cand.some(c => c.v >= 50) ? 50 : 25;
+  const ok = cand.filter(c => c.v >= th);
+  const nearest = ok.reduce((a, b) => (b.d < a.d ? b : a));
+  const best = ok.reduce((a, b) => ((b.v - b.d / 100) > (a.v - a.d / 100) ? b : a));   // 1 point de score vaut 100 m de marche
+  const mk = (c, label) => {
+    const coords = [];
+    for (let u = c.node; u !== -1; u = P[u]) coords.push(G.pts[u]);
+    coords.reverse();
+    const target = cellCenter(c.cellK), off = dist(coords[coords.length - 1], target);
+    return { label, coords, len: c.d, off: off > 20 ? off : 0, target, v: Math.round(c.v), sp: Zg.who[c.cellK] };
+  };
+  const opts = [mk(nearest, "La plus proche")];
+  if (best.node !== nearest.node && dist(G.pts[best.node], G.pts[nearest.node]) > 150 && Math.round(best.v) > Math.round(nearest.v)) opts.push(mk(best, "La meilleure"));
+  ROUTE = { start, snap: G.pts[src], snapDist: sd, opts, sel: 0, demo: TRAILS.demo, th };
+  tMsg(""); drawRoute(); renderSheet();
+  const r = opts[0];
+  map.fitBounds(r.coords.concat([start, r.target]), { padding: [40, 40], maxZoom: 17 });
+}
+
+function drawRoute() {
+  if (!map) return;
+  if (routeLayer) routeLayer.clearLayers(); else routeLayer = L.layerGroup().addTo(map);
+  if (!ROUTE) return;
+  const r = ROUTE.opts[ROUTE.sel], col = css("--route") || "#6a2bd6", cas = css("--surface") || "#ffffff";
+  L.polyline(r.coords, { pane: "route", color: cas, weight: 9, opacity: 0.9, interactive: false }).addTo(routeLayer);
+  L.polyline(r.coords, { pane: "route", color: col, weight: 5, interactive: false }).addTo(routeLayer);
+  if (r.off) L.polyline([r.coords[r.coords.length - 1], r.target], { pane: "route", color: col, weight: 4, dashArray: "1 9", lineCap: "round", interactive: false }).addTo(routeLayer);
+  if (ROUTE.snapDist > 15) L.polyline([ROUTE.start, ROUTE.snap], { pane: "route", color: col, weight: 3, dashArray: "1 8", lineCap: "round", interactive: false }).addTo(routeLayer);
+  L.circleMarker(ROUTE.start, { pane: "route", radius: 7, color: cas, weight: 3, fillColor: col, fillOpacity: 1, interactive: false }).addTo(routeLayer);
+  L.marker(r.target, { interactive: false, icon: L.divIcon({ className: "", iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="tgt">${r.v}</div>` }) }).addTo(routeLayer);
+}
+
+function routeSheet(sh, msg) {
+  const r = ROUTE.opts[ROUTE.sel], total = r.len + r.off;
+  const choice = ROUTE.opts.length > 1
+    ? `<div class="seg" role="group" aria-label="Zone visée">${ROUTE.opts.map((o, k) => `<button type="button" data-ropt="${k}" aria-pressed="${k === ROUTE.sel}">${o.label} · ${o.v}</button>`).join("")}</div>`
+    : "";
+  const notes = [
+    r.len < 30 ? "Ton point de départ est déjà au bord d'une zone favorable." : "",
+    r.off ? "Dont " + fmtDist(r.off) + " hors sentier pour finir (pointillés)." : "",
+    ROUTE.snapDist > 15 ? "Le chemin le plus proche est à " + fmtDist(ROUTE.snapDist) + " de ton point de départ." : "",
+    ROUTE.th < 50 ? "Aucune zone « Favorable » n'est reliée par un chemin : l'appli vise la meilleure zone « Possible »." : "",
+    ROUTE.demo ? "Chemins fictifs (aperçu)." : ""
+  ].filter(Boolean).join(" ");
+  sh.innerHTML = `
+    <h2>Chemin proposé</h2>
+    ${choice}
+    <p class="access-line">${fmtDist(total)} · environ ${walkMin(total)} min à pied · zone ${r.v}${r.sp ? " (" + DEFAULTS[r.sp].label.toLowerCase() + ")" : ""}</p>
+    ${notes ? `<p class="small muted">${esc(notes)}</p>` : ""}
+    ${msg ? `<p class="msg">${esc(msg)}</p>` : ""}
+    <div class="row">
+      <a class="btn access" href="${gmDirections(ROUTE.start[0], ROUTE.start[1])}" target="_blank" rel="noopener">Aller au départ (Google Maps)</a>
+      <button class="btn primary" type="button" id="rtSave">Enregistrer comme coin</button>
+    </div>
+    <div class="row">
+      <button class="btn small" type="button" id="rtAgain">Autre point de départ</button>
+      <button class="btn small ghost" type="button" id="rtClear">Effacer le chemin</button>
+    </div>`;
+  sh.querySelectorAll("[data-ropt]").forEach(b => { b.onclick = () => { ROUTE.sel = Number(b.dataset.ropt); drawRoute(); renderSheet();
+    const o = ROUTE.opts[ROUTE.sel]; map.fitBounds(o.coords.concat([ROUTE.start, o.target]), { padding: [40, 40], maxZoom: 17 }); }; });
+  $("rtAgain").onclick = () => { ui.mode = "route"; drawMap(); renderSheet(); };
+  $("rtClear").onclick = () => { ROUTE = null; drawRoute(); renderSheet(); };
+  $("rtSave").onclick = () => {
+    const rd = p => [+p[0].toFixed(5), +p[1].toFixed(5)];
+    const path = (ROUTE.snapDist > 15 ? [ROUTE.start] : []).concat(r.coords, r.off ? [r.target] : []).map(rd);
+    const c = {
+      id: uid(),
+      name: "Zone " + (r.sp ? DEFAULTS[r.sp].label.toLowerCase() + " " : "") + "du " + new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
+      lat: r.target[0], lon: r.target[1],
+      species: r.sp ? [r.sp] : Object.keys(DEFAULTS),
+      note: "Repérée avec les zones favorables",
+      parking: { lat: +ROUTE.start[0].toFixed(5), lon: +ROUTE.start[1].toFixed(5) },
+      path
+    };
+    state.coins.push(c); persist();
+    ROUTE = null; drawRoute(); ui.sel = c.id;
+    refresh(false, "Coin enregistré avec son départ et son chemin. Renomme-le avec « Modifier / déplacer le coin ».");
+  };
+}
+
 /* ---------- 9. Carnet, réglages, statut ---------- */
 function renderLogForm() {
   const cur = $("logCoin").value;
@@ -983,7 +1563,8 @@ function renderSettings() {
 
 function renderStatus() {
   const chip = $("dataChip"), b = $("banner");
-  $("todayLine").textContent = HOME.label + " · " + longDate(TODAY);
+  const at = !DEMO && WEATHER_AT ? " · météo de " + new Date(WEATHER_AT).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") : "";
+  $("todayLine").textContent = HOME.label + " · " + longDate(TODAY) + at;
   if (DEMO) {
     chip.className = "chip demo"; chip.textContent = "Météo d'exemple";
     b.hidden = false;
@@ -1003,6 +1584,8 @@ function computeAll() {
 function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLogForm(); renderLogs(); drawMap(); renderSheet(msg); }
 
 async function refresh(force, msg) {
+  const now = isoLocal(new Date());
+  if (now !== TODAY) { TODAY = now; if (ZONES) { hideZones(); zMsg("Nouveau jour : relance le calcul des zones pour les données du jour."); } }
   if (force) save("meteo-coins-cache", { at: 0, day: "", data: {} });
   if (!state.coins.length) { DEMO = false; WEATHER = {}; renderAll(msg); return; }
   try { WEATHER = await fetchWeather(state.coins); DEMO = false; }
@@ -1037,6 +1620,16 @@ document.querySelectorAll("[data-base]").forEach(b => {
 });
 
 $("addFromList").onclick = () => { showTab("carte"); startAdd(); };
+$("zonesBtn").onclick = computeZones;
+$("zonesHide").onclick = hideZones;
+$("zonesSp").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Espèce changée : relance la recherche de chemin."); } };
+$("zonesDay").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Jour changé : relance la recherche de chemin."); } };
+$("trailsBtn").onclick = toggleTrails;
+$("routeBtn").onclick = () => {
+  if (!ZONES) { tMsg("Calcule d'abord les zones favorables, puis cherche le chemin.", true); return; }
+  stopRecording(); ui.sel = null; ui.mode = "route"; tMsg(""); drawMap(); renderSheet();
+};
+$("zonesOp").oninput = () => { if (zonesLayer) zonesLayer.setOpacity(Number($("zonesOp").value)); };
 $("coinList").addEventListener("click", ev => {
   const s = ev.target.closest("[data-show]");
   if (s) { showTab("carte"); setTimeout(() => selectCoin(s.dataset.show, true), 80); }
@@ -1096,6 +1689,15 @@ $("importBtn").onclick = () => {
 };
 
 /* ---------- 11. Démarrage ---------- */
+$("refreshBtn").onclick = async () => {
+  const b = $("refreshBtn"); b.disabled = true; b.textContent = "Actualisation…";
+  await refresh(true);
+  b.disabled = false; b.textContent = "Actualiser";
+};
+function isStale() { return isoLocal(new Date()) !== TODAY || (!DEMO && Date.now() - WEATHER_AT > CACHE_HOURS * 3600e3); }
+function autoRefresh() { if (!document.hidden && !ui.mode && isStale()) refresh(false); }
+document.addEventListener("visibilitychange", autoRefresh);   // quand tu reviens sur l'appli
+setInterval(autoRefresh, 30 * 60e3);                           // et toutes les 30 min si elle reste ouverte
 persist();
 renderSettings();
 renderSheet();
