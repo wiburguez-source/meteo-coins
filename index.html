@@ -258,7 +258,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           <button class="btn small primary" type="button" id="zonesBtn">Calculer sur cette vue</button>
         </div>
       </div>
-      <p class="small muted" id="zonesIntro">Colore les endroits de la vue où la météo, l'altitude, l'exposition et la forêt sont réunies. Cadre le secteur qui t'intéresse, puis calcule.</p>
+      <p class="small muted" id="zonesIntro">Colore les endroits de la vue où tout est réuni : pluie, température de l'air et du sol, altitude, exposition, essences d'arbres, observations connues et facilité d'accès. Cadre le secteur qui t'intéresse, puis calcule.</p>
       <div class="grid3" id="zonesCtrls" hidden>
         <label class="f">Espèce
           <select id="zonesSp">
@@ -271,12 +271,17 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
         <label class="f">Jour <select id="zonesDay"></select></label>
         <label class="f">Opacité <input type="range" id="zonesOp" min="0.15" max="0.9" step="0.05" value="0.6"></label>
       </div>
+      <div class="checks" id="zonesOpts" hidden>
+        <label><input type="checkbox" id="zonesAcc" checked> Privilégier les zones accessibles</label>
+        <label><input type="checkbox" id="zonesObs" checked> Observations publiées</label>
+      </div>
       <div class="legend" id="zonesLegend" hidden>
         <span><i class="sw bg1"></i>Possible</span>
         <span><i class="sw bg2"></i>Favorable</span>
         <span><i class="sw bg3"></i>Très favorable</span>
       </div>
       <p class="msg" id="zonesMsg" aria-live="polite"></p>
+      <p class="small muted" id="zonesSrc"></p>
     </div>
     <div id="trailsPanel" class="panel">
       <div class="row" style="justify-content:space-between">
@@ -460,11 +465,11 @@ async function fetchWeather(coins, force) {
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + coins.map(c => c.lat).join(",") +
     "&longitude=" + coins.map(c => c.lon).join(",") +
     "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
+    "&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm" +
     "&past_days=30&forecast_days=7&timezone=Europe%2FParis";
   let json;
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("HTTP " + res.status);
+    const res = await fetchRetry(url, {}, 2, 20000);
     json = await res.json();
   } catch (err) {
     // Pas de réseau (en forêt, par exemple) : on garde la dernière météo connue
@@ -481,6 +486,8 @@ async function fetchWeather(coins, force) {
       tmean: j.daily.temperature_2m_mean.map(v => v ?? 10),
       tmin: j.daily.temperature_2m_min.map(v => v ?? 5),
       et0: j.daily.et0_fao_evapotranspiration.map(v => v ?? 1),
+      soilT: dailyFromHourly(j.hourly, "soil_temperature_6cm", j.daily.time),
+      soilM: dailyFromHourly(j.hourly, "soil_moisture_3_to_9cm", j.daily.time),
       elevation: j.elevation
     };
   });
@@ -489,11 +496,22 @@ async function fetchWeather(coins, force) {
   return data;
 }
 
+/* Moyenne par jour d'une valeur horaire (température et humidité du sol) */
+function dailyFromHourly(h, key, dates) {
+  if (!h || !h.time || !Array.isArray(h[key])) return null;
+  const m = new Map();
+  h.time.forEach((t, i) => { const v = h[key][i]; if (v == null) return; const d = t.slice(0, 10), a = m.get(d) || [0, 0]; a[0] += v; a[1]++; m.set(d, a); });
+  const out = dates.map(d => { const a = m.get(d); return a && a[1] ? a[0] / a[1] : null; });
+  let last = out.find(v => v != null);
+  if (last == null) return null;
+  return out.map(v => (v == null ? last : (last = v)));
+}
+
 /* Météo d'exemple, utilisée seulement quand la vraie météo ne se charge pas. */
 function demoWeather(coins) {
   const data = {};
   coins.forEach((c, k) => {
-    const dates = [], rain = [], tmean = [], tmin = [], et0 = [];
+    const dates = [], rain = [], tmean = [], tmin = [], et0 = [], soilT = [], soilM = [];
     const base = new Date(TODAY + "T12:00:00");
     let seed = Math.round(Math.abs(c.lat * 1000 + c.lon * 777)) + k * 31;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
@@ -509,8 +527,10 @@ function demoWeather(coins) {
       tmean.push(+tm.toFixed(1));
       tmin.push(+(tm - 4 - rnd() * 2).toFixed(1));
       et0.push(+(1.4 - n * 0.015).toFixed(2));
+      soilT.push(+(tm - 0.8).toFixed(1));
+      soilM.push(+Math.min(0.36, 0.17 + (n > 18 ? 0.16 * Math.exp(-(n - 19) / 9) : 0) + r * 0.004).toFixed(3));
     }
-    data[wkey(c)] = { dates, rain, tmean, tmin, et0, elevation: null };
+    data[wkey(c)] = { dates, rain, tmean, tmin, et0, soilT, soilM, elevation: null };
   });
   return data;
 }
@@ -536,18 +556,29 @@ function litterSeries(w) {
 function sum(arr, from, to) { let s = 0; for (let i = Math.max(0, from); i <= to; i++) s += arr[i] || 0; return s; }
 function avg(arr, from, to) { let s = 0, n = 0; for (let i = Math.max(0, from); i <= to; i++) { s += arr[i]; n++; } return n ? s / n : 0; }
 
+/* Température du sol à 6 cm (moyenne 7 jours) favorable à chaque espèce : [début, idéal mini, idéal maxi, fin] */
+const SOIL_T = { cepe: [8, 11, 17, 22], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17] };
 function scoreAt(w, R, i, spKey) {
   const sp = spConf(spKey);
   const month = Number(w.dates[i].slice(5, 7)) - 1;
   const season = sp.season[month];
   const trigMm = sum(w.rain, i - 14, i - 5);
   const trig = clamp(trigMm / sp.rain, 0, 1);
-  const moist = R[i] / LITTER_CAP;
+  let moist = R[i] / LITTER_CAP;
   const t7 = avg(w.tmean, i - 6, i);
-  const temp = trapeze(t7, sp.t);
+  let temp = trapeze(t7, sp.t);
+  let st7 = null, sm = null;
+  // Sol : sa température compte autant que celle de l'air, son humidité autant que celle de la litière
+  if (w.soilT) { st7 = avg(w.soilT, i - 6, i); temp = Math.sqrt(temp * trapeze(st7, SOIL_T[spKey] || sp.t)); }
+  if (w.soilM) { sm = avg(w.soilM, i - 2, i); moist = 0.5 * moist + 0.5 * clamp((sm - 0.12) / 0.18, 0, 1); }
   const frost = Math.min(...w.tmin.slice(Math.max(0, i - 2), i + 1)) < -1 ? 0.4 : 1;
-  const raw = season * temp * frost * (0.55 * trig + 0.45 * moist);
-  return { score: Math.round(100 * raw), season, trig, trigMm, moist, t7, temp, frost };
+  // Choc thermique : un net rafraîchissement quelques jours après la pluie lance souvent les cèpes
+  let shock = false;
+  if (spKey === "cepe" && trig > 0.5) for (let j = Math.max(3, i - 10); j <= i - 3; j++) {
+    if (avg(w.tmean, j - 3, j - 1) - avg(w.tmean, j, j + 2) >= 3) { shock = true; break; }
+  }
+  const raw = season * temp * frost * (0.55 * trig + 0.45 * moist) * (shock ? 1.15 : 1);
+  return { score: Math.min(100, Math.round(100 * raw)), season, trig, trigMm, moist, t7, temp, frost, st7, sm, shock };
 }
 function level(s) { let l = 0; LEVELS.forEach((L, k) => { if (s >= L.min) l = k; }); return l; }
 
@@ -575,6 +606,8 @@ function explain(a) {
   let txt = Math.round(t.trigMm) + " mm tombés il y a 5 à 14 jours, litière " +
     (t.moist > 0.6 ? "bien humide" : t.moist > 0.3 ? "moyennement humide" : "sèche") + ", " +
     t.t7.toFixed(0) + " °C de moyenne sur 7 jours.";
+  if (t.st7 != null) txt += " Sol à " + t.st7.toFixed(0) + " °C" + (t.sm != null ? (t.sm > 0.3 ? ", bien humide" : t.sm > 0.2 ? ", frais" : ", sec") : "") + ".";
+  if (t.shock) txt += " Coup de frais après la pluie : bon signal pour les cèpes.";
   if (t.season === 0) txt += " Hors saison pour les " + sp + ".";
   else if (t.frost < 1) txt += " Gelée récente : la pousse est freinée.";
   else if (t.temp === 0) txt += " Trop " + (t.t7 < spConf(a.lead.key).t[0] ? "froid" : "chaud") + " pour les " + sp + ".";
@@ -718,7 +751,9 @@ function initMap() {
   overlay = L.layerGroup().addTo(map);
   map.on("click", onMapClick);
   drawMap();
-  if (state.coins.length) fitAll();
+  const zv = load(ZONE_VIEW_KEY, null);
+  if (zv) map.fitBounds([[zv.s, zv.w], [zv.n, zv.e]]); else if (state.coins.length) fitAll();
+  setTimeout(maybeAutoZones, 300);
 }
 
 function showMapNote() {
@@ -1038,15 +1073,86 @@ function stopRecording() {
    × habitat (forêts, vergers, broussailles d'OpenStreetMap, selon l'espèce). */
 const LAPSE = 0.0065;        // °C perdus par mètre d'altitude
 const MAX_CELLS = 700;
+/* Affinité de chaque espèce avec chaque essence d'arbre (1 = idéal) et chaque milieu */
 const HABITAT = {
-  cepe:    { forest: { broadleaved: 1, mixed: 1, needleleaved: 0.7, unknown: 0.9 }, orchard: 0,   scrub: 0.15, none: 0 },
-  girolle: { forest: { broadleaved: 1, mixed: 1, needleleaved: 0.8, unknown: 0.9 }, orchard: 0,   scrub: 0.15, none: 0 },
-  morille: { forest: { broadleaved: 0.6, mixed: 0.6, needleleaved: 0.3, unknown: 0.5 }, orchard: 1, scrub: 0.5, none: 0.1 }
+  cepe:    { oak: 1, beech: 1, chestnut: 1, broad: 0.9, mixed: 0.95, firspruce: 0.85, pine: 0.7, conif: 0.7, douglas: 0.5, larch: 0.4, robinia: 0.2, poplar: 0.1, unknown: 0.85, orchard: 0, scrub: 0.15, heath: 0.15, none: 0 },
+  girolle: { oak: 1, beech: 1, chestnut: 1, broad: 0.85, mixed: 0.9, firspruce: 0.8, pine: 0.6, conif: 0.65, douglas: 0.5, larch: 0.4, robinia: 0.2, poplar: 0.2, unknown: 0.85, orchard: 0, scrub: 0.15, heath: 0.15, none: 0 },
+  morille: { oak: 0.4, beech: 0.4, chestnut: 0.3, broad: 0.7, mixed: 0.5, firspruce: 0.25, pine: 0.25, conif: 0.25, douglas: 0.2, larch: 0.3, robinia: 0.5, poplar: 0.9, unknown: 0.5, orchard: 1, scrub: 0.5, heath: 0.3, none: 0.1 }
 };
-const LEAF_TXT = { broadleaved: "feuillus", needleleaved: "résineux", mixed: "mixte", unknown: "type non renseigné" };
-const KIND_TXT = { forest: "forêt", orchard: "verger", scrub: "broussailles", none: "terrain découvert" };
+const ESS_TXT = { oak: "chênes", beech: "hêtres", chestnut: "châtaigniers", robinia: "robiniers", poplar: "peupliers", broad: "feuillus", pine: "pins",
+  firspruce: "sapins, épicéas", larch: "mélèzes", douglas: "douglas", conif: "conifères", mixed: "feuillus et conifères", unknown: "essences non renseignées" };
+const ESS_CODE = { oak: "q", beech: "f", chestnut: "c", robinia: "r", poplar: "p", broad: "b", pine: "n", firspruce: "a", larch: "l", douglas: "d", conif: "k", mixed: "m", unknown: "u" };
+const KIND_TXT = { forest: "Forêt", orchard: "Verger", scrub: "Broussailles", heath: "Lande", none: "Terrain découvert" };
+const LEAF2ESS = { broadleaved: "broad", needleleaved: "conif", mixed: "mixed", unknown: "unknown" };
+/* Observations publiées de chaque espèce (GBIF : iNaturalist, inventaires naturalistes…) */
+const GBIF_SP = {
+  cepe: ["Boletus edulis", "Boletus aereus", "Boletus reticulatus", "Boletus aestivalis", "Boletus pinophilus"],
+  girolle: ["Cantharellus cibarius", "Cantharellus pallens", "Cantharellus friesii"],
+  morille: ["Morchella"]
+};
 let ZONES = null, zonesLayer = null, zonesBusy = false;
+const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
+const ZONE_VIEW_KEY = "meteo-coins-zoneview", TERRAIN_KEY = "meteo-coins-terrain2";
+let obsLayer = null;
 
+/* Requête avec délai maximum et nouvelles tentatives (réseau faible, serveur saturé) */
+async function fetchRetry(url, opts = {}, tries = 3, timeout = 20000) {
+  let last;
+  for (let t = 0; t < tries; t++) {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeout);
+    try {
+      const r = await fetch(url, { ...opts, signal: ctl.signal });
+      clearTimeout(timer);
+      if (r.ok) return r;
+      last = new Error("HTTP " + r.status);
+      if (r.status < 429 && r.status !== 408) break;          // erreur définitive : inutile d'insister
+    } catch (err) { clearTimeout(timer); last = err; }
+    if (t < tries - 1) await new Promise(res => setTimeout(res, 1500 * (t + 1)));
+  }
+  throw last;
+}
+/* Forêts et chemins : on essaie plusieurs serveurs OpenStreetMap à la suite */
+async function overpass(q) {
+  let last;
+  for (let round = 0; round < 2; round++) {
+    for (const ep of OVERPASS) {            // un serveur saturé ? on passe tout de suite au suivant
+      try {
+        const r = await fetchRetry(ep, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q) }, 1, 40000);
+        return await r.json();
+      } catch (err) { last = err; }
+    }
+    if (round === 0) await new Promise(res => setTimeout(res, 2000));
+  }
+  throw last;
+}
+
+/* Le relief et les forêts ne changent pas : on les garde en mémoire pour les recalculs */
+function terrainKey(s, w, n, e, nx, ny) { return [s, w, n, e].map(v => v.toFixed(4)).join(",") + "|" + nx + "x" + ny; }
+function terrainGet(key) { return load(TERRAIN_KEY, []).find(t => t.key === key) || null; }
+function terrainPut(key, data) {
+  const prev = terrainGet(key) || {};
+  const list = load(TERRAIN_KEY, []).filter(t => t.key !== key);
+  const t = { ...prev, key, at: Date.now() };
+  Object.keys(data).forEach(k => { if (data[k] != null) t[k] = data[k]; });
+  list.unshift(t);
+  if (!save(TERRAIN_KEY, list.slice(0, 4))) save(TERRAIN_KEY, [t]);
+}
+function encodeHab(h) {
+  return h.kind[0] + ESS_CODE[h.ess || "unknown"] + (h.src === "ign" ? "i" : h.src === "osm" ? "s" : "-") + (h.open ? "o" : "") + (h.edge ? "e" : "") + (h.water ? "w" : "");
+}
+function decodeHab(codes) {
+  const K = { f: "forest", o: "orchard", s: "scrub", h: "heath", n: "none" };
+  const E = Object.fromEntries(Object.entries(ESS_CODE).map(([k, v]) => [v, k]));
+  return codes.map(c => ({ kind: K[c[0]] || "none", ess: E[c[1]] || "unknown", src: c[2] === "i" ? "ign" : c[2] === "s" ? "osm" : "",
+    open: c.includes("o", 3), edge: c.includes("e", 3), water: c.includes("w", 3) }));
+}
+
+/* Recalcul automatique : à l'ouverture de la carte, et chaque fois que la météo est rafraîchie */
+function maybeAutoZones() {
+  const v = load(ZONE_VIEW_KEY, null);
+  if (!v || !map || DEMO || OFFLINE || ui.mode || zonesBusy) return;
+  if (!ZONES || ZONES.day !== TODAY || ZONES.at < WEATHER_AT) computeZones(v, true);
+}
 function zMsg(t, err) { const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
 
 async function fetchElevations(pts) {
@@ -1055,9 +1161,9 @@ async function fetchElevations(pts) {
     const chunk = pts.slice(k, k + 100);
     const url = "https://api.open-meteo.com/v1/elevation?latitude=" + chunk.map(p => p[0].toFixed(5)).join(",") +
       "&longitude=" + chunk.map(p => p[1].toFixed(5)).join(",");
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("altitude " + r.status);
+    const r = await fetchRetry(url);
     const j = await r.json();
+    if (!Array.isArray(j.elevation)) throw new Error("altitude");
     out.push(...j.elevation);
   }
   return out;
@@ -1067,9 +1173,9 @@ async function fetchWeatherPts(pts) {
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + pts.map(p => p[0].toFixed(4)).join(",") +
     "&longitude=" + pts.map(p => p[1].toFixed(4)).join(",") +
     "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
+    "&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm" +
     "&past_days=30&forecast_days=7&timezone=Europe%2FParis";
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("météo " + r.status);
+  const r = await fetchRetry(url);
   let j = await r.json();
   if (!Array.isArray(j)) j = [j];
   return j.map(x => ({
@@ -1077,25 +1183,25 @@ async function fetchWeatherPts(pts) {
     rain: x.daily.precipitation_sum.map(v => v ?? 0),
     tmean: x.daily.temperature_2m_mean.map(v => v ?? 10),
     tmin: x.daily.temperature_2m_min.map(v => v ?? 5),
-    et0: x.daily.et0_fao_evapotranspiration.map(v => v ?? 1)
+    et0: x.daily.et0_fao_evapotranspiration.map(v => v ?? 1),
+    soilT: dailyFromHourly(x.hourly, "soil_temperature_6cm", x.daily.time),
+    soilM: dailyFromHourly(x.hourly, "soil_moisture_3_to_9cm", x.daily.time)
   }));
 }
 
 /* Forêts, vergers et broussailles d'OpenStreetMap (service Overpass) */
 async function fetchHabitat(s, w, n, e) {
   const bb = `(${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)})`;
-  const sel = ['["landuse"="forest"]', '["natural"="wood"]', '["landuse"="orchard"]', '["natural"="scrub"]'];
-  const q = `[out:json][timeout:25];(${sel.map(t => `way${t}${bb};relation${t}${bb};`).join("")});out geom;`;
-  const r = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q)
-  });
-  if (!r.ok) throw new Error("forêts " + r.status);
-  const j = await r.json();
-  const feats = [];
-  const kindOf = t => (t.landuse === "forest" || t.natural === "wood") ? "forest" : t.landuse === "orchard" ? "orchard" : t.natural === "scrub" ? "scrub" : null;
+  const sel = ['["landuse"="forest"]', '["natural"="wood"]', '["landuse"="orchard"]', '["natural"="scrub"]', '["natural"="heath"]'];
+  const q = `[out:json][timeout:25];(${sel.map(t => `way${t}${bb};relation${t}${bb};`).join("")}way["waterway"~"^(river|stream)$"]${bb};);out geom;`;
+  const j = await overpass(q);
+  const feats = [], waters = [];
+  const kindOf = t => (t.landuse === "forest" || t.natural === "wood") ? "forest" : t.landuse === "orchard" ? "orchard" : t.natural === "scrub" ? "scrub" : t.natural === "heath" ? "heath" : null;
   const leafOf = t => (["broadleaved", "needleleaved", "mixed"].includes(t.leaf_type) ? t.leaf_type : "unknown");
   for (const el of j.elements || []) {
-    const t = el.tags || {}, kind = kindOf(t);
+    const t = el.tags || {};
+    if (t.waterway && el.type === "way" && el.geometry) { waters.push(el.geometry.map(g => [g.lat, g.lon])); continue; }
+    const kind = kindOf(t);
     if (!kind) continue;
     let rings = [];
     if (el.type === "way" && el.geometry && el.geometry.length > 3) rings = [el.geometry.map(g => [g.lat, g.lon])];
@@ -1109,7 +1215,145 @@ async function fetchHabitat(s, w, n, e) {
     rings.forEach(rg => rg.forEach(([la, lo]) => { a = Math.min(a, la); c = Math.max(c, la); b = Math.min(b, lo); d = Math.max(d, lo); }));
     feats.push({ kind, leaf: leafOf(t), rings, box: [a, b, c, d] });
   }
+  return { feats, waters };
+}
+
+/* Essences d'arbres : BD Forêt V2 de l'IGN (Géoplateforme) */
+function essClass(txt) {
+  const t = (txt || "").toLowerCase();
+  if (/peupl/.test(t)) return "poplar";
+  if (/robinier/.test(t)) return "robinia";
+  if (/ch[âa]taign/.test(t)) return "chestnut";
+  if (/h[êe]tre/.test(t)) return "beech";
+  if (/ch[êe]ne/.test(t)) return "oak";
+  if (/douglas/.test(t)) return "douglas";
+  if (/m[ée]l[èe]ze/.test(t)) return "larch";
+  if (/sapin|[ée]pic[ée]a/.test(t)) return "firspruce";
+  if (/\bpins?\b/.test(t)) return "pine";
+  if (/mixte|feuillus et (de )?conif/.test(t)) return "mixed";
+  if (/conif/.test(t)) return "conif";
+  if (/feuillu/.test(t)) return "broad";
+  return "unknown";
+}
+async function fetchIGNForest(s, w, n, e) {
+  const url = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature" +
+    "&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326&COUNT=3000" +
+    "&BBOX=" + [s, w, n, e].map(v => v.toFixed(5)).join(",") + ",urn:ogc:def:crs:EPSG::4326";
+  const r = await fetchRetry(url, {}, 2, 30000);
+  const j = await r.json();
+  if (!Array.isArray(j.features)) throw new Error("IGN");
+  const fix = c => (Math.abs(c[0]) > 30 ? [c[0], c[1]] : [c[1], c[0]]);   // remet toujours [latitude, longitude]
+  const feats = [];
+  for (const f of j.features) {
+    if (!f.geometry) continue;
+    const pr = {}; Object.keys(f.properties || {}).forEach(k => { pr[k.toLowerCase()] = f.properties[k]; });
+    const tfv = String(pr.tfv || pr.lib_tfv || ""), ess = String(pr.essence || "");
+    const all = (tfv + " " + ess).toLowerCase();
+    const kind = /lande/.test(all) ? "heath" : /herbac/.test(all) ? "none" : "forest";
+    const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.type === "MultiPolygon" ? f.geometry.coordinates : [];
+    const rings = [];
+    polys.forEach(pl => pl.forEach(rg => rings.push(rg.map(fix))));
+    if (!rings.length) continue;
+    let a = 90, b = 180, c = -90, d = -180;
+    rings.forEach(rg => rg.forEach(([la, lo]) => { a = Math.min(a, la); c = Math.max(c, la); b = Math.min(b, lo); d = Math.max(d, lo); }));
+    feats.push({ kind, ess: kind === "forest" ? essClass(ess || tfv) : "unknown", open: /ouverte/.test(all), rings, box: [a, b, c, d] });
+  }
   return feats;
+}
+function featAt(lat, lon, feats) {
+  for (const f of feats) {
+    if (lat < f.box[0] || lat > f.box[2] || lon < f.box[1] || lon > f.box[3]) continue;
+    let ins = false;
+    f.rings.forEach(rg => { if (inRing(lat, lon, rg)) ins = !ins; });
+    if (ins) return f;
+  }
+  return null;
+}
+function fastDist(a, b) {
+  const dy = (b[0] - a[0]) * 111320, dx = (b[1] - a[1]) * 111320 * Math.cos(a[0] * Math.PI / 180);
+  return Math.hypot(dx, dy);
+}
+function nearLine(p, lines, maxM) {
+  const ky = 111320, kx = 111320 * Math.cos(p[0] * Math.PI / 180);
+  for (const ln of lines) for (let i = 1; i < ln.length; i++) {
+    const ax = (ln[i - 1][1] - p[1]) * kx, ay = (ln[i - 1][0] - p[0]) * ky, bx = (ln[i][1] - p[1]) * kx, by = (ln[i][0] - p[0]) * ky;
+    const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
+    const t = L2 ? clamp(-(ax * vx + ay * vy) / L2, 0, 1) : 0;
+    if (Math.hypot(ax + t * vx, ay + t * vy) <= maxM) return true;
+  }
+  return false;
+}
+function buildHabitat(pts, nx, ny, ign, osm) {
+  const hab = pts.map(([la, lo]) => {
+    if (ign) { const f = featAt(la, lo, ign); if (f) return { kind: f.kind, ess: f.ess, open: f.open, src: "ign" }; }
+    if (osm) {
+      const h = habitatAt(la, lo, osm.feats);
+      if (h.kind !== "none") return { kind: h.kind, ess: h.kind === "forest" ? LEAF2ESS[h.leaf] : "unknown", open: false, src: "osm" };
+    }
+    return { kind: "none", ess: "unknown", open: false, src: ign ? "ign" : "osm" };
+  });
+  hab.forEach((h, k) => {           // lisières : une case de forêt qui touche un milieu ouvert
+    if (h.kind !== "forest") return;
+    const i = k % nx, j = (k - i) / nx;
+    h.edge = [[i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]].some(([a, b]) => a >= 0 && a < nx && b >= 0 && b < ny && hab[b * nx + a].kind !== "forest");
+  });
+  if (osm && osm.waters.length) hab.forEach((h, k) => { h.water = nearLine(pts[k], osm.waters, 100); });
+  return hab;
+}
+function habitatFactor(sp, h) {
+  const H = HABITAT[sp];
+  let f = h.kind === "forest" ? H[h.ess || "unknown"] : (H[h.kind] ?? 0);
+  if (sp !== "morille" && h.kind === "forest") { if (h.open) f *= 0.85; if (h.edge) f *= 1.1; }
+  if (sp === "morille" && h.water) f *= 1.25;
+  return Math.min(1.2, f);
+}
+
+async function fetchGBIF(s, w, n, e) {
+  const pad = 0.1, out = [];
+  for (const sp of Object.keys(GBIF_SP)) {
+    const names = GBIF_SP[sp].map(x => "scientificName=" + encodeURIComponent(x)).join("&");
+    const url = "https://api.gbif.org/v1/occurrence/search?" + names +
+      "&decimalLatitude=" + (s - pad).toFixed(3) + "," + (n + pad).toFixed(3) +
+      "&decimalLongitude=" + (w - pad).toFixed(3) + "," + (e + pad).toFixed(3) +
+      "&hasCoordinate=true&hasGeospatialIssue=false&occurrenceStatus=PRESENT&limit=300";
+    const r = await fetchRetry(url, {}, 2, 20000);
+    const j = await r.json();
+    (j.results || []).forEach(o => {
+      if (o.decimalLatitude == null || o.decimalLongitude == null) return;
+      if (o.coordinateUncertaintyInMeters && o.coordinateUncertaintyInMeters > 2000) return;
+      out.push([sp, +o.decimalLatitude.toFixed(5), +o.decimalLongitude.toFixed(5), o.year || null]);
+    });
+  }
+  return out;
+}
+
+/* Distance de marche depuis la route carrossable la plus proche, par les chemins connus */
+function accessDistances(pts, T) {
+  const G = buildGraph(T);
+  if (!G.pts.length) return null;
+  const src = G.road.length ? G.road : G.track;
+  if (!src.length) return null;
+  const { D } = dijkstra(G, src);
+  return pts.map(p => {
+    let best = Infinity;
+    for (let k = 0; k < G.pts.length; k++) {
+      if (D[k] === Infinity) continue;
+      const d0 = fastDist(p, G.pts[k]);
+      if (d0 > 400) continue;
+      const v = D[k] + d0 * 1.4;          // hors sentier, on avance moins vite
+      if (v < best) best = v;
+    }
+    return isFinite(best) ? Math.round(best) : -1;
+  });
+}
+function accessFactor(inf) {
+  let f = 1;
+  if (inf.acc != null) {
+    const m = inf.acc < 0 ? Infinity : inf.acc;
+    f = !isFinite(m) ? 0.5 : m <= 600 ? 1 : m >= 3000 ? 0.45 : 1 - 0.55 * (m - 600) / 2400;
+  }
+  if (inf.slope > 35) f *= 0.5; else if (inf.slope > 25) f *= 0.8;
+  return f;
 }
 function assembleRings(segs) {
   const rings = [], open = segs.map(s => s.slice());
@@ -1138,7 +1382,7 @@ function inRing(lat, lon, ring) {
   return ins;
 }
 function habitatAt(lat, lon, feats) {
-  const prio = { forest: 3, orchard: 2, scrub: 1 };
+  const prio = { forest: 3, orchard: 2, scrub: 1, heath: 1 };
   let best = { kind: "none", leaf: "unknown" };
   for (const f of feats) {
     if (lat < f.box[0] || lat > f.box[2] || lon < f.box[1] || lon > f.box[3]) continue;
@@ -1147,10 +1391,6 @@ function habitatAt(lat, lon, feats) {
     if (ins && (prio[f.kind] > (prio[best.kind] || 0))) best = { kind: f.kind, leaf: f.leaf };
   }
   return best;
-}
-function habitatFactor(sp, h) {
-  const H = HABITAT[sp];
-  return h.kind === "forest" ? H.forest[h.leaf] : H[h.kind];
 }
 
 /* Interpolation bilinéaire d'une série météo sur la grille 4 × 4 */
@@ -1166,16 +1406,22 @@ function demoTerrain(pts, nx, ny) {
   // Relief et boisements fictifs pour l'aperçu
   const elev = pts.map((p, k) => { const i = k % nx, j = Math.floor(k / nx); return 380 + 160 * Math.sin(i / nx * 3.1) * Math.cos(j / ny * 2.4) + 90 * (j / ny); });
   const hab = pts.map((p, k) => { const i = k % nx, j = Math.floor(k / nx); const v = Math.sin(i * 0.35) + Math.cos(j * 0.28) + Math.sin((i + j) * 0.17);
-    return v > 0.2 ? { kind: "forest", leaf: v > 1.2 ? "broadleaved" : "mixed" } : v > -0.4 ? { kind: "scrub", leaf: "unknown" } : { kind: "none", leaf: "unknown" }; });
+    return v > 0.2 ? { kind: "forest", ess: v > 1.2 ? "oak" : v > 0.8 ? "beech" : "mixed", open: false, src: "demo" } : v > -0.4 ? { kind: "scrub", ess: "unknown", src: "demo" } : { kind: "none", ess: "unknown", src: "demo" }; });
   return { elev, hab };
 }
 
-async function computeZones() {
+async function computeZones(view, auto) {
   if (!map || zonesBusy) return;
-  if (map.getZoom() < 13) { zMsg("Zoome davantage : le calcul se fait sur un secteur de quelques kilomètres au plus.", true); return; }
+  if (!view) {
+    if (map.getZoom() < 13) { zMsg("Zoome davantage : le calcul se fait sur un secteur de quelques kilomètres au plus.", true); return; }
+    const b = map.getBounds();
+    view = { s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() };
+  }
   zonesBusy = true; $("zonesBtn").disabled = true;
+  let stage = "";
+  const hhmm = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
   try {
-    const b = map.getBounds(), s = b.getSouth(), n = b.getNorth(), w = b.getWest(), e = b.getEast();
+    const { s, w, n, e } = view;
     const mLat = 111320, mLon = 111320 * Math.cos((s + n) / 2 * Math.PI / 180);
     const hM = (n - s) * mLat, wM = (e - w) * mLon;
     const cell = Math.max(60, Math.sqrt(hM * wM / MAX_CELLS));
@@ -1185,24 +1431,58 @@ async function computeZones() {
     const gx = 4, gy = 4, gpts = [];
     for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) gpts.push([n - j * (n - s) / (gy - 1), w + i * (e - w) / (gx - 1)]);
 
-    let elev, hab, WG, demo = false, forestOk = true;
-    try {
-      zMsg("Relief de la zone…");
-      elev = await fetchElevations(pts);
-      zMsg("Météo de la zone…");
+    let elev, hab, WG, obs = [], acc = null, demo = false, forestOk = true;
+    const src = { ign: false, osm: false, gbif: null, acc: false, soil: false, cached: false };
+    const key = terrainKey(s, w, n, e, nx, ny), cached = terrainGet(key) || {};
+    const step = (t) => zMsg(auto ? "Mise à jour des zones… (" + t.toLowerCase() + ")" : t + "…");
+    if (!DEMO) {
+      // Vraies données. En cas d'échec du relief ou de la météo, message clair : jamais de zones fictives en douce.
+      if (cached.elev && cached.elev.length === pts.length) elev = cached.elev;
+      else { stage = "le relief"; step("Relief"); elev = await fetchElevations(pts); }
+      stage = "la météo"; step("Météo et sol");
       WG = await fetchWeatherPts(gpts);
-      zMsg("Forêts et vergers…");
-      try { const feats = await fetchHabitat(s, w, n, e); hab = pts.map(p => habitatAt(p[0], p[1], feats)); }
-      catch (err) { forestOk = false; hab = pts.map(() => ({ kind: "forest", leaf: "unknown" })); }
-    } catch (err) {
+      stage = "";
+      const habFresh = (cached.srcIgn && cached.srcOsm) || Date.now() - (cached.habAt || 0) < 6 * 3600e3;
+      if (cached.hab && cached.hab.length === pts.length && habFresh) {
+        hab = decodeHab(cached.hab); src.ign = !!cached.srcIgn; src.osm = !!cached.srcOsm; src.cached = true;
+      } else {
+        step("Essences d'arbres (IGN)");
+        let ign = null, osm = null;
+        try { ign = await fetchIGNForest(s, w, n, e); src.ign = true; } catch (err) { ign = null; }
+        step("Forêts, vergers et ruisseaux (OpenStreetMap)");
+        try { osm = await fetchHabitat(s, w, n, e); src.osm = true; } catch (err) { osm = null; }
+        if (ign || osm) hab = buildHabitat(pts, nx, ny, ign, osm);
+        else { forestOk = false; hab = pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" })); }
+      }
+      if (Array.isArray(cached.obs)) { obs = cached.obs; src.gbif = obs.length; }
+      else { step("Observations publiées (GBIF)"); try { obs = await fetchGBIF(s, w, n, e); src.gbif = obs.length; } catch (err) { obs = []; } }
+      if (Array.isArray(cached.acc) && cached.acc.length === pts.length) { acc = cached.acc; src.acc = true; }
+      else {
+        step("Chemins et routes");
+        try {
+          const dl = (n - s) * 0.2, dg = (e - w) * 0.2;
+          await loadTrails(s - dl, w - dg, n + dl, e + dg);
+          acc = accessDistances(pts, TRAILS); src.acc = !!acc;
+        } catch (err) { acc = null; }
+      }
+      terrainPut(key, {
+        elev: elev.map(v => Math.round(v)),
+        hab: forestOk && !src.cached ? hab.map(encodeHab) : null, srcIgn: src.cached ? null : src.ign, srcOsm: src.cached ? null : src.osm,
+        habAt: forestOk && !src.cached ? Date.now() : null,
+        obs: src.gbif != null ? obs : null, acc
+      });
+    } else {
+      // Aperçu ou aucune météo réelle disponible : exemple fictif, signalé comme tel
       demo = true;
       const t = demoTerrain(pts, nx, ny); elev = t.elev; hab = t.hab;
       const dw = demoWeather([{ lat: (s + n) / 2, lon: (w + e) / 2 }]);
       const one = Object.values(dw)[0]; one.elevation = 450;
       WG = gpts.map(() => one);
+      acc = accessDistances(pts, demoTrails(s, w, n, e));
     }
+    src.soil = WG.every(x => x.soilT && x.soilM);
 
-    zMsg("Calcul des scores…");
+    if (!auto) zMsg("Calcul des scores…");
     const dates = WG[0].dates;
     let ti = dates.indexOf(TODAY); if (ti < 0) ti = Math.min(30, dates.length - 1);
     const days = dates.slice(ti, ti + 7);
@@ -1210,6 +1490,9 @@ async function computeZones() {
     const species = Object.keys(DEFAULTS);
     const scores = {}; species.forEach(k => { scores[k] = days.map(() => new Float32Array(nx * ny)); });
     const info = [];
+    // Tes coins où tu as fait une bonne récolte (carnet)
+    const mine = [];
+    state.logs.forEach(l => { const c = coinById(l.coin); if (c && l.result >= 2) mine.push([l.sp, c.lat, c.lon]); });
     for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
       const k = j * nx + i, z = elev[k];
       const zE = elev[j * nx + Math.min(nx - 1, i + 1)], zW = elev[j * nx + Math.max(0, i - 1)];
@@ -1228,26 +1511,48 @@ async function computeZones() {
         tmin: interpSeries(WG, gx, gy, fx, fy, "tmin").map(v => v + corr),
         et0: interpSeries(WG, gx, gy, fx, fy, "et0").map(v => v * etMul)
       };
+      if (src.soil) {
+        cw.soilT = interpSeries(WG, gx, gy, fx, fy, "soilT").map(v => v + corr);
+        cw.soilM = interpSeries(WG, gx, gy, fx, fy, "soilM");
+      }
       const R = litterSeries(cw);
+      const near = {};
       species.forEach(sp => {
+        // Observations publiées et tes bonnes récoltes à proximité : léger bonus
+        let dObs = Infinity, dMine = Infinity;
+        obs.forEach(o => { if (o[0] === sp) dObs = Math.min(dObs, fastDist(pts[k], [o[1], o[2]])); });
+        mine.forEach(o => { if (o[0] === sp) dMine = Math.min(dMine, fastDist(pts[k], [o[1], o[2]])); });
+        near[sp] = { obs: dObs, mine: dMine };
+        const bonus = (1 + 0.25 * Math.exp(-dObs / 600)) * (1 + 0.2 * Math.exp(-dMine / 300));
         const hf = habitatFactor(sp, hab[k]);
-        days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? scoreAt(cw, R, ti + d, sp).score * hf : 0; });
+        days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? Math.min(100, scoreAt(cw, R, ti + d, sp).score * hf * bonus) : 0; });
       });
-      info.push({ z, slope, aspect, hab: hab[k] });
+      const inf = { z, slope, aspect, hab: hab[k], acc: acc ? acc[k] : null, near,
+        st7: src.soil ? avg(cw.soilT, ti - 6, ti) : null, sm: src.soil ? avg(cw.soilM, ti - 2, ti) : null };
+      inf.af = accessFactor(inf);
+      info.push(inf);
     }
-    ZONES = { s, w, n, e, nx, ny, cell, days, scores, info, demo, forestOk };
-    ROUTE = null; drawRoute();
+    const sameDay = ZONES && ZONES.day === TODAY;
+    const prevDay = $("zonesDay").value;
+    ZONES = { s, w, n, e, nx, ny, cell, days, scores, info, demo, forestOk, src, obs, at: Date.now(), day: TODAY };
+    if (!auto) { ROUTE = null; drawRoute(); }
+    if (!demo) save(ZONE_VIEW_KEY, { s, w, n, e });
     $("zonesDay").innerHTML = days.map((d, k) => `<option value="${k}">${k === 0 ? "Aujourd'hui" : longDate(d)}</option>`).join("");
+    if (sameDay && prevDay && Number(prevDay) < days.length) $("zonesDay").value = prevDay;
     $("zonesCtrls").hidden = false; $("zonesLegend").hidden = false; $("zonesHide").hidden = false; $("zonesIntro").hidden = true;
-    drawZones();
+    $("zonesOpts").hidden = false;
+    drawZones(); drawObs(); renderSources();
     const txt = demo
-      ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera une fois l'appli en ligne."
+      ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera avec la météo réelle, depuis ton appli."
       : forestOk
-        ? "Calculé à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") + " sur " + (nx * ny) + " cases d'environ " + Math.round(cell) + " m. Touche la carte pour le détail d'une case."
-        : "Carte des forêts indisponible pour l'instant : seuls la météo, l'altitude et l'exposition sont pris en compte.";
+        ? (auto ? "Zones mises à jour automatiquement à " : "Calculé à ") + hhmm() + " sur " + (nx * ny) + " cases d'environ " + Math.round(cell) + " m. Touche la carte pour le détail d'une case."
+        : "Zones calculées à " + hhmm() + ", mais les cartes des forêts n'ont pas répondu : seuls la météo, le sol, l'altitude et l'exposition comptent. Relance le calcul plus tard pour les ajouter.";
     zMsg(txt, false);
   } catch (err) {
-    zMsg("Le calcul n'a pas abouti. Vérifie la connexion et réessaie.", true);
+    const why = (stage ? stage.charAt(0).toUpperCase() + stage.slice(1) + " n'a pas pu se charger" : "Le calcul n'a pas abouti") +
+      (err && err.name === "AbortError" ? " (le serveur a mis trop de temps à répondre)" : " (réseau faible ou serveur saturé)");
+    if (auto && ZONES) zMsg(why + ". Les zones affichées datent de " + new Date(ZONES.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") + ".", true);
+    else zMsg(why + ". Réessaie dans un instant.", true);
   } finally {
     zonesBusy = false; $("zonesBtn").disabled = false;
   }
@@ -1257,8 +1562,9 @@ function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("")
 function zoneGrid() {
   const sp = $("zonesSp").value, d = Number($("zonesDay").value || 0);
   const keys = sp === "all" ? Object.keys(DEFAULTS) : [sp];
+  const useAcc = $("zonesAcc").checked;
   const out = new Float32Array(ZONES.nx * ZONES.ny), who = new Array(out.length);
-  keys.forEach(k => { const a = ZONES.scores[k][d]; for (let i = 0; i < out.length; i++) if (a[i] > out[i]) { out[i] = a[i]; who[i] = k; } });
+  keys.forEach(k => { const a = ZONES.scores[k][d]; for (let i = 0; i < out.length; i++) { const v = a[i] * (useAcc ? ZONES.info[i].af : 1); if (v > out[i]) { out[i] = v; who[i] = k; } } });
   return { out, who };
 }
 function drawZones() {
@@ -1279,7 +1585,30 @@ function drawZones() {
   if (zonesLayer) map.removeLayer(zonesLayer);
   zonesLayer = L.imageOverlay(url, bounds, { pane: "zones", opacity: Number($("zonesOp").value), interactive: false }).addTo(map);
 }
-function hideZones() {
+function drawObs() {
+  if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
+  if (!ZONES || !ZONES.obs.length || !$("zonesObs").checked) return;
+  const col = { cepe: css("--bark"), girolle: css("--s1"), morille: css("--fg") };
+  obsLayer = L.layerGroup(ZONES.obs.map(o => L.circleMarker([o[1], o[2]], {
+    radius: 5, color: css("--surface") || "#fff", weight: 2, fillColor: col[o[0]] || "#888", fillOpacity: 1, bubblingMouseEvents: false
+  }).bindPopup(`<div class="zone-pop"><b>${DEFAULTS[o[0]].label}</b> observés${o[3] ? " en " + o[3] : ""}<br><span class="small">Observation publiée (GBIF)</span></div>`))).addTo(map);
+}
+function renderSources() {
+  const Z = ZONES, s = Z.src, el = $("zonesSrc");
+  if (Z.demo) { el.textContent = "Données fictives (aperçu)."; return; }
+  const parts = [
+    "météo" + (s.soil ? " et sol" : "") + " (Open-Meteo)",
+    s.ign ? "essences d'arbres (IGN)" : "essences IGN indisponibles",
+    s.osm ? "forêts, vergers et ruisseaux (OpenStreetMap)" : "OpenStreetMap indisponible",
+    s.gbif == null ? "observations indisponibles" : s.gbif + " observation" + (s.gbif > 1 ? "s" : "") + " publiée" + (s.gbif > 1 ? "s" : "") + " (GBIF)",
+    s.acc ? "accès par les chemins" : "accès non calculé"
+  ];
+  el.textContent = "Données : " + parts.join(" · ") + ".";
+}
+function hideZones(forget) {
+  if (forget) save(ZONE_VIEW_KEY, null);
+  if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
+  $("zonesOpts").hidden = true; $("zonesSrc").textContent = "";
   if (zonesLayer) { map.removeLayer(zonesLayer); zonesLayer = null; }
   ZONES = null;
   ROUTE = null; drawRoute(); if (!ui.mode) renderSheet();
@@ -1296,10 +1625,20 @@ function zonePopup(ll) {
   const dirs = ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"];
   const az = ((inf.aspect * 180 / Math.PI) + 360) % 360;
   const expo = inf.slope < 3 ? "terrain plat" : "versant " + dirs[Math.round(az / 45) % 8] + ", pente " + Math.round(inf.slope) + "°";
-  const hab = KIND_TXT[inf.hab.kind] + (inf.hab.kind === "forest" ? " (" + LEAF_TXT[inf.hab.leaf] + ")" : "");
-  L.popup({ maxWidth: 240 }).setLatLng(ll).setContent(
-    `<div class="zone-pop"><b class="lvl${level(v)}">${v}</b> · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}<br>${Math.round(inf.z)} m · ${expo}<br>${esc(hab)}${Z.demo ? "<br><i>Données fictives</i>" : ""}</div>`
-  ).openOn(map);
+  const h = inf.hab;
+  const hab = KIND_TXT[h.kind] + (h.kind === "forest" ? (h.open ? " ouverte" : "") + " : " + ESS_TXT[h.ess || "unknown"] : "") +
+    (h.src === "ign" ? " (IGN)" : h.src === "osm" ? " (OSM)" : "") + (h.edge ? " · lisière" : "") + (h.water ? " · près d'un ruisseau" : "");
+  const lines = [`<b class="lvl${level(v)}">${v}</b> · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`,
+    `${Math.round(inf.z)} m · ${expo}`, esc(hab)];
+  if (inf.st7 != null) lines.push("Sol " + inf.st7.toFixed(0) + " °C · " + (inf.sm > 0.3 ? "bien humide" : inf.sm > 0.2 ? "frais" : "sec"));
+  if (inf.acc != null) lines.push(inf.acc < 0 ? "Loin de toute route connue" : "≈ " + fmtDist(inf.acc) + " de marche depuis une route (" + walkMin(inf.acc) + " min)");
+  const sp = who[k];
+  if (sp && inf.near[sp]) {
+    if (inf.near[sp].mine < 400) lines.push("Près d'un de tes coins productifs");
+    else if (inf.near[sp].obs < 2000) lines.push(DEFAULTS[sp].label + " observés à " + fmtDist(inf.near[sp].obs) + " (GBIF)");
+  }
+  if (Z.demo) lines.push("<i>Données fictives</i>");
+  L.popup({ maxWidth: 260 }).setLatLng(ll).setContent(`<div class="zone-pop">${lines.join("<br>")}</div>`).openOn(map);
 }
 
 /* ---------- 8 ter. Chemins (OpenStreetMap) et itinéraire vers les zones ---------- */
@@ -1314,11 +1653,7 @@ function covers(T, s, w, n, e) { return T && T.s <= s && T.w <= w && T.n >= n &&
 async function fetchTrails(s, w, n, e) {
   const re = "^(" + TRAIL_KINDS.concat(ROAD_KINDS).join("|") + ")$";
   const q = `[out:json][timeout:30];way["highway"~"${re}"](${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)});out body;>;out skel qt;`;
-  const r = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q)
-  });
-  if (!r.ok) throw new Error("chemins " + r.status);
-  const j = await r.json();
+  const j = await overpass(q);
   const nodes = new Map(), ways = [];
   for (const el of j.elements || []) if (el.type === "node") nodes.set(el.id, [el.lat, el.lon]);
   for (const el of j.elements || []) if (el.type === "way" && el.nodes) {
@@ -1365,6 +1700,7 @@ function setTrails(on) {
 }
 async function loadTrails(s, w, n, e) {
   if (covers(TRAILS, s, w, n, e)) return TRAILS;
+  if (DEMO) { TRAILS = demoTrails(s, w, n, e); return TRAILS; }     // aperçu : inutile d'interroger le réseau
   try { TRAILS = await fetchTrails(s, w, n, e); }
   catch (err) { if (!DEMO) throw err; TRAILS = demoTrails(s, w, n, e); }
   return TRAILS;
@@ -1391,20 +1727,22 @@ async function toggleTrails() {
 }
 
 function buildGraph(T) {
-  const idx = new Map(), pts = [], adj = [];
+  const idx = new Map(), pts = [], adj = [], road = new Set(), track = new Set();
   const ix = id => { let k = idx.get(id); if (k === undefined) { k = pts.length; idx.set(id, k); pts.push(T.nodes.get(id)); adj.push([]); } return k; };
   for (const wy of T.ways) {
     if (wy.priv) continue;
     for (let i = 1; i < wy.nodes.length; i++) {
       const a = ix(wy.nodes[i - 1]), b = ix(wy.nodes[i]), d = dist(pts[a], pts[b]);
       adj[a].push([b, d]); adj[b].push([a, d]);
+      if (!wy.trail) { road.add(a); road.add(b); } else if (wy.kind === "track") { track.add(a); track.add(b); }
     }
   }
-  return { pts, adj };
+  return { pts, adj, road: [...road], track: [...track] };
 }
 function dijkstra(G, src) {
-  const N = G.pts.length, D = new Float64Array(N).fill(Infinity), P = new Int32Array(N).fill(-1), heap = [[0, src]];
-  D[src] = 0;
+  const srcs = Array.isArray(src) ? src : [src];
+  const N = G.pts.length, D = new Float64Array(N).fill(Infinity), P = new Int32Array(N).fill(-1), heap = srcs.map(x => [0, x]);
+  srcs.forEach(x => { D[x] = 0; });
   const push = x => { heap.push(x); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
   const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0;
     for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } }
@@ -1604,11 +1942,12 @@ function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLog
 
 async function refresh(force, msg) {
   const now = isoLocal(new Date());
-  if (now !== TODAY) { TODAY = now; if (ZONES) { hideZones(); zMsg("Nouveau jour : relance le calcul des zones pour les données du jour."); } }
+  if (now !== TODAY) { TODAY = now; if (ZONES) { hideZones(false); zMsg("Nouveau jour : les zones se recalculent dès que la météo du jour est chargée."); } }
   if (!state.coins.length) { DEMO = false; WEATHER = {}; renderAll(msg); return; }
   try { WEATHER = await fetchWeather(state.coins, force); DEMO = false; }
   catch (e) { WEATHER = demoWeather(state.coins); DEMO = true; }
   renderAll(msg);
+  maybeAutoZones();
 }
 
 function parseCoords(txt) {
@@ -1638,8 +1977,8 @@ document.querySelectorAll("[data-base]").forEach(b => {
 });
 
 $("addFromList").onclick = () => { showTab("carte"); startAdd(); };
-$("zonesBtn").onclick = computeZones;
-$("zonesHide").onclick = hideZones;
+$("zonesHide").onclick = () => hideZones(true);
+$("zonesBtn").onclick = () => computeZones();
 $("zonesSp").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Espèce changée : relance la recherche de chemin."); } };
 $("zonesDay").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Jour changé : relance la recherche de chemin."); } };
 $("trailsBtn").onclick = toggleTrails;
@@ -1647,6 +1986,8 @@ $("routeBtn").onclick = () => {
   if (!ZONES) { tMsg("Calcule d'abord les zones favorables, puis cherche le chemin.", true); return; }
   stopRecording(); ui.sel = null; ui.mode = "route"; tMsg(""); drawMap(); renderSheet();
 };
+$("zonesAcc").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Réglage changé : relance la recherche de chemin."); } };
+$("zonesObs").onchange = drawObs;
 $("zonesOp").oninput = () => { if (zonesLayer) zonesLayer.setOpacity(Number($("zonesOp").value)); };
 $("coinList").addEventListener("click", ev => {
   const s = ev.target.closest("[data-show]");
