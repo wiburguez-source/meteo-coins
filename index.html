@@ -258,7 +258,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           <button class="btn small primary" type="button" id="zonesBtn">Calculer sur cette vue</button>
         </div>
       </div>
-      <p class="small muted" id="zonesIntro">Colore les endroits de la vue où tout est réuni : pluie, température de l'air et du sol, altitude, exposition, essences d'arbres, observations connues et facilité d'accès. Cadre le secteur qui t'intéresse, puis calcule.</p>
+      <p class="small muted" id="zonesIntro">Colore les endroits de la vue où tout est réuni : pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Cadre le secteur qui t'intéresse, puis calcule. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
       <div class="grid3" id="zonesCtrls" hidden>
         <label class="f">Espèce
           <select id="zonesSp">
@@ -274,6 +274,10 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div class="checks" id="zonesOpts" hidden>
         <label><input type="checkbox" id="zonesAcc" checked> Privilégier les zones accessibles</label>
         <label><input type="checkbox" id="zonesObs" checked> Observations publiées</label>
+      </div>
+      <div class="row" id="accRow" hidden>
+        <button class="btn small" type="button" id="accBtn">Calculer l'accès depuis les routes</button>
+        <span class="small muted" id="accHint"></span>
       </div>
       <div class="legend" id="zonesLegend" hidden>
         <span><i class="sw bg1"></i>Possible</span>
@@ -1334,17 +1338,66 @@ function accessDistances(pts, T) {
   const src = G.road.length ? G.road : G.track;
   if (!src.length) return null;
   const { D } = dijkstra(G, src);
+  // Index par carrés de 250 m : chaque case ne regarde que les points de chemin voisins
+  const ky = 111320, kx = 111320 * Math.cos(pts[0][0] * Math.PI / 180), B = 250, grid = new Map();
+  G.pts.forEach((q, k) => {
+    if (D[k] === Infinity) return;
+    const id = Math.floor(q[1] * kx / B) + ":" + Math.floor(q[0] * ky / B);
+    if (!grid.has(id)) grid.set(id, []);
+    grid.get(id).push(k);
+  });
   return pts.map(p => {
+    const gx = Math.floor(p[1] * kx / B), gy = Math.floor(p[0] * ky / B);
     let best = Infinity;
-    for (let k = 0; k < G.pts.length; k++) {
-      if (D[k] === Infinity) continue;
-      const d0 = fastDist(p, G.pts[k]);
-      if (d0 > 400) continue;
-      const v = D[k] + d0 * 1.4;          // hors sentier, on avance moins vite
-      if (v < best) best = v;
+    for (let a = -2; a <= 2; a++) for (let c = -2; c <= 2; c++) {
+      const list = grid.get((gx + a) + ":" + (gy + c));
+      if (!list) continue;
+      for (const k of list) {
+        const q = G.pts[k], d0 = Math.hypot((q[1] - p[1]) * kx, (q[0] - p[0]) * ky);
+        if (d0 > 400) continue;
+        const v = D[k] + d0 * 1.4;        // hors sentier, on avance moins vite
+        if (v < best) best = v;
+      }
     }
     return isFinite(best) ? Math.round(best) : -1;
   });
+}
+function renderAccBtn() {
+  const b = $("accBtn"), has = ZONES && ZONES.src.acc;
+  b.textContent = has ? "Recalculer l'accès" : "Calculer l'accès depuis les routes";
+  b.classList.toggle("primary", !has);
+  $("accHint").textContent = has ? "" : "Mesure la marche depuis la route la plus proche, par les chemins. Ça peut prendre jusqu'à une minute.";
+}
+async function computeAccess() {
+  if (!ZONES || zonesBusy) return;
+  const Z = ZONES, b = $("accBtn");
+  zonesBusy = true; b.disabled = true; $("zonesBtn").disabled = true;
+  try {
+    const dl = (Z.n - Z.s) * 0.2, dg = (Z.e - Z.w) * 0.2;
+    zMsg("Chargement des chemins et routes…");
+    await loadTrails(Z.s - dl, Z.w - dg, Z.n + dl, Z.e + dg);
+    zMsg("Calcul des distances de marche…");
+    await new Promise(r => setTimeout(r, 30));           // laisse le message s'afficher
+    const acc = accessDistances(Z.pts, TRAILS);
+    if (!acc) { zMsg("Aucune route ni piste connue dans ce secteur : l'accès n'a pas pu être calculé.", true); return; }
+    Z.info.forEach((inf, k) => { inf.acc = acc[k]; inf.af = accessFactor(inf); });
+    Z.src.acc = true;
+    if (!Z.demo) terrainPut(Z.key, { acc });
+    drawZones(); renderSources(); renderAccBtn();
+    if (trailsOn) drawTrails();
+    // Résumé : part des bonnes zones à moins d'un quart d'heure de marche
+    const best = Z.scores, d = Number($("zonesDay").value || 0);
+    let good = 0, near = 0;
+    Z.info.forEach((inf, k) => {
+      const v = Math.max(...Object.keys(DEFAULTS).map(sp => best[sp][d][k]));
+      if (v >= 50) { good++; if (inf.acc >= 0 && inf.acc <= 900) near++; }
+    });
+    zMsg(good ? "Accès calculé : " + near + " case" + (near > 1 ? "s" : "") + " favorable" + (near > 1 ? "s" : "") + " sur " + good + " à moins de 15 min de marche d'une route." : "Accès calculé.");
+  } catch (err) {
+    zMsg("Les chemins et routes n'ont pas pu se charger (réseau faible ou serveur saturé). Réessaie dans un instant.", true);
+  } finally {
+    zonesBusy = false; b.disabled = false; $("zonesBtn").disabled = false;
+  }
 }
 function accessFactor(inf) {
   let f = 1;
@@ -1456,15 +1509,10 @@ async function computeZones(view, auto) {
       }
       if (Array.isArray(cached.obs)) { obs = cached.obs; src.gbif = obs.length; }
       else { step("Observations publiées (GBIF)"); try { obs = await fetchGBIF(s, w, n, e); src.gbif = obs.length; } catch (err) { obs = []; } }
+      // L'accès (chemins et routes) se calcule avec son propre bouton ; on réutilise un calcul déjà fait
+      const dl = (n - s) * 0.2, dg = (e - w) * 0.2;
       if (Array.isArray(cached.acc) && cached.acc.length === pts.length) { acc = cached.acc; src.acc = true; }
-      else {
-        step("Chemins et routes");
-        try {
-          const dl = (n - s) * 0.2, dg = (e - w) * 0.2;
-          await loadTrails(s - dl, w - dg, n + dl, e + dg);
-          acc = accessDistances(pts, TRAILS); src.acc = !!acc;
-        } catch (err) { acc = null; }
-      }
+      else if (covers(TRAILS, s - dl, w - dg, n + dl, e + dg)) { acc = accessDistances(pts, TRAILS); src.acc = !!acc; }
       terrainPut(key, {
         elev: elev.map(v => Math.round(v)),
         hab: forestOk && !src.cached ? hab.map(encodeHab) : null, srcIgn: src.cached ? null : src.ign, srcOsm: src.cached ? null : src.osm,
@@ -1478,7 +1526,6 @@ async function computeZones(view, auto) {
       const dw = demoWeather([{ lat: (s + n) / 2, lon: (w + e) / 2 }]);
       const one = Object.values(dw)[0]; one.elevation = 450;
       WG = gpts.map(() => one);
-      acc = accessDistances(pts, demoTrails(s, w, n, e));
     }
     src.soil = WG.every(x => x.soilT && x.soilM);
 
@@ -1534,13 +1581,14 @@ async function computeZones(view, auto) {
     }
     const sameDay = ZONES && ZONES.day === TODAY;
     const prevDay = $("zonesDay").value;
-    ZONES = { s, w, n, e, nx, ny, cell, days, scores, info, demo, forestOk, src, obs, at: Date.now(), day: TODAY };
+    ZONES = { s, w, n, e, nx, ny, cell, days, scores, info, demo, forestOk, src, obs, pts, key, at: Date.now(), day: TODAY };
     if (!auto) { ROUTE = null; drawRoute(); }
     if (!demo) save(ZONE_VIEW_KEY, { s, w, n, e });
     $("zonesDay").innerHTML = days.map((d, k) => `<option value="${k}">${k === 0 ? "Aujourd'hui" : longDate(d)}</option>`).join("");
     if (sameDay && prevDay && Number(prevDay) < days.length) $("zonesDay").value = prevDay;
     $("zonesCtrls").hidden = false; $("zonesLegend").hidden = false; $("zonesHide").hidden = false; $("zonesIntro").hidden = true;
-    $("zonesOpts").hidden = false;
+    $("zonesOpts").hidden = false; $("accRow").hidden = false;
+    renderAccBtn();
     drawZones(); drawObs(); renderSources();
     const txt = demo
       ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera avec la météo réelle, depuis ton appli."
@@ -1601,14 +1649,14 @@ function renderSources() {
     s.ign ? "essences d'arbres (IGN)" : "essences IGN indisponibles",
     s.osm ? "forêts, vergers et ruisseaux (OpenStreetMap)" : "OpenStreetMap indisponible",
     s.gbif == null ? "observations indisponibles" : s.gbif + " observation" + (s.gbif > 1 ? "s" : "") + " publiée" + (s.gbif > 1 ? "s" : "") + " (GBIF)",
-    s.acc ? "accès par les chemins" : "accès non calculé"
+    s.acc ? "accès par les chemins" : "accès pas encore calculé (seule la pente compte)"
   ];
   el.textContent = "Données : " + parts.join(" · ") + ".";
 }
 function hideZones(forget) {
   if (forget) save(ZONE_VIEW_KEY, null);
   if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
-  $("zonesOpts").hidden = true; $("zonesSrc").textContent = "";
+  $("zonesOpts").hidden = true; $("accRow").hidden = true; $("zonesSrc").textContent = "";
   if (zonesLayer) { map.removeLayer(zonesLayer); zonesLayer = null; }
   ZONES = null;
   ROUTE = null; drawRoute(); if (!ui.mode) renderSheet();
@@ -1782,6 +1830,10 @@ async function routeFrom(start) {
   try { await loadTrails(s, w, n, e); }
   catch (err) { tMsg("Les chemins n'ont pas pu se charger. Vérifie la connexion et réessaie.", true); return; }
   setTrails(true);
+  if (!ZONES.src.acc && covers(TRAILS, Z.s, Z.w, Z.n, Z.e)) {      // chemins déjà chargés : l'accès est gratuit
+    const acc = accessDistances(Z.pts, TRAILS);
+    if (acc) { Z.info.forEach((inf, k) => { inf.acc = acc[k]; inf.af = accessFactor(inf); }); Z.src.acc = true; if (!Z.demo) terrainPut(Z.key, { acc }); drawZones(); renderSources(); renderAccBtn(); }
+  }
   const G = buildGraph(TRAILS);
   if (!G.pts.length) { tMsg("Aucun chemin connu dans ce secteur.", true); return; }
   let src = 0, sd = Infinity;
@@ -1988,6 +2040,7 @@ $("routeBtn").onclick = () => {
 };
 $("zonesAcc").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Réglage changé : relance la recherche de chemin."); } };
 $("zonesObs").onchange = drawObs;
+$("accBtn").onclick = computeAccess;
 $("zonesOp").oninput = () => { if (zonesLayer) zonesLayer.setOpacity(Number($("zonesOp").value)); };
 $("coinList").addEventListener("click", ev => {
   const s = ev.target.closest("[data-show]");
