@@ -37,6 +37,9 @@
   --danger: #a2321f;
   --me: #2b6fd6;
   --trail: #e06a12;         /* sentiers et pistes */
+  --z1: #f4a9cf;            /* zones : bonnes */
+  --z2: #d9378f;            /* zones : très bonnes */
+  --z3: #7d0a4e;            /* zones : meilleures */
   --route: #6a2bd6;         /* chemin proposé */
   --font-display: "Bricolage Grotesque", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
@@ -46,14 +49,14 @@
   :root:not([data-theme="light"]) {
     --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
     --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff;
+    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #d9378f; --z3: #7d0a4e;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
   --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff;
+  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #d9378f; --z3: #7d0a4e;
   color-scheme: dark;
 }
 
@@ -150,6 +153,18 @@ details.more[open] summary::after { content: " ▴"; }
 .map-note { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 500; background: var(--surface); color: var(--fg); font-size: 0.82rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); }
 .mode-bar { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 500; background: var(--bark); color: var(--surface); font-weight: 700; font-size: 0.9rem; padding: 8px 12px; border-radius: 10px; }
 .leaflet-container { font-family: var(--font-body); }
+.prog { display: flex; flex-direction: column; gap: 6px; }
+.map-prog { position: absolute; left: 54px; right: 10px; top: 10px; z-index: 650; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+.prog-top { display: flex; justify-content: space-between; gap: 10px; font-size: .82rem; font-weight: 700; }
+.prog-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prog-pct { font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.prog-bar { height: 8px; background: var(--sunk); border-radius: 999px; overflow: hidden; }
+.prog-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; }
+.prog-err .prog-bar i { background: var(--danger); }
+@media (prefers-reduced-motion: no-preference) { .prog-bar i { transition: width .3s ease; } }
+.zbest { font-weight: 700; font-size: .92rem; }
+.sw.z1, .sw.z2, .sw.z3 { box-shadow: 0 0 0 1px var(--line); }
+.sw.z1 { background: var(--z1); opacity: 1; } .sw.z2 { background: var(--z2); opacity: 1; } .sw.z3 { background: var(--z3); opacity: 1; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.84rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { display: inline-block; width: 16px; height: 12px; border-radius: 3px; opacity: .8; }
@@ -206,6 +221,18 @@ nav.tabs .in { max-width: 640px; margin: 0 auto; display: grid; grid-template-co
 nav.tabs button { background: none; border: 0; padding: 12px 2px 14px; font-weight: 700; color: var(--muted); border-top: 3px solid transparent; font-size: 0.95rem; }
 nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
 
+/* Grand écran (Z Fold déplié, tablette) : carte à gauche, panneaux à droite ; coins sur plusieurs colonnes */
+@media (min-width: 760px) {
+  .wrap { max-width: 1400px; }
+  nav.tabs .in { max-width: 720px; }
+  #coinList { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); align-items: start; }
+  #tab-carte:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); gap: 16px; align-items: start; }
+  .map-col { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px); min-width: 0; }
+  .side-col { min-width: 0; }
+  #map { height: calc(100dvh - 190px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); min-height: 360px; }
+  #tab-carnet, #tab-reglages { max-width: 760px; width: 100%; margin-inline: auto; }
+  .side-col .grid3 { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 420px) {
   .score .big { font-size: 2.2rem; }
   .grid3 { grid-template-columns: 1fr 1fr; }
@@ -221,7 +248,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
   <header class="top">
     <div class="top-row">
       <h1>Météo des Coins</h1>
-      <div class="row"><span id="dataChip" class="chip">Chargement…</span><button class="btn small" type="button" id="refreshBtn">Actualiser</button></div>
+      <div class="row"><span id="dataChip" class="chip">Chargement…</span><button class="btn small" type="button" id="refreshBtn">Actualiser</button><button class="btn small" type="button" id="fsBtn" hidden>Plein écran</button></div>
     </div>
     <p class="muted small" id="todayLine"></p>
   </header>
@@ -237,6 +264,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
 
   <!-- Onglet CARTE -->
   <section id="tab-carte" class="stack" hidden>
+    <div class="map-col stack">
     <div class="map-tools">
       <div class="seg" role="group" aria-label="Fond de carte">
         <button type="button" data-base="plan" aria-pressed="true">Plan IGN</button>
@@ -249,7 +277,10 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div id="map" aria-label="Carte des coins"></div>
       <div id="modeBar" class="mode-bar" hidden></div>
       <div id="mapNote" class="map-note" hidden></div>
+      <div class="prog map-prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
     </div>
+    </div>
+    <div class="side-col stack">
     <div id="zonesPanel" class="panel">
       <div class="row" style="justify-content:space-between">
         <h3>Zones favorables</h3>
@@ -258,8 +289,9 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           <button class="btn small primary" type="button" id="zonesBtn">Calculer sur cette vue</button>
         </div>
       </div>
-      <p class="small muted" id="zonesIntro">Colore les endroits de la vue où tout est réuni : pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Cadre le secteur qui t'intéresse, puis calcule. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
-      <div class="grid3" id="zonesCtrls" hidden>
+      <div class="prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
+      <p class="small muted" id="zonesIntro">Colore les meilleurs endroits de la vue en croisant pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Cadre le secteur qui t'intéresse, puis calcule. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
+      <div class="grid2" id="zonesCtrls" hidden>
         <label class="f">Espèce
           <select id="zonesSp">
             <option value="all">Toutes</option>
@@ -269,7 +301,13 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           </select>
         </label>
         <label class="f">Jour <select id="zonesDay"></select></label>
-        <label class="f">Opacité <input type="range" id="zonesOp" min="0.15" max="0.9" step="0.05" value="0.6"></label>
+        <label class="f">Couleurs
+          <select id="zonesMode">
+            <option value="rel">Meilleures zones</option>
+            <option value="abs">Score sur 100</option>
+          </select>
+        </label>
+        <label class="f">Opacité <input type="range" id="zonesOp" min="0.2" max="1" step="0.05" value="0.8"></label>
       </div>
       <div class="checks" id="zonesOpts" hidden>
         <label><input type="checkbox" id="zonesAcc" checked> Privilégier les zones accessibles</label>
@@ -279,10 +317,11 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
         <button class="btn small" type="button" id="accBtn">Calculer l'accès depuis les routes</button>
         <span class="small muted" id="accHint"></span>
       </div>
+      <p class="zbest" id="zonesBest" hidden></p>
       <div class="legend" id="zonesLegend" hidden>
-        <span><i class="sw bg1"></i>Possible</span>
-        <span><i class="sw bg2"></i>Favorable</span>
-        <span><i class="sw bg3"></i>Très favorable</span>
+        <span><i class="sw z1"></i><b id="lg1">Top 30 %</b></span>
+        <span><i class="sw z2"></i><b id="lg2">Top 15 %</b></span>
+        <span><i class="sw z3"></i><b id="lg3">Top 5 %</b></span>
       </div>
       <p class="msg" id="zonesMsg" aria-live="polite"></p>
       <p class="small muted" id="zonesSrc"></p>
@@ -298,6 +337,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <p class="msg" id="trailsMsg" aria-live="polite"></p>
     </div>
     <div id="sheet" class="panel"></div>
+    </div>
   </section>
 
   <!-- Onglet CARNET -->
@@ -1076,7 +1116,7 @@ function stopRecording() {
    × exposition (un versant nord s'assèche moins vite qu'un versant sud)
    × habitat (forêts, vergers, broussailles d'OpenStreetMap, selon l'espèce). */
 const LAPSE = 0.0065;        // °C perdus par mètre d'altitude
-const MAX_CELLS = 700;
+const MAX_CELLS = 900;
 /* Affinité de chaque espèce avec chaque essence d'arbre (1 = idéal) et chaque milieu */
 const HABITAT = {
   cepe:    { oak: 1, beech: 1, chestnut: 1, broad: 0.9, mixed: 0.95, firspruce: 0.85, pine: 0.7, conif: 0.7, douglas: 0.5, larch: 0.4, robinia: 0.2, poplar: 0.1, unknown: 0.85, orchard: 0, scrub: 0.15, heath: 0.15, none: 0 },
@@ -1157,20 +1197,69 @@ function maybeAutoZones() {
   if (!v || !map || DEMO || OFFLINE || ui.mode || zonesBusy) return;
   if (!ZONES || ZONES.day !== TODAY || ZONES.at < WEATHER_AT) computeZones(v, true);
 }
+/* ---------- Barre de progression ---------- */
+let CUR_PROG = null, progTimer = null;
+function showProg(on) { document.querySelectorAll(".prog").forEach(el => { el.hidden = !on; }); }
+function makeProg(title, defs) {
+  const job = { title, tasks: {} };
+  Object.entries(defs).forEach(([k, d]) => { job.tasks[k] = { w: d.w, label: d.label, creep: !!d.creep, frac: 0, start: null, done: false, sub: "" }; });
+  let shown = 0;
+  const render = (final, ok) => {
+    if (CUR_PROG !== job) return;
+    let W = 0, F = 0; const pend = [], now = Date.now();
+    Object.values(job.tasks).forEach(t => {
+      let f = t.frac;
+      if (!t.done && t.creep && t.start != null) f = Math.max(f, 0.9 * (1 - Math.exp(-(now - t.start) / 9000)));
+      W += t.w; F += t.w * f;
+      if (!t.done && t.start != null) pend.push(t.label + (t.sub ? " " + t.sub : ""));
+    });
+    shown = Math.max(shown, Math.round(100 * F / (W || 1)));
+    const pct = final && ok ? 100 : Math.min(final ? 100 : 99, shown);
+    const label = final ? job.title + (ok ? " : terminé" : " : interrompu") : job.title + (pend.length ? " · " + pend.join(", ") : "…");
+    document.querySelectorAll(".prog").forEach(el => {
+      el.classList.toggle("prog-err", !!final && !ok);
+      el.querySelector(".prog-label").textContent = label;
+      el.querySelector(".prog-pct").textContent = pct + " %";
+      el.querySelector(".prog-bar i").style.width = pct + "%";
+      el.querySelector(".prog-bar").setAttribute("aria-valuenow", pct);
+    });
+  };
+  const T = k => job.tasks[k];
+  job.begin = k => { const t = T(k); if (t && t.start == null) t.start = Date.now(); render(); };
+  job.set = (k, f, sub) => { const t = T(k); if (!t) return; if (t.start == null) t.start = Date.now(); t.frac = Math.max(t.frac, clamp(f, 0, 1)); if (sub != null) t.sub = sub; if (t.frac >= 1) t.done = true; render(); };
+  job.done = (k, failed) => { const t = T(k); if (!t) return; if (t.start == null) t.start = Date.now(); t.frac = 1; t.done = true; t.failed = !!failed; render(); };
+  job.end = ok => {
+    if (CUR_PROG !== job) return;
+    clearInterval(progTimer); render(true, ok);
+    setTimeout(() => { if (CUR_PROG === job) { showProg(false); CUR_PROG = null; } }, ok ? 900 : 3000);
+  };
+  CUR_PROG = job; showProg(true); clearInterval(progTimer); progTimer = setInterval(() => render(), 300); render();
+  return job;
+}
+const tick = () => new Promise(r => setTimeout(r, 0));
+
 function zMsg(t, err) { const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
 
-async function fetchElevations(pts) {
-  const out = [];
-  for (let k = 0; k < pts.length; k += 100) {
-    const chunk = pts.slice(k, k + 100);
-    const url = "https://api.open-meteo.com/v1/elevation?latitude=" + chunk.map(p => p[0].toFixed(5)).join(",") +
-      "&longitude=" + chunk.map(p => p[1].toFixed(5)).join(",");
-    const r = await fetchRetry(url);
-    const j = await r.json();
-    if (!Array.isArray(j.elevation)) throw new Error("altitude");
-    out.push(...j.elevation);
-  }
-  return out;
+async function fetchElevations(pts, onProg) {
+  const chunks = [];
+  for (let k = 0; k < pts.length; k += 100) chunks.push(pts.slice(k, k + 100));
+  const res = new Array(chunks.length);
+  let next = 0, done = 0;
+  if (onProg) onProg(0, chunks.length);
+  const worker = async () => {                 // 4 requêtes à la fois
+    while (next < chunks.length) {
+      const c = next++, ch = chunks[c];
+      const url = "https://api.open-meteo.com/v1/elevation?latitude=" + ch.map(p => p[0].toFixed(5)).join(",") +
+        "&longitude=" + ch.map(p => p[1].toFixed(5)).join(",");
+      const r = await fetchRetry(url);
+      const j = await r.json();
+      if (!Array.isArray(j.elevation) || j.elevation.length !== ch.length) throw new Error("altitude");
+      res[c] = j.elevation;
+      done++; if (onProg) onProg(done, chunks.length);
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  return res.flat();
 }
 
 async function fetchWeatherPts(pts) {
@@ -1312,9 +1401,10 @@ function habitatFactor(sp, h) {
   return Math.min(1.2, f);
 }
 
-async function fetchGBIF(s, w, n, e) {
-  const pad = 0.1, out = [];
-  for (const sp of Object.keys(GBIF_SP)) {
+async function fetchGBIF(s, w, n, e, onProg) {
+  const pad = 0.1, out = [], list = Object.keys(GBIF_SP);
+  let done = 0;
+  await Promise.all(list.map(async sp => {
     const names = GBIF_SP[sp].map(x => "scientificName=" + encodeURIComponent(x)).join("&");
     const url = "https://api.gbif.org/v1/occurrence/search?" + names +
       "&decimalLatitude=" + (s - pad).toFixed(3) + "," + (n + pad).toFixed(3) +
@@ -1327,7 +1417,8 @@ async function fetchGBIF(s, w, n, e) {
       if (o.coordinateUncertaintyInMeters && o.coordinateUncertaintyInMeters > 2000) return;
       out.push([sp, +o.decimalLatitude.toFixed(5), +o.decimalLongitude.toFixed(5), o.year || null]);
     });
-  }
+    done++; if (onProg) onProg(done, list.length);
+  }));
   return out;
 }
 
@@ -1372,30 +1463,34 @@ async function computeAccess() {
   if (!ZONES || zonesBusy) return;
   const Z = ZONES, b = $("accBtn");
   zonesBusy = true; b.disabled = true; $("zonesBtn").disabled = true;
+  const dl = (Z.n - Z.s) * 0.2, dg = (Z.e - Z.w) * 0.2;
+  const job = makeProg("Calcul de l'accès", { trails: { w: 3, label: "chemins et routes", creep: true }, dist: { w: 1, label: "distances de marche" } });
+  let ok = false;
   try {
-    const dl = (Z.n - Z.s) * 0.2, dg = (Z.e - Z.w) * 0.2;
     zMsg("Chargement des chemins et routes…");
+    job.begin("trails");
     await loadTrails(Z.s - dl, Z.w - dg, Z.n + dl, Z.e + dg);
+    job.done("trails"); job.begin("dist");
     zMsg("Calcul des distances de marche…");
-    await new Promise(r => setTimeout(r, 30));           // laisse le message s'afficher
+    await tick();
     const acc = accessDistances(Z.pts, TRAILS);
+    job.done("dist");
     if (!acc) { zMsg("Aucune route ni piste connue dans ce secteur : l'accès n'a pas pu être calculé.", true); return; }
+    ok = true;
     Z.info.forEach((inf, k) => { inf.acc = acc[k]; inf.af = accessFactor(inf); });
     Z.src.acc = true;
     if (!Z.demo) terrainPut(Z.key, { acc });
     drawZones(); renderSources(); renderAccBtn();
     if (trailsOn) drawTrails();
-    // Résumé : part des bonnes zones à moins d'un quart d'heure de marche
-    const best = Z.scores, d = Number($("zonesDay").value || 0);
+    // Résumé : part des zones colorées à moins d'un quart d'heure de marche
+    const { out } = zoneGrid(), th = zoneThresholds(out);
     let good = 0, near = 0;
-    Z.info.forEach((inf, k) => {
-      const v = Math.max(...Object.keys(DEFAULTS).map(sp => best[sp][d][k]));
-      if (v >= 50) { good++; if (inf.acc >= 0 && inf.acc <= 900) near++; }
-    });
-    zMsg(good ? "Accès calculé : " + near + " case" + (near > 1 ? "s" : "") + " favorable" + (near > 1 ? "s" : "") + " sur " + good + " à moins de 15 min de marche d'une route." : "Accès calculé.");
+    Z.info.forEach((inf, k) => { if (out[k] >= th.t[0]) { good++; if (inf.acc >= 0 && inf.acc <= 900) near++; } });
+    zMsg(good ? "Accès calculé : " + near + " des " + good + " cases colorées sont à moins de 15 min de marche d'une route." : "Accès calculé.");
   } catch (err) {
     zMsg("Les chemins et routes n'ont pas pu se charger (réseau faible ou serveur saturé). Réessaie dans un instant.", true);
   } finally {
+    job.end(ok);
     zonesBusy = false; b.disabled = false; $("zonesBtn").disabled = false;
   }
 }
@@ -1403,7 +1498,7 @@ function accessFactor(inf) {
   let f = 1;
   if (inf.acc != null) {
     const m = inf.acc < 0 ? Infinity : inf.acc;
-    f = !isFinite(m) ? 0.5 : m <= 600 ? 1 : m >= 3000 ? 0.45 : 1 - 0.55 * (m - 600) / 2400;
+    f = !isFinite(m) ? 0.5 : m <= 600 ? 1 : m >= 3000 ? 0.55 : 1 - 0.45 * (m - 600) / 2400;
   }
   if (inf.slope > 35) f *= 0.5; else if (inf.slope > 25) f *= 0.8;
   return f;
@@ -1471,7 +1566,7 @@ async function computeZones(view, auto) {
     view = { s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() };
   }
   zonesBusy = true; $("zonesBtn").disabled = true;
-  let stage = "";
+  let stage = "", job = null;
   const hhmm = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
   try {
     const { s, w, n, e } = view;
@@ -1487,28 +1582,40 @@ async function computeZones(view, auto) {
     let elev, hab, WG, obs = [], acc = null, demo = false, forestOk = true;
     const src = { ign: false, osm: false, gbif: null, acc: false, soil: false, cached: false };
     const key = terrainKey(s, w, n, e, nx, ny), cached = terrainGet(key) || {};
-    const step = (t) => zMsg(auto ? "Mise à jour des zones… (" + t.toLowerCase() + ")" : t + "…");
     if (!DEMO) {
-      // Vraies données. En cas d'échec du relief ou de la météo, message clair : jamais de zones fictives en douce.
-      if (cached.elev && cached.elev.length === pts.length) elev = cached.elev;
-      else { stage = "le relief"; step("Relief"); elev = await fetchElevations(pts); }
-      stage = "la météo"; step("Météo et sol");
-      WG = await fetchWeatherPts(gpts);
-      stage = "";
+      // Vraies données, chargées en parallèle. En cas d'échec du relief ou de la météo, message clair : jamais de zones fictives en douce.
+      const needElev = !(cached.elev && cached.elev.length === pts.length);
       const habFresh = (cached.srcIgn && cached.srcOsm) || Date.now() - (cached.habAt || 0) < 6 * 3600e3;
-      if (cached.hab && cached.hab.length === pts.length && habFresh) {
-        hab = decodeHab(cached.hab); src.ign = !!cached.srcIgn; src.osm = !!cached.srcOsm; src.cached = true;
-      } else {
-        step("Essences d'arbres (IGN)");
-        let ign = null, osm = null;
-        try { ign = await fetchIGNForest(s, w, n, e); src.ign = true; } catch (err) { ign = null; }
-        step("Forêts, vergers et ruisseaux (OpenStreetMap)");
-        try { osm = await fetchHabitat(s, w, n, e); src.osm = true; } catch (err) { osm = null; }
+      const needHab = !(cached.hab && cached.hab.length === pts.length && habFresh);
+      const needObs = !Array.isArray(cached.obs);
+      const defs = {};
+      if (needElev) defs.relief = { w: 3, label: "relief" };
+      defs.meteo = { w: 2, label: "météo et sol", creep: true };
+      if (needHab) { defs.ign = { w: 2, label: "essences IGN", creep: true }; defs.osm = { w: 2, label: "forêts OSM", creep: true }; }
+      if (needObs) defs.gbif = { w: 1, label: "observations" };
+      defs.calc = { w: 2, label: "calcul" };
+      job = makeProg(auto ? "Mise à jour des zones" : "Calcul des zones", defs);
+      zMsg(auto ? "Mise à jour des zones…" : "Chargement des données…");
+      const track = (k, p) => { job.begin(k); return p.then(x => { job.done(k); return x; }, er => { job.done(k, true); throw er; }); };
+      const none = Promise.resolve(null);
+      const [rE, rM, rI, rO, rG] = await Promise.allSettled([
+        needElev ? fetchElevations(pts, (d, t) => job.set("relief", d / t, d + "/" + t)) : Promise.resolve(cached.elev),
+        track("meteo", fetchWeatherPts(gpts)),
+        needHab ? track("ign", fetchIGNForest(s, w, n, e)) : none,
+        needHab ? track("osm", fetchHabitat(s, w, n, e)) : none,
+        needObs ? fetchGBIF(s, w, n, e, (d, t) => job.set("gbif", d / t, d + "/" + t)) : none
+      ]);
+      if (rE.status === "rejected") { stage = "le relief"; throw rE.reason; }
+      if (rM.status === "rejected") { stage = "la météo"; throw rM.reason; }
+      elev = rE.value; WG = rM.value;
+      if (needHab) {
+        const ign = rI.status === "fulfilled" ? rI.value : null, osm = rO.status === "fulfilled" ? rO.value : null;
+        src.ign = !!ign; src.osm = !!osm;
         if (ign || osm) hab = buildHabitat(pts, nx, ny, ign, osm);
         else { forestOk = false; hab = pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" })); }
-      }
-      if (Array.isArray(cached.obs)) { obs = cached.obs; src.gbif = obs.length; }
-      else { step("Observations publiées (GBIF)"); try { obs = await fetchGBIF(s, w, n, e); src.gbif = obs.length; } catch (err) { obs = []; } }
+      } else { hab = decodeHab(cached.hab); src.ign = !!cached.srcIgn; src.osm = !!cached.srcOsm; src.cached = true; }
+      if (!needObs) { obs = cached.obs; src.gbif = obs.length; }
+      else if (rG.status === "fulfilled") { obs = rG.value; src.gbif = obs.length; } else obs = [];
       // L'accès (chemins et routes) se calcule avec son propre bouton ; on réutilise un calcul déjà fait
       const dl = (n - s) * 0.2, dg = (e - w) * 0.2;
       if (Array.isArray(cached.acc) && cached.acc.length === pts.length) { acc = cached.acc; src.acc = true; }
@@ -1522,6 +1629,7 @@ async function computeZones(view, auto) {
     } else {
       // Aperçu ou aucune météo réelle disponible : exemple fictif, signalé comme tel
       demo = true;
+      job = makeProg("Calcul des zones (exemple)", { calc: { w: 1, label: "calcul" } });
       const t = demoTerrain(pts, nx, ny); elev = t.elev; hab = t.hab;
       const dw = demoWeather([{ lat: (s + n) / 2, lon: (w + e) / 2 }]);
       const one = Object.values(dw)[0]; one.elevation = 450;
@@ -1530,6 +1638,7 @@ async function computeZones(view, auto) {
     src.soil = WG.every(x => x.soilT && x.soilM);
 
     if (!auto) zMsg("Calcul des scores…");
+    job.begin("calc"); await tick();
     const dates = WG[0].dates;
     let ti = dates.indexOf(TODAY); if (ti < 0) ti = Math.min(30, dates.length - 1);
     const days = dates.slice(ti, ti + 7);
@@ -1540,7 +1649,9 @@ async function computeZones(view, auto) {
     // Tes coins où tu as fait une bonne récolte (carnet)
     const mine = [];
     state.logs.forEach(l => { const c = coinById(l.coin); if (c && l.result >= 2) mine.push([l.sp, c.lat, c.lon]); });
-    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const obsBy = {}; species.forEach(sp => { obsBy[sp] = obs.filter(o => o[0] === sp); });
+    for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
       const k = j * nx + i, z = elev[k];
       const zE = elev[j * nx + Math.min(nx - 1, i + 1)], zW = elev[j * nx + Math.max(0, i - 1)];
       const zN = elev[Math.max(0, j - 1) * nx + i], zS = elev[Math.min(ny - 1, j + 1) * nx + i];
@@ -1567,7 +1678,7 @@ async function computeZones(view, auto) {
       species.forEach(sp => {
         // Observations publiées et tes bonnes récoltes à proximité : léger bonus
         let dObs = Infinity, dMine = Infinity;
-        obs.forEach(o => { if (o[0] === sp) dObs = Math.min(dObs, fastDist(pts[k], [o[1], o[2]])); });
+        obsBy[sp].forEach(o => { dObs = Math.min(dObs, fastDist(pts[k], [o[1], o[2]])); });
         mine.forEach(o => { if (o[0] === sp) dMine = Math.min(dMine, fastDist(pts[k], [o[1], o[2]])); });
         near[sp] = { obs: dObs, mine: dMine };
         const bonus = (1 + 0.25 * Math.exp(-dObs / 600)) * (1 + 0.2 * Math.exp(-dMine / 300));
@@ -1578,6 +1689,8 @@ async function computeZones(view, auto) {
         st7: src.soil ? avg(cw.soilT, ti - 6, ti) : null, sm: src.soil ? avg(cw.soilM, ti - 2, ti) : null };
       inf.af = accessFactor(inf);
       info.push(inf);
+    }
+    if ((j & 3) === 3 || j === ny - 1) { job.set("calc", (j + 1) / ny, Math.round(100 * (j + 1) / ny) + " %"); await tick(); }
     }
     const sameDay = ZONES && ZONES.day === TODAY;
     const prevDay = $("zonesDay").value;
@@ -1596,7 +1709,9 @@ async function computeZones(view, auto) {
         ? (auto ? "Zones mises à jour automatiquement à " : "Calculé à ") + hhmm() + " sur " + (nx * ny) + " cases d'environ " + Math.round(cell) + " m. Touche la carte pour le détail d'une case."
         : "Zones calculées à " + hhmm() + ", mais les cartes des forêts n'ont pas répondu : seuls la météo, le sol, l'altitude et l'exposition comptent. Relance le calcul plus tard pour les ajouter.";
     zMsg(txt, false);
+    job.end(true);
   } catch (err) {
+    if (job) job.end(false);
     const why = (stage ? stage.charAt(0).toUpperCase() + stage.slice(1) + " n'a pas pu se charger" : "Le calcul n'a pas abouti") +
       (err && err.name === "AbortError" ? " (le serveur a mis trop de temps à répondre)" : " (réseau faible ou serveur saturé)");
     if (auto && ZONES) zMsg(why + ". Les zones affichées datent de " + new Date(ZONES.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") + ".", true);
@@ -1615,24 +1730,67 @@ function zoneGrid() {
   keys.forEach(k => { const a = ZONES.scores[k][d]; for (let i = 0; i < out.length; i++) { const v = a[i] * (useAcc ? ZONES.info[i].af : 1); if (v > out[i]) { out[i] = v; who[i] = k; } } });
   return { out, who };
 }
+/* Seuils des 3 couleurs.
+   « Meilleures zones de la vue » : les 30 %, 15 % et 5 % meilleures cases, pour toujours voir où aller, même hors pleine saison.
+   « Score sur 100 » : Possible (25), Favorable (50), Très favorable (75). */
+const MODE_KEY = "meteo-coins-zonemode";
+function zoneThresholds(out) {
+  let vmax = 0; for (const v of out) if (v > vmax) vmax = v;
+  if ($("zonesMode").value === "abs") return { t: [25, 50, 75], labels: ["Possible", "Favorable", "Très favorable"], rel: false, vmax };
+  const floor = Math.max(8, 0.3 * vmax), vals = [];
+  for (const v of out) if (v > 0) vals.push(v);
+  vals.sort((a, b) => a - b);
+  const q = p => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))] : Infinity);
+  const t = vmax < 8 ? [Infinity, Infinity, Infinity] : [Math.max(floor, q(0.70)), Math.max(floor, q(0.85)), Math.max(floor, q(0.95))];
+  return { t, labels: ["Top 30 %", "Top 15 %", "Top 5 %"], rel: true, vmax };
+}
+function zClass(v, t) { return v >= t[2] ? 3 : v >= t[1] ? 2 : v >= t[0] ? 1 : 0; }
 function drawZones() {
   if (!ZONES || !map) return;
-  const { nx, ny } = ZONES, { out } = zoneGrid();
-  const cv = document.createElement("canvas"); cv.width = nx; cv.height = ny;
-  const ctx = cv.getContext("2d"), img = ctx.createImageData(nx, ny);
-  const pal = [css("--s1"), css("--s2"), css("--s3")].map(c => hexRgb(c || "#888888"));
-  for (let k = 0; k < out.length; k++) {
-    const v = out[k], lv = level(Math.round(v));
-    const a = v < 20 ? 0 : Math.min(1, (v - 20) / 45);
-    const c = pal[Math.max(0, lv - 1)];
-    img.data.set([c[0], c[1], c[2], Math.round(a * 255)], k * 4);
+  const { nx, ny } = ZONES, { out, who } = zoneGrid(), th = zoneThresholds(out);
+  ZONES.th = th;
+  // Image affinée : interpolation des scores entre les cases, puis 3 couleurs nettes avec un liseré
+  const F = Math.max(1, Math.min(12, Math.floor(720 / Math.max(nx, ny))));
+  const W = nx * F, H = ny * F;
+  const cls = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    const gy = (y + 0.5) / F - 0.5, j0 = clamp(Math.floor(gy), 0, ny - 1), j1 = Math.min(ny - 1, j0 + 1), ty = clamp(gy - j0, 0, 1);
+    for (let x = 0; x < W; x++) {
+      const gxx = (x + 0.5) / F - 0.5, i0 = clamp(Math.floor(gxx), 0, nx - 1), i1 = Math.min(nx - 1, i0 + 1), tx = clamp(gxx - i0, 0, 1);
+      const v = (out[j0 * nx + i0] * (1 - tx) + out[j0 * nx + i1] * tx) * (1 - ty) + (out[j1 * nx + i0] * (1 - tx) + out[j1 * nx + i1] * tx) * ty;
+      cls[y * W + x] = zClass(v, th.t);
+    }
+  }
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d"), img = ctx.createImageData(W, H);
+  const pal = [css("--z1"), css("--z2"), css("--z3")].map(c => hexRgb(c || "#cc3399"));
+  const alpha = [0, 140, 185, 225];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = y * W + x, c = cls[p];
+    if (!c) continue;
+    const edge = (x > 0 && cls[p - 1] < c) || (x < W - 1 && cls[p + 1] < c) || (y > 0 && cls[p - W] < c) || (y < H - 1 && cls[p + W] < c);
+    const col = pal[c - 1], k = edge ? 0.6 : 1;
+    img.data[p * 4] = col[0] * k; img.data[p * 4 + 1] = col[1] * k; img.data[p * 4 + 2] = col[2] * k; img.data[p * 4 + 3] = edge ? 255 : alpha[c];
   }
   ctx.putImageData(img, 0, 0);
   const url = cv.toDataURL();
   const bounds = [[ZONES.s, ZONES.w], [ZONES.n, ZONES.e]];
   if (zonesLayer) map.removeLayer(zonesLayer);
-  zonesLayer = L.imageOverlay(url, bounds, { pane: "zones", opacity: Number($("zonesOp").value), interactive: false }).addTo(map);
+  zonesLayer = L.layerGroup([
+    L.imageOverlay(url, bounds, { pane: "zones", opacity: Number($("zonesOp").value), interactive: false }),
+    L.rectangle(bounds, { pane: "zones", color: css("--fg") || "#333", weight: 1.5, dashArray: "5 6", fill: false, interactive: false })
+  ]).addTo(map);
+  // Légende et meilleur score
+  th.labels.forEach((l, i) => { $("lg" + (i + 1)).textContent = l; });
+  let bk = 0; for (let k = 1; k < out.length; k++) if (out[k] > out[bk]) bk = k;
+  const best = $("zonesBest"); best.hidden = false;
+  const lv = level(Math.round(th.vmax));
+  best.textContent = th.vmax < 8
+    ? "Conditions défavorables partout dans la vue ce jour-là : rien à colorer."
+    : "Meilleure case : " + Math.round(th.vmax) + "/100 (" + LEVELS[lv].label.toLowerCase() + (who[bk] ? ", " + DEFAULTS[who[bk]].label.toLowerCase() : "") + ")" +
+      (th.rel && th.vmax < 50 ? ". Les couleurs montrent les meilleures zones de la vue, pas des conditions idéales." : ".");
 }
+function setZonesOpacity() { if (zonesLayer) zonesLayer.eachLayer(l => { if (l.setOpacity) l.setOpacity(Number($("zonesOp").value)); }); }
 function drawObs() {
   if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
   if (!ZONES || !ZONES.obs.length || !$("zonesObs").checked) return;
@@ -1661,6 +1819,7 @@ function hideZones(forget) {
   ZONES = null;
   ROUTE = null; drawRoute(); if (!ui.mode) renderSheet();
   $("zonesCtrls").hidden = true; $("zonesLegend").hidden = true; $("zonesHide").hidden = true; $("zonesIntro").hidden = false;
+  $("zonesBest").hidden = true;
   zMsg("");
 }
 function zonePopup(ll) {
@@ -1676,8 +1835,10 @@ function zonePopup(ll) {
   const h = inf.hab;
   const hab = KIND_TXT[h.kind] + (h.kind === "forest" ? (h.open ? " ouverte" : "") + " : " + ESS_TXT[h.ess || "unknown"] : "") +
     (h.src === "ign" ? " (IGN)" : h.src === "osm" ? " (OSM)" : "") + (h.edge ? " · lisière" : "") + (h.water ? " · près d'un ruisseau" : "");
-  const lines = [`<b class="lvl${level(v)}">${v}</b> · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`,
-    `${Math.round(inf.z)} m · ${expo}`, esc(hab)];
+  const th = Z.th || zoneThresholds(out), zc = zClass(out[k], th.t);
+  const lines = [`<b class="lvl${level(v)}">${v}</b>/100 · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`];
+  if (zc && th.rel) lines.push("Dans le " + th.labels[zc - 1].toLowerCase() + " de la vue");
+  lines.push(`${Math.round(inf.z)} m · ${expo}`, esc(hab));
   if (inf.st7 != null) lines.push("Sol " + inf.st7.toFixed(0) + " °C · " + (inf.sm > 0.3 ? "bien humide" : inf.sm > 0.2 ? "frais" : "sec"));
   if (inf.acc != null) lines.push(inf.acc < 0 ? "Loin de toute route connue" : "≈ " + fmtDist(inf.acc) + " de marche depuis une route (" + walkMin(inf.acc) + " min)");
   const sp = who[k];
@@ -1827,8 +1988,12 @@ async function routeFrom(start) {
   const dl = (n - s) * 0.15, dg = (e - w) * 0.15;
   s -= dl; n += dl; w -= dg; e += dg;
   tMsg("Recherche des chemins…"); renderSheet();
-  try { await loadTrails(s, w, n, e); }
-  catch (err) { tMsg("Les chemins n'ont pas pu se charger. Vérifie la connexion et réessaie.", true); return; }
+  const need = !covers(TRAILS, s, w, n, e);
+  const job = need ? makeProg("Recherche du chemin", { trails: { w: 3, label: "chemins", creep: true }, route: { w: 1, label: "itinéraire" } }) : null;
+  try { if (job) job.begin("trails"); await loadTrails(s, w, n, e); if (job) job.done("trails"); }
+  catch (err) { if (job) job.end(false); tMsg("Les chemins n'ont pas pu se charger. Vérifie la connexion et réessaie.", true); return; }
+  if (job) { job.begin("route"); await tick(); }
+  try {
   setTrails(true);
   if (!ZONES.src.acc && covers(TRAILS, Z.s, Z.w, Z.n, Z.e)) {      // chemins déjà chargés : l'accès est gratuit
     const acc = accessDistances(Z.pts, TRAILS);
@@ -1839,17 +2004,18 @@ async function routeFrom(start) {
   let src = 0, sd = Infinity;
   G.pts.forEach((p, k) => { const d = dist(p, start); if (d < sd) { sd = d; src = k; } });
   const { D, P } = dijkstra(G, src);
-  const Zg = zoneGrid(), cand = [];
+  const Zg = zoneGrid(), cand = [], T = zoneThresholds(Zg.out);
   G.pts.forEach((p, k) => {
     if (!(D[k] <= MAX_WALK)) return;
     const b = bestCellNear(p[0], p[1], Zg);
-    if (b && b.v >= 25) cand.push({ node: k, d: D[k], v: b.v, cellK: b.k });
+    if (b && b.v >= T.t[0]) cand.push({ node: k, d: D[k], v: b.v, cellK: b.k });
   });
-  if (!cand.length) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Aucune zone favorable n'est reliée à ce point de départ par un chemin connu.", true); return; }
-  const th = cand.some(c => c.v >= 50) ? 50 : 25;
-  const ok = cand.filter(c => c.v >= th);
+  if (!cand.length) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Aucune zone colorée n'est reliée à ce point de départ par un chemin connu.", true); return; }
+  const hi = cand.some(c => c.v >= T.t[1]);
+  const ok = cand.filter(c => c.v >= (hi ? T.t[1] : T.t[0]));
   const nearest = ok.reduce((a, b) => (b.d < a.d ? b : a));
-  const best = ok.reduce((a, b) => ((b.v - b.d / 100) > (a.v - a.d / 100) ? b : a));   // 1 point de score vaut 100 m de marche
+  const vm = T.vmax || 1;
+  const best = ok.reduce((a, b) => ((100 * b.v / vm - b.d / 100) > (100 * a.v / vm - a.d / 100) ? b : a));   // 1 % du meilleur score vaut 100 m de marche
   const mk = (c, label) => {
     const coords = [];
     for (let u = c.node; u !== -1; u = P[u]) coords.push(G.pts[u]);
@@ -1859,10 +2025,11 @@ async function routeFrom(start) {
   };
   const opts = [mk(nearest, "La plus proche")];
   if (best.node !== nearest.node && dist(G.pts[best.node], G.pts[nearest.node]) > 150 && Math.round(best.v) > Math.round(nearest.v)) opts.push(mk(best, "La meilleure"));
-  ROUTE = { start, snap: G.pts[src], snapDist: sd, opts, sel: 0, demo: TRAILS.demo, th };
+  ROUTE = { start, snap: G.pts[src], snapDist: sd, opts, sel: 0, demo: TRAILS.demo, low: !hi, labels: T.labels };
   tMsg(""); drawRoute(); renderSheet();
   const r = opts[0];
   map.fitBounds(r.coords.concat([start, r.target]), { padding: [40, 40], maxZoom: 17 });
+  } finally { if (job) job.end(true); }
 }
 
 function drawRoute() {
@@ -1887,7 +2054,7 @@ function routeSheet(sh, msg) {
     r.len < 30 ? "Ton point de départ est déjà au bord d'une zone favorable." : "",
     r.off ? "Dont " + fmtDist(r.off) + " hors sentier pour finir (pointillés)." : "",
     ROUTE.snapDist > 15 ? "Le chemin le plus proche est à " + fmtDist(ROUTE.snapDist) + " de ton point de départ." : "",
-    ROUTE.th < 50 ? "Aucune zone « Favorable » n'est reliée par un chemin : l'appli vise la meilleure zone « Possible »." : "",
+    ROUTE.low ? "Aucune zone « " + ROUTE.labels[1] + " » n'est reliée par un chemin : l'appli vise la meilleure zone « " + ROUTE.labels[0] + " »." : "",
     ROUTE.demo ? "Chemins fictifs (aperçu)." : ""
   ].filter(Boolean).join(" ");
   sh.innerHTML = `
@@ -2041,7 +2208,12 @@ $("routeBtn").onclick = () => {
 $("zonesAcc").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Réglage changé : relance la recherche de chemin."); } };
 $("zonesObs").onchange = drawObs;
 $("accBtn").onclick = computeAccess;
-$("zonesOp").oninput = () => { if (zonesLayer) zonesLayer.setOpacity(Number($("zonesOp").value)); };
+$("zonesOp").oninput = setZonesOpacity;
+try { const m = localStorage.getItem(MODE_KEY); if (m === "abs" || m === "rel") $("zonesMode").value = m; } catch (e) {}
+$("zonesMode").onchange = () => {
+  try { localStorage.setItem(MODE_KEY, $("zonesMode").value); } catch (e) {}
+  drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Couleurs changées : relance la recherche de chemin."); }
+};
 $("coinList").addEventListener("click", ev => {
   const s = ev.target.closest("[data-show]");
   if (s) { showTab("carte"); setTimeout(() => selectCoin(s.dataset.show, true), 80); }
@@ -2106,6 +2278,21 @@ $("refreshBtn").onclick = async () => {
   await refresh(true);
   b.disabled = false; b.textContent = "Actualiser";
 };
+/* Plein écran à la demande (dans Chrome, ou si l'appli installée garde la barre d'état) */
+(function setupFullscreen() {
+  const b = $("fsBtn"), el = document.documentElement;
+  const already = window.matchMedia && matchMedia("(display-mode: fullscreen)").matches;
+  if (!document.fullscreenEnabled || already) return;
+  b.hidden = false;
+  const upd = () => { b.textContent = document.fullscreenElement ? "Quitter le plein écran" : "Plein écran"; };
+  b.onclick = async () => {
+    try { if (document.fullscreenElement) await document.exitFullscreen(); else await el.requestFullscreen({ navigationUI: "hide" }); }
+    catch (e) { b.hidden = true; }
+    upd();
+  };
+  document.addEventListener("fullscreenchange", () => { upd(); if (map) setTimeout(() => map.invalidateSize(), 250); });
+  upd();
+})();
 function isStale() { return isoLocal(new Date()) !== TODAY || (!DEMO && Date.now() - WEATHER_AT > CACHE_HOURS * 3600e3); }
 function autoRefresh() { if (!document.hidden && !ui.mode && isStale()) refresh(false); }
 document.addEventListener("visibilitychange", autoRefresh);   // quand tu reviens sur l'appli
