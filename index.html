@@ -286,11 +286,11 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
         <h3>Zones favorables</h3>
         <div class="row">
           <button class="btn small ghost" type="button" id="zonesHide" hidden>Masquer</button>
-          <button class="btn small primary" type="button" id="zonesBtn">Calculer sur cette vue</button>
+          <button class="btn small primary" type="button" id="zonesBtn">Afficher les zones</button>
         </div>
       </div>
       <div class="prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
-      <p class="small muted" id="zonesIntro">Colore les meilleurs endroits de la vue en croisant pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Cadre le secteur qui t'intéresse, puis calcule. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
+      <p class="small muted" id="zonesIntro">Colore les meilleurs endroits de la vue en croisant pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Les zones se calculent par secteurs de 1,6 km et suivent la carte quand tu la déplaces. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
       <div class="grid2" id="zonesCtrls" hidden>
         <label class="f">Espèce
           <select id="zonesSp">
@@ -791,12 +791,12 @@ function initMap() {
   map.getPane("zones").style.pointerEvents = "none";
   map.createPane("trails"); map.getPane("trails").style.zIndex = 380; map.getPane("trails").style.pointerEvents = "none";
   map.createPane("route"); map.getPane("route").style.zIndex = 395; map.getPane("route").style.pointerEvents = "none";
-  map.on("moveend", () => { if (trailsOn) refreshTrailsView(); });
+  map.on("moveend", () => { if (trailsOn) refreshTrailsView(); onMapMoved(); });
   overlay = L.layerGroup().addTo(map);
   map.on("click", onMapClick);
   drawMap();
-  const zv = load(ZONE_VIEW_KEY, null);
-  if (zv) map.fitBounds([[zv.s, zv.w], [zv.n, zv.e]]); else if (state.coins.length) fitAll();
+  const mv = load(MAPVIEW_KEY, null);
+  if (mv && mv.lat) map.setView([mv.lat, mv.lng], mv.z); else if (state.coins.length) fitAll();
   setTimeout(maybeAutoZones, 300);
 }
 
@@ -1116,7 +1116,6 @@ function stopRecording() {
    × exposition (un versant nord s'assèche moins vite qu'un versant sud)
    × habitat (forêts, vergers, broussailles d'OpenStreetMap, selon l'espèce). */
 const LAPSE = 0.0065;        // °C perdus par mètre d'altitude
-const MAX_CELLS = 900;
 /* Affinité de chaque espèce avec chaque essence d'arbre (1 = idéal) et chaque milieu */
 const HABITAT = {
   cepe:    { oak: 1, beech: 1, chestnut: 1, broad: 0.9, mixed: 0.95, firspruce: 0.85, pine: 0.7, conif: 0.7, douglas: 0.5, larch: 0.4, robinia: 0.2, poplar: 0.1, unknown: 0.85, orchard: 0, scrub: 0.15, heath: 0.15, none: 0 },
@@ -1136,7 +1135,7 @@ const GBIF_SP = {
 };
 let ZONES = null, zonesLayer = null, zonesBusy = false;
 const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
-const ZONE_VIEW_KEY = "meteo-coins-zoneview", TERRAIN_KEY = "meteo-coins-terrain2";
+
 let obsLayer = null;
 
 /* Requête avec délai maximum et nouvelles tentatives (réseau faible, serveur saturé) */
@@ -1170,17 +1169,6 @@ async function overpass(q) {
   throw last;
 }
 
-/* Le relief et les forêts ne changent pas : on les garde en mémoire pour les recalculs */
-function terrainKey(s, w, n, e, nx, ny) { return [s, w, n, e].map(v => v.toFixed(4)).join(",") + "|" + nx + "x" + ny; }
-function terrainGet(key) { return load(TERRAIN_KEY, []).find(t => t.key === key) || null; }
-function terrainPut(key, data) {
-  const prev = terrainGet(key) || {};
-  const list = load(TERRAIN_KEY, []).filter(t => t.key !== key);
-  const t = { ...prev, key, at: Date.now() };
-  Object.keys(data).forEach(k => { if (data[k] != null) t[k] = data[k]; });
-  list.unshift(t);
-  if (!save(TERRAIN_KEY, list.slice(0, 4))) save(TERRAIN_KEY, [t]);
-}
 function encodeHab(h) {
   return h.kind[0] + ESS_CODE[h.ess || "unknown"] + (h.src === "ign" ? "i" : h.src === "osm" ? "s" : "-") + (h.open ? "o" : "") + (h.edge ? "e" : "") + (h.water ? "w" : "");
 }
@@ -1191,12 +1179,6 @@ function decodeHab(codes) {
     open: c.includes("o", 3), edge: c.includes("e", 3), water: c.includes("w", 3) }));
 }
 
-/* Recalcul automatique : à l'ouverture de la carte, et chaque fois que la météo est rafraîchie */
-function maybeAutoZones() {
-  const v = load(ZONE_VIEW_KEY, null);
-  if (!v || !map || DEMO || OFFLINE || ui.mode || zonesBusy) return;
-  if (!ZONES || ZONES.day !== TODAY || ZONES.at < WEATHER_AT) computeZones(v, true);
-}
 /* ---------- Barre de progression ---------- */
 let CUR_PROG = null, progTimer = null;
 function showProg(on) { document.querySelectorAll(".prog").forEach(el => { el.hidden = !on; }); }
@@ -1454,38 +1436,40 @@ function accessDistances(pts, T) {
   });
 }
 function renderAccBtn() {
-  const b = $("accBtn"), has = ZONES && ZONES.src.acc;
-  b.textContent = has ? "Recalculer l'accès" : "Calculer l'accès depuis les routes";
-  b.classList.toggle("primary", !has);
-  $("accHint").textContent = has ? "" : "Mesure la marche depuis la route la plus proche, par les chemins. Ça peut prendre jusqu'à une minute.";
+  const b = $("accBtn"); if (!ZONES) return;
+  const s = ZONES.src, partial = s.accN > 0 && !s.acc;
+  b.textContent = s.acc ? "Recalculer l'accès" : partial ? "Calculer l'accès des nouveaux secteurs (" + (s.n - s.accN) + ")" : "Calculer l'accès depuis les routes";
+  b.classList.toggle("primary", !s.acc);
+  $("accHint").textContent = s.acc ? "" : "Mesure la marche depuis la route la plus proche, par les chemins. Ça peut prendre jusqu'à une minute.";
 }
 async function computeAccess() {
   if (!ZONES || zonesBusy) return;
-  const Z = ZONES, b = $("accBtn");
+  const ids = ZONES.tiles.filter(id => TILE_MEM.has(id));
+  const todo = ZONES.src.acc ? ids : ids.filter(id => !TILE_MEM.get(id).hasAcc);
+  if (!todo.length) return;
+  const b = $("accBtn");
   zonesBusy = true; b.disabled = true; $("zonesBtn").disabled = true;
-  const dl = (Z.n - Z.s) * 0.2, dg = (Z.e - Z.w) * 0.2;
-  const job = makeProg("Calcul de l'accès", { trails: { w: 3, label: "chemins et routes", creep: true }, dist: { w: 1, label: "distances de marche" } });
+  const bx = boxOf(todo.map(id => { const m = TILE_MEM.get(id); return { tx: m.tx, ty: m.ty }; }), 0);
+  const dl = (bx.n - bx.s) * 0.2, dg = (bx.e - bx.w) * 0.2;
+  const job = makeProg("Calcul de l'accès · " + todo.length + " secteur" + (todo.length > 1 ? "s" : ""), { trails: { w: 3, label: "chemins et routes", creep: true }, dist: { w: 1, label: "distances de marche" } });
   let ok = false;
   try {
     zMsg("Chargement des chemins et routes…");
     job.begin("trails");
-    await loadTrails(Z.s - dl, Z.w - dg, Z.n + dl, Z.e + dg);
+    await loadTrails(bx.s - dl, bx.w - dg, bx.n + dl, bx.e + dg);
     job.done("trails"); job.begin("dist");
     zMsg("Calcul des distances de marche…");
     await tick();
-    const acc = accessDistances(Z.pts, TRAILS);
+    const n = accessForTiles(todo, TRAILS);
     job.done("dist");
-    if (!acc) { zMsg("Aucune route ni piste connue dans ce secteur : l'accès n'a pas pu être calculé.", true); return; }
+    if (!n) { zMsg("Aucune route ni piste connue dans ce secteur : l'accès n'a pas pu être calculé.", true); return; }
     ok = true;
-    Z.info.forEach((inf, k) => { inf.acc = acc[k]; inf.af = accessFactor(inf); });
-    Z.src.acc = true;
-    if (!Z.demo) terrainPut(Z.key, { acc });
-    drawZones(); renderSources(); renderAccBtn();
+    stitch(ZONES.range); drawZones(); renderSources(); renderAccBtn();
     if (trailsOn) drawTrails();
     // Résumé : part des zones colorées à moins d'un quart d'heure de marche
     const { out } = zoneGrid(), th = zoneThresholds(out);
     let good = 0, near = 0;
-    Z.info.forEach((inf, k) => { if (out[k] >= th.t[0]) { good++; if (inf.acc >= 0 && inf.acc <= 900) near++; } });
+    ZONES.info.forEach((inf, k) => { if (out[k] >= th.t[0]) { good++; if (inf.acc >= 0 && inf.acc <= 900) near++; } });
     zMsg(good ? "Accès calculé : " + near + " des " + good + " cases colorées sont à moins de 15 min de marche d'une route." : "Accès calculé.");
   } catch (err) {
     zMsg("Les chemins et routes n'ont pas pu se charger (réseau faible ou serveur saturé). Réessaie dans un instant.", true);
@@ -1550,175 +1534,287 @@ function interpSeries(WG, gx, gy, fx, fy, key) {
   return A.map((_, k) => (A[k] * (1 - tx) + B[k] * tx) * (1 - ty) + (C[k] * (1 - tx) + D[k] * tx) * ty);
 }
 
-function demoTerrain(pts, nx, ny) {
+/* ---------- Zones par secteurs ----------
+   La carte est découpée en secteurs fixes de 1,6 km (20 × 20 cases de 80 m).
+   Quand tu déplaces la carte, seuls les secteurs nouveaux ou périmés sont calculés ;
+   le relief, les forêts, les observations et l'accès de chaque secteur restent en mémoire. */
+const CELL_M = 80, TILE_N = 20, MAX_TILES = 24;
+const TILE_DLAT = CELL_M * TILE_N / 111320;
+const TILE_DLON = CELL_M * TILE_N / (111320 * Math.cos(HOME.lat * Math.PI / 180));
+const TILES_KEY = "meteo-coins-tiles", ZONES_ON_KEY = "meteo-coins-zones-on", MAPVIEW_KEY = "meteo-coins-mapview";
+const TILE_MEM = new Map();
+let TSTORE = null, zonesOn = false, zonesPending = false, moveTimer = null;
+try { ["meteo-coins-terrain", "meteo-coins-terrain2", "meteo-coins-zoneview"].forEach(k => localStorage.removeItem(k)); } catch (e) {}
+
+function tstore() { if (!TSTORE) TSTORE = load(TILES_KEY, {}) || {}; return TSTORE; }
+function tstoreSave() {
+  const all = tstore(), ids = Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0));
+  ids.slice(150).forEach(id => delete all[id]);
+  if (!save(TILES_KEY, all)) { ids.slice(40).forEach(id => delete all[id]); save(TILES_KEY, all); }
+}
+function tterrain(id) { return tstore()[id] || {}; }
+function tput(id, data) { const all = tstore(), t = all[id] || {}; Object.keys(data).forEach(k => { if (data[k] != null) t[k] = data[k]; }); t.at = Date.now(); all[id] = t; }
+
+function tileBox(tx, ty) { return { s: ty * TILE_DLAT, n: (ty + 1) * TILE_DLAT, w: tx * TILE_DLON, e: (tx + 1) * TILE_DLON }; }
+function tilesFor(s, w, n, e) {
+  const tx0 = Math.floor(w / TILE_DLON), tx1 = Math.floor(e / TILE_DLON), ty0 = Math.floor(s / TILE_DLAT), ty1 = Math.floor(n / TILE_DLAT);
+  const list = [];
+  for (let ty = ty1; ty >= ty0; ty--) for (let tx = tx0; tx <= tx1; tx++) list.push({ tx, ty, id: tx + "_" + ty });
+  return { tx0, tx1, ty0, ty1, list };
+}
+/* Centres des cases d'un secteur, du nord au sud ; border = cases en plus tout autour (pour les pentes et les lisières) */
+function tilePts(tx, ty, border) {
+  const b = tileBox(tx, ty), N = TILE_N + 2 * border, dLat = TILE_DLAT / TILE_N, dLon = TILE_DLON / TILE_N, pts = [];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) pts.push([b.n - (j - border + 0.5) * dLat, b.w + (i - border + 0.5) * dLon]);
+  return pts;
+}
+function boxOf(list, padCells) {
+  let s = 90, w = 180, n = -90, e = -180;
+  list.forEach(t => { const b = tileBox(t.tx, t.ty); s = Math.min(s, b.s); n = Math.max(n, b.n); w = Math.min(w, b.w); e = Math.max(e, b.e); });
+  const dl = (padCells || 0) * TILE_DLAT / TILE_N, dg = (padCells || 0) * TILE_DLON / TILE_N;
+  return { s: s - dl, w: w - dg, n: n + dl, e: e + dg };
+}
+function demoTile(pts) {
   // Relief et boisements fictifs pour l'aperçu
-  const elev = pts.map((p, k) => { const i = k % nx, j = Math.floor(k / nx); return 380 + 160 * Math.sin(i / nx * 3.1) * Math.cos(j / ny * 2.4) + 90 * (j / ny); });
-  const hab = pts.map((p, k) => { const i = k % nx, j = Math.floor(k / nx); const v = Math.sin(i * 0.35) + Math.cos(j * 0.28) + Math.sin((i + j) * 0.17);
+  const elev = pts.map(([la, lo]) => 380 + 160 * Math.sin(la * 900) * Math.cos(lo * 700) + 60 * Math.sin(la * 2500 + lo * 1800));
+  const hab = pts.map(([la, lo]) => { const v = Math.sin(la * 2200) + Math.cos(lo * 1600) + Math.sin((la + lo) * 1300);
     return v > 0.2 ? { kind: "forest", ess: v > 1.2 ? "oak" : v > 0.8 ? "beech" : "mixed", open: false, src: "demo" } : v > -0.4 ? { kind: "scrub", ess: "unknown", src: "demo" } : { kind: "none", ess: "unknown", src: "demo" }; });
   return { elev, hab };
 }
 
-async function computeZones(view, auto) {
-  if (!map || zonesBusy) return;
-  if (!view) {
-    if (map.getZoom() < 13) { zMsg("Zoome davantage : le calcul se fait sur un secteur de quelques kilomètres au plus.", true); return; }
-    const b = map.getBounds();
-    view = { s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() };
-  }
+/* Calcule une liste de secteurs : données manquantes chargées en parallèle, puis scores */
+async function computeTiles(list, auto) {
   zonesBusy = true; $("zonesBtn").disabled = true;
-  let stage = "", job = null;
-  const hhmm = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+  let stage = "", job = null, ok = false;
+  const N2 = TILE_N + 2;
   try {
-    const { s, w, n, e } = view;
-    const mLat = 111320, mLon = 111320 * Math.cos((s + n) / 2 * Math.PI / 180);
-    const hM = (n - s) * mLat, wM = (e - w) * mLon;
-    const cell = Math.max(60, Math.sqrt(hM * wM / MAX_CELLS));
-    const nx = Math.max(6, Math.round(wM / cell)), ny = Math.max(6, Math.round(hM / cell));
-    const pts = [];
-    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) pts.push([n - (j + 0.5) * (n - s) / ny, w + (i + 0.5) * (e - w) / nx]);
+    const box = boxOf(list, 1);
     const gx = 4, gy = 4, gpts = [];
-    for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) gpts.push([n - j * (n - s) / (gy - 1), w + i * (e - w) / (gx - 1)]);
-
-    let elev, hab, WG, obs = [], acc = null, demo = false, forestOk = true;
-    const src = { ign: false, osm: false, gbif: null, acc: false, soil: false, cached: false };
-    const key = terrainKey(s, w, n, e, nx, ny), cached = terrainGet(key) || {};
+    for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) gpts.push([box.n - j * (box.n - box.s) / (gy - 1), box.w + i * (box.e - box.w) / (gx - 1)]);
+    const T = {};
+    let WG, demo = false;
+    const title = (auto ? "Mise à jour des zones" : "Calcul des zones") + " · " + list.length + " secteur" + (list.length > 1 ? "s" : "");
     if (!DEMO) {
-      // Vraies données, chargées en parallèle. En cas d'échec du relief ou de la météo, message clair : jamais de zones fictives en douce.
-      const needElev = !(cached.elev && cached.elev.length === pts.length);
-      const habFresh = (cached.srcIgn && cached.srcOsm) || Date.now() - (cached.habAt || 0) < 6 * 3600e3;
-      const needHab = !(cached.hab && cached.hab.length === pts.length && habFresh);
-      const needObs = !Array.isArray(cached.obs);
+      const needElev = list.filter(t => { const c = tterrain(t.id); return !(c.elev && c.elev.length === N2 * N2); });
+      const needHab = list.filter(t => { const c = tterrain(t.id), fresh = (c.srcIgn && c.srcOsm) || Date.now() - (c.habAt || 0) < 6 * 3600e3; return !(c.hab && c.hab.length === TILE_N * TILE_N && fresh); });
+      const needObs = list.filter(t => !Array.isArray(tterrain(t.id).obs));
       const defs = {};
-      if (needElev) defs.relief = { w: 3, label: "relief" };
+      if (needElev.length) defs.relief = { w: 3, label: "relief" };
       defs.meteo = { w: 2, label: "météo et sol", creep: true };
-      if (needHab) { defs.ign = { w: 2, label: "essences IGN", creep: true }; defs.osm = { w: 2, label: "forêts OSM", creep: true }; }
-      if (needObs) defs.gbif = { w: 1, label: "observations" };
+      if (needHab.length) { defs.ign = { w: 2, label: "essences IGN", creep: true }; defs.osm = { w: 2, label: "forêts OSM", creep: true }; }
+      if (needObs.length) defs.gbif = { w: 1, label: "observations" };
       defs.calc = { w: 2, label: "calcul" };
-      job = makeProg(auto ? "Mise à jour des zones" : "Calcul des zones", defs);
-      zMsg(auto ? "Mise à jour des zones…" : "Chargement des données…");
-      const track = (k, p) => { job.begin(k); return p.then(x => { job.done(k); return x; }, er => { job.done(k, true); throw er; }); };
+      job = makeProg(title, defs);
+      const track = (k, pr) => { job.begin(k); return pr.then(x => { job.done(k); return x; }, er => { job.done(k, true); throw er; }); };
       const none = Promise.resolve(null);
+      const hb = needHab.length ? boxOf(needHab, 1) : null, ob = needObs.length ? boxOf(needObs, 0) : null;
+      const elevPts = []; needElev.forEach(t => elevPts.push(...tilePts(t.tx, t.ty, 1)));
       const [rE, rM, rI, rO, rG] = await Promise.allSettled([
-        needElev ? fetchElevations(pts, (d, t) => job.set("relief", d / t, d + "/" + t)) : Promise.resolve(cached.elev),
+        needElev.length ? fetchElevations(elevPts, (d, n) => job.set("relief", d / n, d + "/" + n)) : none,
         track("meteo", fetchWeatherPts(gpts)),
-        needHab ? track("ign", fetchIGNForest(s, w, n, e)) : none,
-        needHab ? track("osm", fetchHabitat(s, w, n, e)) : none,
-        needObs ? fetchGBIF(s, w, n, e, (d, t) => job.set("gbif", d / t, d + "/" + t)) : none
+        hb ? track("ign", fetchIGNForest(hb.s, hb.w, hb.n, hb.e)) : none,
+        hb ? track("osm", fetchHabitat(hb.s, hb.w, hb.n, hb.e)) : none,
+        ob ? fetchGBIF(ob.s, ob.w, ob.n, ob.e, (d, n) => job.set("gbif", d / n, d + "/" + n)) : none
       ]);
       if (rE.status === "rejected") { stage = "le relief"; throw rE.reason; }
       if (rM.status === "rejected") { stage = "la météo"; throw rM.reason; }
-      elev = rE.value; WG = rM.value;
-      if (needHab) {
+      WG = rM.value;
+      needElev.forEach((t, k) => tput(t.id, { elev: rE.value.slice(k * N2 * N2, (k + 1) * N2 * N2).map(v => Math.round(v)) }));
+      if (needHab.length) {
         const ign = rI.status === "fulfilled" ? rI.value : null, osm = rO.status === "fulfilled" ? rO.value : null;
-        src.ign = !!ign; src.osm = !!osm;
-        if (ign || osm) hab = buildHabitat(pts, nx, ny, ign, osm);
-        else { forestOk = false; hab = pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" })); }
-      } else { hab = decodeHab(cached.hab); src.ign = !!cached.srcIgn; src.osm = !!cached.srcOsm; src.cached = true; }
-      if (!needObs) { obs = cached.obs; src.gbif = obs.length; }
-      else if (rG.status === "fulfilled") { obs = rG.value; src.gbif = obs.length; } else obs = [];
-      // L'accès (chemins et routes) se calcule avec son propre bouton ; on réutilise un calcul déjà fait
-      const dl = (n - s) * 0.2, dg = (e - w) * 0.2;
-      if (Array.isArray(cached.acc) && cached.acc.length === pts.length) { acc = cached.acc; src.acc = true; }
-      else if (covers(TRAILS, s - dl, w - dg, n + dl, e + dg)) { acc = accessDistances(pts, TRAILS); src.acc = !!acc; }
-      terrainPut(key, {
-        elev: elev.map(v => Math.round(v)),
-        hab: forestOk && !src.cached ? hab.map(encodeHab) : null, srcIgn: src.cached ? null : src.ign, srcOsm: src.cached ? null : src.osm,
-        habAt: forestOk && !src.cached ? Date.now() : null,
-        obs: src.gbif != null ? obs : null, acc
+        if (ign || osm) needHab.forEach(t => {
+          const h22 = buildHabitat(tilePts(t.tx, t.ty, 1), N2, N2, ign, osm), h = [];
+          for (let j = 1; j <= TILE_N; j++) for (let i = 1; i <= TILE_N; i++) h.push(encodeHab(h22[j * N2 + i]));
+          tput(t.id, { hab: h, srcIgn: !!ign, srcOsm: !!osm, habAt: Date.now() });
+        });
+      }
+      if (needObs.length && rG.status === "fulfilled") needObs.forEach(t => {
+        const b = tileBox(t.tx, t.ty), pd = 0.02;
+        tput(t.id, { obs: rG.value.filter(o => o[1] >= b.s - pd && o[1] <= b.n + pd && o[2] >= b.w - pd && o[2] <= b.e + pd) });
+      });
+      tstoreSave();
+      list.forEach(t => {
+        const c = tterrain(t.id);
+        T[t.id] = { elev: c.elev, hab: c.hab ? decodeHab(c.hab) : null, srcIgn: !!c.srcIgn, srcOsm: !!c.srcOsm,
+          obs: Array.isArray(c.obs) ? c.obs : null, acc: Array.isArray(c.acc) && c.acc.length === TILE_N * TILE_N ? c.acc : null };
       });
     } else {
       // Aperçu ou aucune météo réelle disponible : exemple fictif, signalé comme tel
       demo = true;
-      job = makeProg("Calcul des zones (exemple)", { calc: { w: 1, label: "calcul" } });
-      const t = demoTerrain(pts, nx, ny); elev = t.elev; hab = t.hab;
-      const dw = demoWeather([{ lat: (s + n) / 2, lon: (w + e) / 2 }]);
+      job = makeProg(title + " (exemple)", { calc: { w: 1, label: "calcul" } });
+      const dw = demoWeather([{ lat: (box.s + box.n) / 2, lon: (box.w + box.e) / 2 }]);
       const one = Object.values(dw)[0]; one.elevation = 450;
       WG = gpts.map(() => one);
+      list.forEach(t => {
+        const dt = demoTile(tilePts(t.tx, t.ty, 1)), h = [];
+        for (let j = 1; j <= TILE_N; j++) for (let i = 1; i <= TILE_N; i++) h.push(dt.hab[j * N2 + i]);
+        T[t.id] = { elev: dt.elev, hab: h, srcIgn: false, srcOsm: false, obs: [], acc: null };
+      });
     }
-    src.soil = WG.every(x => x.soilT && x.soilM);
-
-    if (!auto) zMsg("Calcul des scores…");
     job.begin("calc"); await tick();
-    const dates = WG[0].dates;
-    let ti = dates.indexOf(TODAY); if (ti < 0) ti = Math.min(30, dates.length - 1);
-    const days = dates.slice(ti, ti + 7);
-    const dx = wM / nx, dy = hM / ny;
-    const species = Object.keys(DEFAULTS);
-    const scores = {}; species.forEach(k => { scores[k] = days.map(() => new Float32Array(nx * ny)); });
-    const info = [];
-    // Tes coins où tu as fait une bonne récolte (carnet)
     const mine = [];
     state.logs.forEach(l => { const c = coinById(l.coin); if (c && l.result >= 2) mine.push([l.sp, c.lat, c.lon]); });
-    const obsBy = {}; species.forEach(sp => { obsBy[sp] = obs.filter(o => o[0] === sp); });
-    for (let j = 0; j < ny; j++) {
-    for (let i = 0; i < nx; i++) {
-      const k = j * nx + i, z = elev[k];
-      const zE = elev[j * nx + Math.min(nx - 1, i + 1)], zW = elev[j * nx + Math.max(0, i - 1)];
-      const zN = elev[Math.max(0, j - 1) * nx + i], zS = elev[Math.min(ny - 1, j + 1) * nx + i];
-      const dzdx = (zE - zW) / (dx * ((i > 0 && i < nx - 1) ? 2 : 1)), dzdy = (zN - zS) / (dy * ((j > 0 && j < ny - 1) ? 2 : 1));
-      const slope = Math.atan(Math.hypot(dzdx, dzdy)) * 180 / Math.PI;
-      const aspect = Math.atan2(-dzdx, -dzdy);                 // direction vers laquelle la pente descend, 0 = nord
-      const etMul = 1 + 0.3 * Math.cos(aspect - Math.PI) * Math.min(slope / 20, 1);
-      const fx = (pts[k][1] - w) / (e - w) * (gx - 1), fy = (n - pts[k][0]) / (n - s) * (gy - 1);
-      const zW0 = interpSeries(WG, gx, gy, fx, fy, "elevation");
-      const corr = (zW0 - z) * LAPSE;
-      const cw = {
-        dates,
-        rain: interpSeries(WG, gx, gy, fx, fy, "rain"),
-        tmean: interpSeries(WG, gx, gy, fx, fy, "tmean").map(v => v + corr),
-        tmin: interpSeries(WG, gx, gy, fx, fy, "tmin").map(v => v + corr),
-        et0: interpSeries(WG, gx, gy, fx, fy, "et0").map(v => v * etMul)
-      };
-      if (src.soil) {
-        cw.soilT = interpSeries(WG, gx, gy, fx, fy, "soilT").map(v => v + corr);
-        cw.soilM = interpSeries(WG, gx, gy, fx, fy, "soilM");
-      }
-      const R = litterSeries(cw);
-      const near = {};
-      species.forEach(sp => {
-        // Observations publiées et tes bonnes récoltes à proximité : léger bonus
-        let dObs = Infinity, dMine = Infinity;
-        obsBy[sp].forEach(o => { dObs = Math.min(dObs, fastDist(pts[k], [o[1], o[2]])); });
-        mine.forEach(o => { if (o[0] === sp) dMine = Math.min(dMine, fastDist(pts[k], [o[1], o[2]])); });
-        near[sp] = { obs: dObs, mine: dMine };
-        const bonus = (1 + 0.25 * Math.exp(-dObs / 600)) * (1 + 0.2 * Math.exp(-dMine / 300));
-        const hf = habitatFactor(sp, hab[k]);
-        days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? Math.min(100, scoreAt(cw, R, ti + d, sp).score * hf * bonus) : 0; });
-      });
-      const inf = { z, slope, aspect, hab: hab[k], acc: acc ? acc[k] : null, near,
-        st7: src.soil ? avg(cw.soilT, ti - 6, ti) : null, sm: src.soil ? avg(cw.soilM, ti - 2, ti) : null };
-      inf.af = accessFactor(inf);
-      info.push(inf);
+    for (let k = 0; k < list.length; k++) {
+      scoreTile(list[k], T[list[k].id], WG, box, mine, demo);
+      job.set("calc", (k + 1) / list.length, (k + 1) + "/" + list.length);
+      await tick();
     }
-    if ((j & 3) === 3 || j === ny - 1) { job.set("calc", (j + 1) / ny, Math.round(100 * (j + 1) / ny) + " %"); await tick(); }
-    }
-    const sameDay = ZONES && ZONES.day === TODAY;
-    const prevDay = $("zonesDay").value;
-    ZONES = { s, w, n, e, nx, ny, cell, days, scores, info, demo, forestOk, src, obs, pts, key, at: Date.now(), day: TODAY };
-    if (!auto) { ROUTE = null; drawRoute(); }
-    if (!demo) save(ZONE_VIEW_KEY, { s, w, n, e });
-    $("zonesDay").innerHTML = days.map((d, k) => `<option value="${k}">${k === 0 ? "Aujourd'hui" : longDate(d)}</option>`).join("");
-    if (sameDay && prevDay && Number(prevDay) < days.length) $("zonesDay").value = prevDay;
-    $("zonesCtrls").hidden = false; $("zonesLegend").hidden = false; $("zonesHide").hidden = false; $("zonesIntro").hidden = true;
-    $("zonesOpts").hidden = false; $("accRow").hidden = false;
-    renderAccBtn();
-    drawZones(); drawObs(); renderSources();
-    const txt = demo
-      ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera avec la météo réelle, depuis ton appli."
-      : forestOk
-        ? (auto ? "Zones mises à jour automatiquement à " : "Calculé à ") + hhmm() + " sur " + (nx * ny) + " cases d'environ " + Math.round(cell) + " m. Touche la carte pour le détail d'une case."
-        : "Zones calculées à " + hhmm() + ", mais les cartes des forêts n'ont pas répondu : seuls la météo, le sol, l'altitude et l'exposition comptent. Relance le calcul plus tard pour les ajouter.";
-    zMsg(txt, false);
+    ok = true;
     job.end(true);
   } catch (err) {
     if (job) job.end(false);
     const why = (stage ? stage.charAt(0).toUpperCase() + stage.slice(1) + " n'a pas pu se charger" : "Le calcul n'a pas abouti") +
       (err && err.name === "AbortError" ? " (le serveur a mis trop de temps à répondre)" : " (réseau faible ou serveur saturé)");
-    if (auto && ZONES) zMsg(why + ". Les zones affichées datent de " + new Date(ZONES.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ") + ".", true);
-    else zMsg(why + ". Réessaie dans un instant.", true);
+    zMsg(why + (ZONES ? ". Les zones déjà calculées restent affichées ; déplace la carte ou touche « Recalculer » pour réessayer." : ". Réessaie dans un instant."), true);
   } finally {
     zonesBusy = false; $("zonesBtn").disabled = false;
   }
+  return ok;
+}
+
+function scoreTile(t, terr, WG, box, mine, demo) {
+  const N2 = TILE_N + 2, gx = 4, gy = 4, nC = TILE_N * TILE_N;
+  const pts = tilePts(t.tx, t.ty, 0);
+  const soil = WG.every(x => x.soilT && x.soilM);
+  const dates = WG[0].dates;
+  let ti = dates.indexOf(TODAY); if (ti < 0) ti = Math.min(30, dates.length - 1);
+  const days = dates.slice(ti, ti + 7);
+  const species = Object.keys(DEFAULTS);
+  const scores = {}; species.forEach(sp => { scores[sp] = days.map(() => new Float32Array(nC)); });
+  const info = new Array(nC);
+  const hab = terr.hab || pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" }));
+  const obs = terr.obs || [];
+  const obsBy = {}; species.forEach(sp => { obsBy[sp] = obs.filter(o => o[0] === sp); });
+  const E = terr.elev, el = (j, i) => E[(j + 1) * N2 + (i + 1)];
+  for (let j = 0; j < TILE_N; j++) for (let i = 0; i < TILE_N; i++) {
+    const k = j * TILE_N + i, z = el(j, i);
+    const dzdx = (el(j, i + 1) - el(j, i - 1)) / (2 * CELL_M), dzdy = (el(j - 1, i) - el(j + 1, i)) / (2 * CELL_M);
+    const slope = Math.atan(Math.hypot(dzdx, dzdy)) * 180 / Math.PI;
+    const aspect = Math.atan2(-dzdx, -dzdy);                 // direction vers laquelle la pente descend, 0 = nord
+    const etMul = 1 + 0.3 * Math.cos(aspect - Math.PI) * Math.min(slope / 20, 1);
+    const fx = clamp((pts[k][1] - box.w) / (box.e - box.w), 0, 1) * (gx - 1), fy = clamp((box.n - pts[k][0]) / (box.n - box.s), 0, 1) * (gy - 1);
+    const corr = (interpSeries(WG, gx, gy, fx, fy, "elevation") - z) * LAPSE;
+    const cw = {
+      dates,
+      rain: interpSeries(WG, gx, gy, fx, fy, "rain"),
+      tmean: interpSeries(WG, gx, gy, fx, fy, "tmean").map(v => v + corr),
+      tmin: interpSeries(WG, gx, gy, fx, fy, "tmin").map(v => v + corr),
+      et0: interpSeries(WG, gx, gy, fx, fy, "et0").map(v => v * etMul)
+    };
+    if (soil) {
+      cw.soilT = interpSeries(WG, gx, gy, fx, fy, "soilT").map(v => v + corr);
+      cw.soilM = interpSeries(WG, gx, gy, fx, fy, "soilM");
+    }
+    const R = litterSeries(cw), near = {};
+    species.forEach(sp => {
+      // Observations publiées et tes bonnes récoltes à proximité : léger bonus
+      let dObs = Infinity, dMine = Infinity;
+      obsBy[sp].forEach(o => { dObs = Math.min(dObs, fastDist(pts[k], [o[1], o[2]])); });
+      mine.forEach(o => { if (o[0] === sp) dMine = Math.min(dMine, fastDist(pts[k], [o[1], o[2]])); });
+      near[sp] = { obs: dObs, mine: dMine };
+      const bonus = (1 + 0.25 * Math.exp(-dObs / 600)) * (1 + 0.2 * Math.exp(-dMine / 300));
+      const hf = habitatFactor(sp, hab[k]);
+      days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? Math.min(100, scoreAt(cw, R, ti + d, sp).score * hf * bonus) : 0; });
+    });
+    const inf = { z, slope, aspect, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near,
+      st7: soil ? avg(cw.soilT, ti - 6, ti) : null, sm: soil ? avg(cw.soilM, ti - 2, ti) : null };
+    inf.af = accessFactor(inf);
+    info[k] = inf;
+  }
+  TILE_MEM.set(t.id, { tx: t.tx, ty: t.ty, pts, scores, info, days, day: TODAY, at: Date.now(), demo, soil,
+    srcIgn: terr.srcIgn, srcOsm: terr.srcOsm, habOk: !!terr.hab, obsOk: !!terr.obs, obs, hasAcc: !!terr.acc });
+}
+
+/* Assemble les secteurs de la vue en une seule grille (affichage, détail, chemins) */
+function stitch(r) {
+  const tiles = r.list.map(t => TILE_MEM.get(t.id)).filter(m => m && m.day === TODAY);
+  if (!tiles.length) return false;
+  const nx = (r.tx1 - r.tx0 + 1) * TILE_N, ny = (r.ty1 - r.ty0 + 1) * TILE_N;
+  const ref = tiles[0], days = ref.days, species = Object.keys(DEFAULTS);
+  const scores = {}; species.forEach(sp => { scores[sp] = days.map(() => new Float32Array(nx * ny)); });
+  const info = new Array(nx * ny), pts = new Array(nx * ny);
+  const empty = { missing: true, af: 0, z: 0, slope: 0, aspect: 0, hab: { kind: "none", ess: "unknown" }, acc: null, near: {} };
+  const s = r.ty0 * TILE_DLAT, n = (r.ty1 + 1) * TILE_DLAT, w = r.tx0 * TILE_DLON, e = (r.tx1 + 1) * TILE_DLON;
+  const dLat = TILE_DLAT / TILE_N, dLon = TILE_DLON / TILE_N;
+  for (let J = 0; J < ny; J++) for (let I = 0; I < nx; I++) {
+    const K = J * nx + I;
+    pts[K] = [n - (J + 0.5) * dLat, w + (I + 0.5) * dLon];
+    const m = TILE_MEM.get((r.tx0 + Math.floor(I / TILE_N)) + "_" + (r.ty1 - Math.floor(J / TILE_N)));
+    if (!m || m.day !== TODAY) { info[K] = empty; continue; }
+    const k = (J % TILE_N) * TILE_N + (I % TILE_N);
+    info[K] = m.info[k];
+    for (const sp of species) for (let d = 0; d < days.length; d++) scores[sp][d][K] = m.scores[sp][d] ? m.scores[sp][d][k] : 0;
+  }
+  const seen = new Set(), obs = [];
+  tiles.forEach(m => m.obs.forEach(o => { const key = o.join("|"); if (!seen.has(key)) { seen.add(key); obs.push(o); } }));
+  const accN = tiles.filter(m => m.hasAcc).length;
+  const src = { n: tiles.length, ign: tiles.filter(m => m.srcIgn).length, osm: tiles.filter(m => m.srcOsm).length,
+    gbif: tiles.some(m => m.obsOk) ? obs.length : null, accN, acc: accN === tiles.length, soil: tiles.every(m => m.soil), missing: r.list.length - tiles.length };
+  ZONES = { s, w, n, e, nx, ny, cell: CELL_M, days, scores, info, pts, obs, src, range: r, tiles: tiles.map(m => m.tx + "_" + m.ty),
+    demo: tiles.some(m => m.demo), forestOk: tiles.every(m => m.habOk), at: Math.min(...tiles.map(m => m.at)), day: TODAY };
+  return true;
+}
+
+function showZonesUI(on) {
+  ["zonesCtrls", "zonesLegend", "zonesOpts", "accRow"].forEach(id => { $(id).hidden = !on; });
+  $("zonesHide").hidden = !on; $("zonesIntro").hidden = on;
+  $("zonesBtn").textContent = on ? "Recalculer" : "Afficher les zones";
+}
+const hhmmOf = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+
+/* Affiche les zones de la vue actuelle ; ne calcule que les secteurs qui manquent */
+async function ensureView(manual, force) {
+  if (!map) return;
+  if (zonesBusy) { zonesPending = true; return; }
+  if (map.getZoom() < 13) { zMsg("Zoome davantage pour afficher les zones : elles se calculent par secteurs de 1,6 km.", !!manual); return; }
+  const b = map.getBounds(), r = tilesFor(b.getSouth(), b.getWest(), b.getNorth(), b.getEast());
+  if (r.list.length > MAX_TILES) { zMsg("Zoome un peu : la vue couvre " + r.list.length + " secteurs, l'appli en calcule " + MAX_TILES + " au plus à la fois.", true); return; }
+  if (force) r.list.forEach(t => TILE_MEM.delete(t.id));
+  const stale = r.list.filter(t => { const m = TILE_MEM.get(t.id); return !m || m.day !== TODAY || m.demo !== DEMO || (!m.demo && m.at < WEATHER_AT); });
+  let failed = false;
+  if (stale.length) failed = !(await computeTiles(stale, !manual));
+  const prevDays = ZONES ? ZONES.days.join() : "", prevDay = $("zonesDay").value;
+  if (stitch(r)) {
+    if (ZONES.days.join() !== prevDays) {
+      $("zonesDay").innerHTML = ZONES.days.map((d, k) => `<option value="${k}">${k === 0 ? "Aujourd'hui" : longDate(d)}</option>`).join("");
+    } else if (prevDay) $("zonesDay").value = prevDay;
+    showZonesUI(true); renderAccBtn(); drawZones(); drawObs(); renderSources();
+    if (!failed) {
+      const nS = ZONES.src.n;
+      zMsg(ZONES.demo
+        ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera avec la météo réelle, depuis ton appli."
+        : (ZONES.forestOk ? "" : "Les cartes des forêts n'ont pas répondu pour une partie des secteurs : là, seuls la météo, le sol, l'altitude et l'exposition comptent. ") +
+          "Zones à jour (" + hhmmOf(ZONES.at) + ") sur " + nS + " secteur" + (nS > 1 ? "s" : "") + ". Elles suivent la carte quand tu la déplaces. Touche une zone pour le détail.");
+    }
+  }
+  if (zonesPending) { zonesPending = false; setTimeout(() => ensureView(false), 30); }
+}
+/* À l'ouverture de la carte et à chaque nouvelle météo */
+function maybeAutoZones() {
+  if (!map || ui.mode || OFFLINE) return;
+  if (!zonesOn) { if (DEMO || !load(ZONES_ON_KEY, false)) return; zonesOn = true; }
+  ensureView(false);
+}
+function onMapMoved() {
+  try { const c = map.getCenter(); save(MAPVIEW_KEY, { lat: +c.lat.toFixed(5), lng: +c.lng.toFixed(5), z: map.getZoom() }); } catch (e) {}
+  if (!zonesOn || ui.mode) return;
+  clearTimeout(moveTimer);
+  moveTimer = setTimeout(() => ensureView(false), 600);
+}
+
+/* Accès depuis les routes, pour une liste de secteurs */
+function accessForTiles(ids, T) {
+  let n = 0;
+  ids.forEach(id => {
+    const m = TILE_MEM.get(id); if (!m) return;
+    const acc = accessDistances(m.pts, T);
+    if (!acc) return;
+    m.info.forEach((inf, k) => { inf.acc = acc[k]; inf.af = accessFactor(inf); });
+    m.hasAcc = true; n++;
+    if (!m.demo) tput(id, { acc });
+  });
+  tstoreSave();
+  return n;
 }
 
 function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const v = parseInt(h, 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
@@ -1734,15 +1830,25 @@ function zoneGrid() {
    « Meilleures zones de la vue » : les 30 %, 15 % et 5 % meilleures cases, pour toujours voir où aller, même hors pleine saison.
    « Score sur 100 » : Possible (25), Favorable (50), Très favorable (75). */
 const MODE_KEY = "meteo-coins-zonemode";
+/* Cases visibles à l'écran : c'est sur elles que se calculent « les meilleures zones de la vue » */
+function visibleMask() {
+  const m = new Uint8Array(ZONES.pts.length);
+  let b = null; try { b = map.getBounds(); } catch (e) {}
+  ZONES.pts.forEach((p, k) => { m[k] = !b || (p[0] >= b.getSouth() && p[0] <= b.getNorth() && p[1] >= b.getWest() && p[1] <= b.getEast()) ? 1 : 0; });
+  if (!m.some(x => x)) m.fill(1);
+  return m;
+}
 function zoneThresholds(out) {
-  let vmax = 0; for (const v of out) if (v > vmax) vmax = v;
-  if ($("zonesMode").value === "abs") return { t: [25, 50, 75], labels: ["Possible", "Favorable", "Très favorable"], rel: false, vmax };
+  const vis = visibleMask();
+  let vmax = 0, bk = -1;
+  out.forEach((v, k) => { if (vis[k] && (bk < 0 || v > vmax)) { vmax = v; bk = k; } });
+  if ($("zonesMode").value === "abs") return { t: [25, 50, 75], labels: ["Possible", "Favorable", "Très favorable"], rel: false, vmax, bk };
   const floor = Math.max(8, 0.3 * vmax), vals = [];
-  for (const v of out) if (v > 0) vals.push(v);
+  out.forEach((v, k) => { if (vis[k] && v > 0) vals.push(v); });
   vals.sort((a, b) => a - b);
   const q = p => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))] : Infinity);
   const t = vmax < 8 ? [Infinity, Infinity, Infinity] : [Math.max(floor, q(0.70)), Math.max(floor, q(0.85)), Math.max(floor, q(0.95))];
-  return { t, labels: ["Top 30 %", "Top 15 %", "Top 5 %"], rel: true, vmax };
+  return { t, labels: ["Top 30 %", "Top 15 %", "Top 5 %"], rel: true, vmax, bk };
 }
 function zClass(v, t) { return v >= t[2] ? 3 : v >= t[1] ? 2 : v >= t[0] ? 1 : 0; }
 function drawZones() {
@@ -1782,12 +1888,12 @@ function drawZones() {
   ]).addTo(map);
   // Légende et meilleur score
   th.labels.forEach((l, i) => { $("lg" + (i + 1)).textContent = l; });
-  let bk = 0; for (let k = 1; k < out.length; k++) if (out[k] > out[bk]) bk = k;
+  const bk = Math.max(0, th.bk);
   const best = $("zonesBest"); best.hidden = false;
   const lv = level(Math.round(th.vmax));
   best.textContent = th.vmax < 8
-    ? "Conditions défavorables partout dans la vue ce jour-là : rien à colorer."
-    : "Meilleure case : " + Math.round(th.vmax) + "/100 (" + LEVELS[lv].label.toLowerCase() + (who[bk] ? ", " + DEFAULTS[who[bk]].label.toLowerCase() : "") + ")" +
+    ? "Conditions défavorables partout à l'écran ce jour-là : rien à colorer."
+    : "Meilleure case à l'écran : " + Math.round(th.vmax) + "/100 (" + LEVELS[lv].label.toLowerCase() + (who[bk] ? ", " + DEFAULTS[who[bk]].label.toLowerCase() : "") + ")" +
       (th.rel && th.vmax < 50 ? ". Les couleurs montrent les meilleures zones de la vue, pas des conditions idéales." : ".");
 }
 function setZonesOpacity() { if (zonesLayer) zonesLayer.eachLayer(l => { if (l.setOpacity) l.setOpacity(Number($("zonesOp").value)); }); }
@@ -1802,23 +1908,25 @@ function drawObs() {
 function renderSources() {
   const Z = ZONES, s = Z.src, el = $("zonesSrc");
   if (Z.demo) { el.textContent = "Données fictives (aperçu)."; return; }
+  const part = (k, label, miss) => (k === s.n ? label : k === 0 ? miss : label + " sur " + k + "/" + s.n + " secteurs");
   const parts = [
     "météo" + (s.soil ? " et sol" : "") + " (Open-Meteo)",
-    s.ign ? "essences d'arbres (IGN)" : "essences IGN indisponibles",
-    s.osm ? "forêts, vergers et ruisseaux (OpenStreetMap)" : "OpenStreetMap indisponible",
+    part(s.ign, "essences d'arbres (IGN)", "essences IGN indisponibles"),
+    part(s.osm, "forêts, vergers et ruisseaux (OpenStreetMap)", "OpenStreetMap indisponible"),
     s.gbif == null ? "observations indisponibles" : s.gbif + " observation" + (s.gbif > 1 ? "s" : "") + " publiée" + (s.gbif > 1 ? "s" : "") + " (GBIF)",
-    s.acc ? "accès par les chemins" : "accès pas encore calculé (seule la pente compte)"
+    s.acc ? "accès par les chemins" : s.accN ? "accès calculé sur " + s.accN + "/" + s.n + " secteurs" : "accès pas encore calculé (seule la pente compte)"
   ];
   el.textContent = "Données : " + parts.join(" · ") + ".";
 }
 function hideZones(forget) {
-  if (forget) save(ZONE_VIEW_KEY, null);
+  zonesOn = false; clearTimeout(moveTimer);
+  if (forget) save(ZONES_ON_KEY, false);
   if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
-  $("zonesOpts").hidden = true; $("accRow").hidden = true; $("zonesSrc").textContent = "";
+  $("zonesSrc").textContent = "";
   if (zonesLayer) { map.removeLayer(zonesLayer); zonesLayer = null; }
   ZONES = null;
   ROUTE = null; drawRoute(); if (!ui.mode) renderSheet();
-  $("zonesCtrls").hidden = true; $("zonesLegend").hidden = true; $("zonesHide").hidden = true; $("zonesIntro").hidden = false;
+  showZonesUI(false);
   $("zonesBest").hidden = true;
   zMsg("");
 }
@@ -1828,6 +1936,7 @@ function zonePopup(ll) {
   const i = Math.min(Z.nx - 1, Math.floor((ll.lng - Z.w) / (Z.e - Z.w) * Z.nx));
   const j = Math.min(Z.ny - 1, Math.floor((Z.n - ll.lat) / (Z.n - Z.s) * Z.ny));
   const k = j * Z.nx + i, { out, who } = zoneGrid(), inf = Z.info[k];
+  if (inf.missing) { L.popup().setLatLng(ll).setContent('<div class="zone-pop">Secteur pas encore calculé.</div>').openOn(map); return; }
   const v = Math.round(out[k]);
   const dirs = ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"];
   const az = ((inf.aspect * 180 / Math.PI) + 360) % 360;
@@ -1995,9 +2104,9 @@ async function routeFrom(start) {
   if (job) { job.begin("route"); await tick(); }
   try {
   setTrails(true);
-  if (!ZONES.src.acc && covers(TRAILS, Z.s, Z.w, Z.n, Z.e)) {      // chemins déjà chargés : l'accès est gratuit
-    const acc = accessDistances(Z.pts, TRAILS);
-    if (acc) { Z.info.forEach((inf, k) => { inf.acc = acc[k]; inf.af = accessFactor(inf); }); Z.src.acc = true; if (!Z.demo) terrainPut(Z.key, { acc }); drawZones(); renderSources(); renderAccBtn(); }
+  if (!ZONES.src.acc) {      // chemins déjà chargés : l'accès des secteurs couverts est gratuit
+    const ids = ZONES.tiles.filter(id => { const m = TILE_MEM.get(id); if (!m || m.hasAcc) return false; const tb = tileBox(m.tx, m.ty); return covers(TRAILS, tb.s, tb.w, tb.n, tb.e); });
+    if (ids.length && accessForTiles(ids, TRAILS)) { stitch(ZONES.range); drawZones(); renderSources(); renderAccBtn(); }
   }
   const G = buildGraph(TRAILS);
   if (!G.pts.length) { tMsg("Aucun chemin connu dans ce secteur.", true); return; }
@@ -2161,7 +2270,7 @@ function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLog
 
 async function refresh(force, msg) {
   const now = isoLocal(new Date());
-  if (now !== TODAY) { TODAY = now; if (ZONES) { hideZones(false); zMsg("Nouveau jour : les zones se recalculent dès que la météo du jour est chargée."); } }
+  if (now !== TODAY) TODAY = now;      // les secteurs de la veille sont recalculés avec la météo du jour
   if (!state.coins.length) { DEMO = false; WEATHER = {}; renderAll(msg); return; }
   try { WEATHER = await fetchWeather(state.coins, force); DEMO = false; }
   catch (e) { WEATHER = demoWeather(state.coins); DEMO = true; }
@@ -2197,7 +2306,11 @@ document.querySelectorAll("[data-base]").forEach(b => {
 
 $("addFromList").onclick = () => { showTab("carte"); startAdd(); };
 $("zonesHide").onclick = () => hideZones(true);
-$("zonesBtn").onclick = () => computeZones();
+$("zonesBtn").onclick = () => {
+  const force = zonesOn && !!ZONES;
+  zonesOn = true; if (!DEMO) save(ZONES_ON_KEY, true);
+  ensureView(true, force);
+};
 $("zonesSp").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Espèce changée : relance la recherche de chemin."); } };
 $("zonesDay").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Jour changé : relance la recherche de chemin."); } };
 $("trailsBtn").onclick = toggleTrails;
