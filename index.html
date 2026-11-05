@@ -163,6 +163,16 @@ details.more[open] summary::after { content: " ▴"; }
 .prog-err .prog-bar i { background: var(--danger); }
 @media (prefers-reduced-motion: no-preference) { .prog-bar i { transition: width .3s ease; } }
 .zbest { font-weight: 700; font-size: .92rem; }
+.span2 { grid-column: 1 / -1; }
+.spchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.spchips button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 13px; font-weight: 700; font-size: .9rem; color: var(--muted); }
+.spchips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+details.diag { border-top: 1px solid var(--line); padding-top: 8px; font-size: .86rem; }
+details.diag summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+.diag-list { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.diag-list li { display: grid; grid-template-columns: 1.4em 1fr; gap: 4px; }
+.diag-list li > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.d-ok { color: var(--s2); } .d-fail { color: var(--danger); } .d-wait { color: var(--s1); } .d-mem { color: var(--muted); }
 .sw.z1, .sw.z2, .sw.z3 { box-shadow: 0 0 0 1px var(--line); }
 .sw.z1 { background: var(--z1); opacity: 1; } .sw.z2 { background: var(--z2); opacity: 1; } .sw.z3 { background: var(--z3); opacity: 1; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.84rem; color: var(--muted); }
@@ -292,19 +302,20 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div class="prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
       <p class="small muted" id="zonesIntro">Colore les meilleurs endroits de la vue en croisant pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Les zones se calculent par secteurs de 1,6 km et suivent la carte quand tu la déplaces. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
       <div class="grid2" id="zonesCtrls" hidden>
-        <label class="f">Espèce
-          <select id="zonesSp">
-            <option value="all">Toutes</option>
-            <option value="cepe">Cèpes</option>
-            <option value="girolle">Girolles</option>
-            <option value="morille">Morilles</option>
-          </select>
-        </label>
+        <div class="f span2"><span>Espèces affichées</span>
+          <div class="spchips" id="zonesSpChips" role="group" aria-label="Espèces affichées">
+            <button type="button" data-sp="all">Toutes</button>
+            <button type="button" data-sp="cepe">Cèpes</button>
+            <button type="button" data-sp="girolle">Girolles</button>
+            <button type="button" data-sp="morille">Morilles</button>
+          </div>
+        </div>
         <label class="f">Jour <select id="zonesDay"></select></label>
         <label class="f">Couleurs
           <select id="zonesMode">
             <option value="rel">Meilleures zones</option>
             <option value="abs">Score sur 100</option>
+            <option value="pot">Potentiel du terrain</option>
           </select>
         </label>
         <label class="f">Opacité <input type="range" id="zonesOp" min="0.2" max="1" step="0.05" value="0.8"></label>
@@ -325,6 +336,12 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       </div>
       <p class="msg" id="zonesMsg" aria-live="polite"></p>
       <p class="small muted" id="zonesSrc"></p>
+      <details class="diag" id="diag">
+        <summary id="diagSum">État des données</summary>
+        <ul class="diag-list" id="diagList"></ul>
+        <div class="row"><button class="btn small" type="button" id="diagCopy">Copier le diagnostic</button><span class="msg" id="diagMsg"></span></div>
+        <textarea id="diagText" aria-label="Diagnostic" hidden></textarea>
+      </details>
     </div>
     <div id="trailsPanel" class="panel">
       <div class="row" style="justify-content:space-between">
@@ -383,6 +400,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
 
     <div class="panel">
       <h2>Sauvegarde</h2>
+      <p class="small muted">Version de l'appli : 15 (5 nov. 2026).</p>
       <p class="small muted">Tes coins, accès et carnet restent dans ce téléphone. Copie-les de temps en temps dans une note ou un mail pour ne rien perdre.</p>
       <div class="row">
         <button class="btn" type="button" id="exportBtn">Copier mes données</button>
@@ -1179,6 +1197,63 @@ function decodeHab(codes) {
     open: c.includes("o", 3), edge: c.includes("e", 3), water: c.includes("w", 3) }));
 }
 
+/* ---------- Diagnostic : ce que chaque service a répondu ---------- */
+const APP_VERSION = "15 · 5 nov. 2026";
+const DIAG = { src: {}, errors: [] };
+const DIAG_LABELS = { meteo: "Météo et sol (Open-Meteo)", ign: "Essences d'arbres (IGN)", osm: "Forêts, vergers, ruisseaux (OpenStreetMap)",
+  relief: "Relief (Open-Meteo)", gbif: "Observations (GBIF)", trails: "Chemins et routes (OpenStreetMap)" };
+function describeErr(e) {
+  if (!e) return "erreur inconnue";
+  if (e.name === "AbortError") return "délai dépassé (le serveur n'a pas répondu à temps)";
+  const m = /HTTP (\d+)/.exec(e.message || "");
+  if (m) { const c = +m[1]; return "réponse " + c + (c === 429 ? " (trop de demandes, réessaie plus tard)" : c >= 500 ? " (serveur saturé ou en panne)" : c === 400 ? " (requête refusée par le service)" : c === 403 ? " (accès refusé)" : ""); }
+  if (e instanceof TypeError) return "connexion impossible (pas de réseau, ou service bloqué)";
+  return String(e.message || e).slice(0, 160);
+}
+function diagSet(k, st, extra) {
+  const d = DIAG.src[k] || {};
+  if (st === "wait") { d.t0 = Date.now(); d.note = ""; d.why = ""; }
+  d.state = st; d.at = Date.now();
+  if (st === "ok" || st === "fail") d.ms = Date.now() - (d.t0 || Date.now());
+  if (st === "ok") { d.note = extra || ""; d.why = ""; }
+  if (st === "fail") d.why = describeErr(extra);
+  if (st === "mem") d.note = extra || "";
+  DIAG.src[k] = d; renderDiag();
+}
+function watch(k, pr, okNote) {
+  diagSet(k, "wait");
+  pr.then(v => diagSet(k, "ok", okNote ? okNote(v) : ""), e => diagSet(k, "fail", e));
+  return pr;
+}
+function renderDiag() {
+  const list = $("diagList"); if (!list) return;
+  const icon = { ok: "✓", fail: "✗", wait: "…", mem: "◦" }, cls = { ok: "d-ok", fail: "d-fail", wait: "d-wait", mem: "d-mem" };
+  const rows = Object.keys(DIAG_LABELS).filter(k => DIAG.src[k]).map(k => {
+    const d = DIAG.src[k], t = d.ms != null && d.state !== "wait" && d.state !== "mem" ? " · " + (d.ms / 1000).toFixed(1).replace(".", ",") + " s" : "";
+    const txt = d.state === "ok" ? "reçu" + (d.note ? " (" + d.note + ")" : "") + t
+      : d.state === "fail" ? "échec : " + d.why + t
+      : d.state === "mem" ? "déjà en mémoire" + (d.note ? " (" + d.note + ")" : "")
+      : "en cours depuis " + Math.round((Date.now() - d.t0) / 1000) + " s";
+    return `<li><span class="${cls[d.state]}">${icon[d.state]}</span><span><b>${esc(DIAG_LABELS[k])}</b> : ${esc(txt)}</span></li>`;
+  });
+  DIAG.errors.slice(-3).forEach(e => rows.push(`<li><span class="d-fail">!</span><span><b>Erreur de l'appli</b> : ${esc(e)}</span></li>`));
+  rows.push(`<li><span class="d-mem">◦</span><span>Version de l'appli : ${esc(APP_VERSION)}${DEMO ? " · météo d'exemple" : OFFLINE ? " · hors connexion" : ""}</span></li>`);
+  list.innerHTML = rows.join("");
+  const fails = Object.values(DIAG.src).filter(d => d.state === "fail").length + DIAG.errors.length;
+  $("diagSum").textContent = "État des données" + (fails ? " · " + fails + " problème" + (fails > 1 ? "s" : "") : "");
+  $("diagSum").className = fails ? "d-fail" : "";
+}
+function diagText() {
+  const lines = ["Météo des Coins " + APP_VERSION, new Date().toLocaleString("fr-FR"), "Zoom " + (map ? map.getZoom() : "?") + (ZONES ? " · " + ZONES.src.n + " secteurs" : " · pas de zones")];
+  Object.keys(DIAG_LABELS).forEach(k => { const d = DIAG.src[k]; if (d) lines.push(DIAG_LABELS[k] + " : " + d.state + (d.why ? " – " + d.why : "") + (d.note ? " – " + d.note : "") + (d.ms != null ? " – " + d.ms + " ms" : "")); });
+  DIAG.errors.forEach(e => lines.push("Erreur : " + e));
+  lines.push("Message : " + ($("zonesMsg").textContent || "-"));
+  return lines.join("\n");
+}
+window.addEventListener("error", e => { DIAG.errors.push((e.message || "erreur") + (e.lineno ? " (ligne " + e.lineno + ")" : "")); renderDiag(); });
+window.addEventListener("unhandledrejection", e => { const r = e.reason; if (r && r.name === "AbortError") return; DIAG.errors.push("Promesse : " + describeErr(r)); renderDiag(); });
+setInterval(() => { if (Object.values(DIAG.src).some(d => d.state === "wait")) renderDiag(); }, 1000);
+
 /* ---------- Barre de progression ---------- */
 let CUR_PROG = null, progTimer = null;
 function showProg(on) { document.querySelectorAll(".prog").forEach(el => { el.hidden = !on; }); }
@@ -1476,6 +1551,7 @@ async function computeAccess() {
   } finally {
     job.end(ok);
     zonesBusy = false; b.disabled = false; $("zonesBtn").disabled = false;
+    if (zonesPending) { zonesPending = false; setTimeout(() => ensureView(false), 30); }
   }
 }
 function accessFactor(inf) {
@@ -1702,10 +1778,14 @@ async function computeTiles(list, auto) {
       job = makeProg(title, defs);
       const hb = needHab.length ? boxOf(needHab, 1) : null, ob = needObs.length ? boxOf(needObs, 0) : null;
       // Tout part en même temps ; seules la météo et une carte des forêts sont attendues
-      const pElev = needElev.length ? fetchReliefTiles(needElev) : null;
-      const pMeteo = fetchWeatherPts(gpts);
-      const pIgn = hb ? fetchIGNForest(hb.s, hb.w, hb.n, hb.e) : null, pOsm = hb ? fetchHabitat(hb.s, hb.w, hb.n, hb.e) : null;
-      const pObs = ob ? fetchGBIF(ob.s, ob.w, ob.n, ob.e) : null;
+      const pElev = needElev.length ? watch("relief", fetchReliefTiles(needElev), () => needElev.length + " secteur" + (needElev.length > 1 ? "s" : "")) : null;
+      const pMeteo = watch("meteo", fetchWeatherPts(gpts), v => v.length + " points" + (v.every(x => x.soilT) ? ", sol inclus" : ", sans le sol"));
+      const pIgn = hb ? watch("ign", fetchIGNForest(hb.s, hb.w, hb.n, hb.e), v => v.length + " parcelles") : null;
+      const pOsm = hb ? watch("osm", fetchHabitat(hb.s, hb.w, hb.n, hb.e), v => v.feats.length + " zones, " + v.waters.length + " cours d'eau") : null;
+      const pObs = ob ? watch("gbif", fetchGBIF(ob.s, ob.w, ob.n, ob.e), v => v.length + " observations") : null;
+      if (!needElev.length) diagSet("relief", "mem", list.length + " secteurs");
+      if (!hb) { diagSet("ign", "mem"); diagSet("osm", "mem"); }
+      if (!ob) diagSet("gbif", "mem");
       [pElev, pIgn, pOsm, pObs].forEach(q => { if (q) q.catch(() => {}); });
       job.begin("meteo"); if (hb) job.begin("forest");
       const forestP = hb ? firstForest(pIgn, pOsm) : Promise.resolve(null);
@@ -1767,6 +1847,7 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
   const days = dates.slice(ti, ti + 7);
   const species = Object.keys(DEFAULTS);
   const scores = {}; species.forEach(sp => { scores[sp] = days.map(() => new Float32Array(nC)); });
+  const pot = {}; species.forEach(sp => { pot[sp] = new Float32Array(nC); });
   const info = new Array(nC);
   const hab = terr.hab || pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" }));
   const obs = terr.obs || [];
@@ -1807,13 +1888,15 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
       const bonus = (1 + 0.25 * Math.exp(-dObs / 600)) * (1 + 0.2 * Math.exp(-dMine / 300));
       const hf = habitatFactor(sp, hab[k]);
       days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? Math.min(100, scoreAt(cw, R, ti + d, sp).score * hf * bonus) : 0; });
+      // Potentiel du terrain, sans la météo : essences, lisières, exposition fraîche, observations
+      pot[sp][k] = Math.min(100, 80 * hf * bonus * (1 + 0.1 * Math.cos(aspect) * Math.min(slope / 20, 1)));
     });
     const inf = { z, slope, aspect, flat: !E, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near,
       st7: soil ? avg(cw.soilT, ti - 6, ti) : null, sm: soil ? avg(cw.soilM, ti - 2, ti) : null };
     inf.af = accessFactor(inf);
     info[k] = inf;
   }
-  TILE_MEM.set(t.id, { tx: t.tx, ty: t.ty, pts, scores, info, days, day: TODAY, at: Date.now(), demo, soil, batch, hasElev: !!E,
+  TILE_MEM.set(t.id, { tx: t.tx, ty: t.ty, pts, scores, pot, info, days, day: TODAY, at: Date.now(), demo, soil, batch, hasElev: !!E,
     srcIgn: terr.srcIgn, srcOsm: terr.srcOsm, habOk: !!terr.hab, obsOk: !!terr.obs, obs, hasAcc: !!terr.acc });
 }
 
@@ -1824,6 +1907,7 @@ function stitch(r) {
   const nx = (r.tx1 - r.tx0 + 1) * TILE_N, ny = (r.ty1 - r.ty0 + 1) * TILE_N;
   const ref = tiles[0], days = ref.days, species = Object.keys(DEFAULTS);
   const scores = {}; species.forEach(sp => { scores[sp] = days.map(() => new Float32Array(nx * ny)); });
+  const pot = {}; species.forEach(sp => { pot[sp] = new Float32Array(nx * ny); });
   const info = new Array(nx * ny), pts = new Array(nx * ny);
   const empty = { missing: true, af: 0, z: 0, slope: 0, aspect: 0, hab: { kind: "none", ess: "unknown" }, acc: null, near: {} };
   const s = r.ty0 * TILE_DLAT, n = (r.ty1 + 1) * TILE_DLAT, w = r.tx0 * TILE_DLON, e = (r.tx1 + 1) * TILE_DLON;
@@ -1835,14 +1919,14 @@ function stitch(r) {
     if (!m || m.day !== TODAY) { info[K] = empty; continue; }
     const k = (J % TILE_N) * TILE_N + (I % TILE_N);
     info[K] = m.info[k];
-    for (const sp of species) for (let d = 0; d < days.length; d++) scores[sp][d][K] = m.scores[sp][d] ? m.scores[sp][d][k] : 0;
+    for (const sp of species) { for (let d = 0; d < days.length; d++) scores[sp][d][K] = m.scores[sp][d] ? m.scores[sp][d][k] : 0; pot[sp][K] = m.pot ? m.pot[sp][k] : 0; }
   }
   const seen = new Set(), obs = [];
   tiles.forEach(m => m.obs.forEach(o => { const key = o.join("|"); if (!seen.has(key)) { seen.add(key); obs.push(o); } }));
   const accN = tiles.filter(m => m.hasAcc).length;
   const src = { n: tiles.length, elev: tiles.filter(m => m.hasElev).length, ign: tiles.filter(m => m.srcIgn).length, osm: tiles.filter(m => m.srcOsm).length,
     gbif: tiles.some(m => m.obsOk) ? obs.length : null, accN, acc: accN === tiles.length, soil: tiles.every(m => m.soil), missing: r.list.length - tiles.length };
-  ZONES = { s, w, n, e, nx, ny, cell: CELL_M, days, scores, info, pts, obs, src, range: r, tiles: tiles.map(m => m.tx + "_" + m.ty),
+  ZONES = { s, w, n, e, nx, ny, cell: CELL_M, days, scores, pot, info, pts, obs, src, range: r, tiles: tiles.map(m => m.tx + "_" + m.ty),
     demo: tiles.some(m => m.demo), forestOk: tiles.every(m => m.habOk), at: Math.min(...tiles.map(m => m.at)), day: TODAY };
   return true;
 }
@@ -1858,9 +1942,19 @@ const hhmmOf = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", m
 async function ensureView(manual, force) {
   if (!map) return;
   if (zonesBusy) { zonesPending = true; return; }
-  if (map.getZoom() < 13) { zMsg("Zoome davantage pour afficher les zones : elles se calculent par secteurs de 1,6 km.", !!manual); return; }
+  if (map.getZoom() < 12) { zMsg("Zoome davantage pour afficher les zones : elles se calculent par secteurs de 1,6 km.", !!manual); return; }
   const b = map.getBounds(), r = tilesFor(b.getSouth(), b.getWest(), b.getNorth(), b.getEast());
-  if (r.list.length > MAX_TILES) { zMsg("Zoome un peu : la vue couvre " + r.list.length + " secteurs, l'appli en calcule " + MAX_TILES + " au plus à la fois.", true); return; }
+  let partial = false;
+  if (r.list.length > MAX_TILES) {
+    // Vue très large (écran déplié, zoom faible) : on calcule le centre de l'écran plutôt que rien
+    partial = true;
+    while ((r.tx1 - r.tx0 + 1) * (r.ty1 - r.ty0 + 1) > MAX_TILES) {
+      if (r.tx1 - r.tx0 >= r.ty1 - r.ty0) { r.tx0++; if ((r.tx1 - r.tx0 + 1) * (r.ty1 - r.ty0 + 1) > MAX_TILES) r.tx1--; }
+      else { r.ty0++; if ((r.tx1 - r.tx0 + 1) * (r.ty1 - r.ty0 + 1) > MAX_TILES) r.ty1--; }
+    }
+    r.list = [];
+    for (let ty = r.ty1; ty >= r.ty0; ty--) for (let tx = r.tx0; tx <= r.tx1; tx++) r.list.push({ tx, ty, id: tx + "_" + ty });
+  }
   if (force) r.list.forEach(t => TILE_MEM.delete(t.id));
   const stale = r.list.filter(t => { const m = TILE_MEM.get(t.id); return !m || m.day !== TODAY || m.demo !== DEMO || (!m.demo && m.at < WEATHER_AT); });
   let failed = false;
@@ -1876,7 +1970,8 @@ async function ensureView(manual, force) {
       zMsg(ZONES.demo
         ? "Exemple calculé sur un relief et une météo fictifs : le vrai calcul se fera avec la météo réelle, depuis ton appli."
         : (ZONES.forestOk ? "" : "Les cartes des forêts n'ont pas répondu pour une partie des secteurs : là, seuls la météo, le sol, l'altitude et l'exposition comptent. ") +
-          "Zones à jour (" + hhmmOf(ZONES.at) + ") sur " + nS + " secteur" + (nS > 1 ? "s" : "") + ". Elles suivent la carte quand tu la déplaces. Touche une zone pour le détail.");
+          "Zones à jour (" + hhmmOf(ZONES.at) + ") sur " + nS + " secteur" + (nS > 1 ? "s" : "") + ". " +
+          (partial ? "La vue est très large : seul le centre de l'écran est calculé (cadre en pointillés). Zoome pour couvrir tout l'écran." : "Elles suivent la carte quand tu la déplaces. Touche une zone pour le détail."));
     }
   }
   if (zonesPending) { zonesPending = false; setTimeout(() => ensureView(false), 30); }
@@ -1910,12 +2005,25 @@ function accessForTiles(ids, T) {
 }
 
 function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const v = parseInt(h, 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
-function zoneGrid() {
-  const sp = $("zonesSp").value, d = Number($("zonesDay").value || 0);
-  const keys = sp === "all" ? Object.keys(DEFAULTS) : [sp];
+/* Espèces affichées : une, plusieurs ou toutes (mémorisé) */
+const SP_KEY = "meteo-coins-zonesp";
+let SP_SEL = (() => { const v = load(SP_KEY, null); return Array.isArray(v) && v.length && v.every(k => DEFAULTS[k]) ? v : Object.keys(DEFAULTS); })();
+function renderSpChips() {
+  const all = Object.keys(DEFAULTS).every(k => SP_SEL.includes(k));
+  document.querySelectorAll("#zonesSpChips button").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.sp === "all" ? String(all) : String(SP_SEL.includes(b.dataset.sp)));
+  });
+}
+/* Mode effectif : « Potentiel du terrain » si choisi, ou en secours quand la météo ne donne rien à l'écran */
+function effMode() { return ZONES && ZONES.fallback ? "pot" : $("zonesMode").value; }
+function zoneGrid(forceMode) {
+  const mode = forceMode || effMode(), d = Number($("zonesDay").value || 0);
   const useAcc = $("zonesAcc").checked;
   const out = new Float32Array(ZONES.nx * ZONES.ny), who = new Array(out.length);
-  keys.forEach(k => { const a = ZONES.scores[k][d]; for (let i = 0; i < out.length; i++) { const v = a[i] * (useAcc ? ZONES.info[i].af : 1); if (v > out[i]) { out[i] = v; who[i] = k; } } });
+  SP_SEL.forEach(k => {
+    const a = mode === "pot" ? ZONES.pot[k] : ZONES.scores[k][d];
+    for (let i = 0; i < out.length; i++) { const v = a[i] * (useAcc ? ZONES.info[i].af : 1); if (v > out[i]) { out[i] = v; who[i] = k; } }
+  });
   return { out, who };
 }
 /* Seuils des 3 couleurs.
@@ -1934,17 +2042,24 @@ function zoneThresholds(out) {
   const vis = visibleMask();
   let vmax = 0, bk = -1;
   out.forEach((v, k) => { if (vis[k] && (bk < 0 || v > vmax)) { vmax = v; bk = k; } });
-  if ($("zonesMode").value === "abs") return { t: [25, 50, 75], labels: ["Possible", "Favorable", "Très favorable"], rel: false, vmax, bk };
-  const floor = Math.max(8, 0.3 * vmax), vals = [];
+  if (effMode() === "abs") return { t: [25, 50, 75], labels: ["Possible", "Favorable", "Très favorable"], rel: false, vmax, bk };
+  const floor = Math.max(1, 0.3 * vmax), vals = [];
   out.forEach((v, k) => { if (vis[k] && v > 0) vals.push(v); });
   vals.sort((a, b) => a - b);
   const q = p => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))] : Infinity);
-  const t = vmax < 8 ? [Infinity, Infinity, Infinity] : [Math.max(floor, q(0.70)), Math.max(floor, q(0.85)), Math.max(floor, q(0.95))];
+  const t = vmax < 1 ? [Infinity, Infinity, Infinity] : [Math.max(floor, q(0.70)), Math.max(floor, q(0.85)), Math.max(floor, q(0.95))];
   return { t, labels: ["Top 30 %", "Top 15 %", "Top 5 %"], rel: true, vmax, bk };
 }
 function zClass(v, t) { return v >= t[2] ? 3 : v >= t[1] ? 2 : v >= t[0] ? 1 : 0; }
 function drawZones() {
   if (!ZONES || !map) return;
+  // Si la météo ne donne rien nulle part à l'écran, on montre le potentiel du terrain plutôt qu'une carte vide
+  ZONES.fallback = false;
+  if ($("zonesMode").value !== "pot") {
+    const g = zoneGrid(), vis = visibleMask();
+    let m = 0; g.out.forEach((v, k) => { if (vis[k] && v > m) m = v; });
+    if (m < 1) ZONES.fallback = true;
+  }
   const { nx, ny } = ZONES, { out, who } = zoneGrid(), th = zoneThresholds(out);
   ZONES.th = th;
   // Image affinée : interpolation des scores entre les cases, puis 3 couleurs nettes avec un liseré
@@ -1983,17 +2098,23 @@ function drawZones() {
   const bk = Math.max(0, th.bk);
   const best = $("zonesBest"); best.hidden = false;
   const lv = level(Math.round(th.vmax));
-  best.textContent = th.vmax < 8
-    ? "Conditions défavorables partout à l'écran ce jour-là : rien à colorer."
-    : "Meilleure case à l'écran : " + Math.round(th.vmax) + "/100 (" + LEVELS[lv].label.toLowerCase() + (who[bk] ? ", " + DEFAULTS[who[bk]].label.toLowerCase() : "") + ")" +
+  const spTxt = who[bk] ? DEFAULTS[who[bk]].label.toLowerCase() : "";
+  if (effMode() === "pot") {
+    best.textContent = th.vmax < 1
+      ? "Aucune forêt adaptée aux espèces choisies à l'écran."
+      : (ZONES.fallback ? "Pas de pousse possible à l'écran ce jour-là (froid, sécheresse ou hors saison). " : "") +
+        "La carte montre le potentiel du terrain" + (spTxt ? " (meilleur pour les " + spTxt + ")" : "") + " : les meilleurs endroits où chercher quand les conditions reviendront.";
+  } else {
+    best.textContent = "Meilleure case à l'écran : " + Math.round(th.vmax) + "/100 (" + LEVELS[lv].label.toLowerCase() + (spTxt ? ", " + spTxt : "") + ")" +
       (th.rel && th.vmax < 50 ? ". Les couleurs montrent les meilleures zones de la vue, pas des conditions idéales." : ".");
+  }
 }
 function setZonesOpacity() { if (zonesLayer) zonesLayer.eachLayer(l => { if (l.setOpacity) l.setOpacity(Number($("zonesOp").value)); }); }
 function drawObs() {
   if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
   if (!ZONES || !ZONES.obs.length || !$("zonesObs").checked) return;
   const col = { cepe: css("--bark"), girolle: css("--s1"), morille: css("--fg") };
-  obsLayer = L.layerGroup(ZONES.obs.map(o => L.circleMarker([o[1], o[2]], {
+  obsLayer = L.layerGroup(ZONES.obs.filter(o => SP_SEL.includes(o[0])).map(o => L.circleMarker([o[1], o[2]], {
     radius: 5, color: css("--surface") || "#fff", weight: 2, fillColor: col[o[0]] || "#888", fillOpacity: 1, bubblingMouseEvents: false
   }).bindPopup(`<div class="zone-pop"><b>${DEFAULTS[o[0]].label}</b> observés${o[3] ? " en " + o[3] : ""}<br><span class="small">Observation publiée (GBIF)</span></div>`))).addTo(map);
 }
@@ -2038,7 +2159,9 @@ function zonePopup(ll) {
   const hab = KIND_TXT[h.kind] + (h.kind === "forest" ? (h.open ? " ouverte" : "") + " : " + ESS_TXT[h.ess || "unknown"] : "") +
     (h.src === "ign" ? " (IGN)" : h.src === "osm" ? " (OSM)" : "") + (h.edge ? " · lisière" : "") + (h.water ? " · près d'un ruisseau" : "");
   const th = Z.th || zoneThresholds(out), zc = zClass(out[k], th.t);
-  const lines = [`<b class="lvl${level(v)}">${v}</b>/100 · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`];
+  const lines = effMode() === "pot"
+    ? [`Potentiel du terrain <b>${v}</b>/100${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`]
+    : [`<b class="lvl${level(v)}">${v}</b>/100 · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`];
   if (zc && th.rel) lines.push("Dans le " + th.labels[zc - 1].toLowerCase() + " de la vue");
   lines.push(inf.flat ? "Relief pas encore chargé : pente et exposition non prises en compte" : `${Math.round(inf.z)} m · ${expo}`, esc(hab));
   if (inf.st7 != null) lines.push("Sol " + inf.st7.toFixed(0) + " °C · " + (inf.sm > 0.3 ? "bien humide" : inf.sm > 0.2 ? "frais" : "sec"));
@@ -2112,7 +2235,7 @@ function setTrails(on) {
 async function loadTrails(s, w, n, e) {
   if (covers(TRAILS, s, w, n, e)) return TRAILS;
   if (DEMO) { TRAILS = demoTrails(s, w, n, e); return TRAILS; }     // aperçu : inutile d'interroger le réseau
-  try { TRAILS = await fetchTrails(s, w, n, e); }
+  try { TRAILS = await watch("trails", fetchTrails(s, w, n, e), v => v.ways.length + " tronçons"); }
   catch (err) { if (!DEMO) throw err; TRAILS = demoTrails(s, w, n, e); }
   return TRAILS;
 }
@@ -2404,13 +2527,29 @@ $("zonesBtn").onclick = () => {
   zonesOn = true; if (!DEMO) save(ZONES_ON_KEY, true);
   ensureView(true, force);
 };
-$("zonesSp").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Espèce changée : relance la recherche de chemin."); } };
+renderSpChips();
+$("zonesSpChips").addEventListener("click", ev => {
+  const b = ev.target.closest("button[data-sp]"); if (!b) return;
+  const k = b.dataset.sp, allKeys = Object.keys(DEFAULTS);
+  if (k === "all") SP_SEL = allKeys.slice();
+  else if (SP_SEL.includes(k)) { if (SP_SEL.length > 1) SP_SEL = SP_SEL.filter(x => x !== k); else { $("zonesMsg").textContent = "Garde au moins une espèce."; return; } }
+  else SP_SEL = allKeys.filter(x => SP_SEL.includes(x) || x === k);
+  save(SP_KEY, SP_SEL); renderSpChips();
+  if (ZONES) { drawZones(); drawObs(); }
+  if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Espèces changées : relance la recherche de chemin."); }
+});
 $("zonesDay").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Jour changé : relance la recherche de chemin."); } };
 $("trailsBtn").onclick = toggleTrails;
 $("routeBtn").onclick = () => {
   if (!ZONES) { tMsg("Calcule d'abord les zones favorables, puis cherche le chemin.", true); return; }
   stopRecording(); ui.sel = null; ui.mode = "route"; tMsg(""); drawMap(); renderSheet();
 };
+$("diagCopy").onclick = async () => {
+  const t = diagText(), ta = $("diagText");
+  try { await navigator.clipboard.writeText(t); $("diagMsg").textContent = "Copié. Colle-le dans ton message à Claude."; }
+  catch (e) { ta.hidden = false; ta.value = t; ta.focus(); ta.select(); $("diagMsg").textContent = "Texte sélectionné : copie-le à la main."; }
+};
+renderDiag();
 $("zonesAcc").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Réglage changé : relance la recherche de chemin."); } };
 $("zonesObs").onchange = drawObs;
 $("accBtn").onclick = computeAccess;
