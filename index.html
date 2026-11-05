@@ -1582,62 +1582,147 @@ function demoTile(pts) {
   return { elev, hab };
 }
 
-/* Calcule une liste de secteurs : données manquantes chargées en parallèle, puis scores */
-async function computeTiles(list, auto) {
-  zonesBusy = true; $("zonesBtn").disabled = true;
-  let stage = "", job = null, ok = false;
+/* Relief allégé : 12 × 12 points d'altitude par secteur (au lieu de 22 × 22), puis interpolation.
+   Le modèle d'altitude d'origine a une maille de 90 m, on ne perd presque rien. */
+const ELEV_S = 12;
+async function fetchReliefTiles(tiles) {
+  const N2 = TILE_N + 2, dLat = TILE_DLAT / TILE_N, dLon = TILE_DLON / TILE_N, all = [];
+  tiles.forEach(t => {
+    const b = tileBox(t.tx, t.ty);
+    for (let u = 0; u < ELEV_S; u++) for (let v = 0; v < ELEV_S; v++) {
+      const cj = u * (N2 - 1) / (ELEV_S - 1), ci = v * (N2 - 1) / (ELEV_S - 1);
+      all.push([b.n - (cj - 0.5) * dLat, b.w + (ci - 0.5) * dLon]);
+    }
+  });
+  const chunks = [];
+  for (let k = 0; k < all.length; k += 100) chunks.push(all.slice(k, k + 100));
+  const res = new Array(chunks.length);
+  let next = 0;
+  const worker = async () => {                 // 2 requêtes à la fois : le service d'altitude sature vite
+    while (next < chunks.length) {
+      const c = next++, ch = chunks[c];
+      const url = "https://api.open-meteo.com/v1/elevation?latitude=" + ch.map(q => q[0].toFixed(5)).join(",") +
+        "&longitude=" + ch.map(q => q[1].toFixed(5)).join(",");
+      const r = await fetchRetry(url, {}, 3, 20000);
+      const j = await r.json();
+      if (!Array.isArray(j.elevation) || j.elevation.length !== ch.length) throw new Error("altitude");
+      res[c] = j.elevation;
+    }
+  };
+  await Promise.all([worker(), worker()]);
+  const flat = res.flat(), S = ELEV_S;
+  tiles.forEach((t, k) => {
+    const g = flat.slice(k * S * S, (k + 1) * S * S), out = [];
+    for (let j = 0; j < N2; j++) for (let i = 0; i < N2; i++) {
+      const fu = j * (S - 1) / (N2 - 1), fv = i * (S - 1) / (N2 - 1);
+      const u0 = Math.min(S - 2, Math.floor(fu)), v0 = Math.min(S - 2, Math.floor(fv)), a = fu - u0, c = fv - v0;
+      const z = (g[u0 * S + v0] * (1 - c) + g[u0 * S + v0 + 1] * c) * (1 - a) + (g[(u0 + 1) * S + v0] * (1 - c) + g[(u0 + 1) * S + v0 + 1] * c) * a;
+      out.push(Math.round(z));
+    }
+    tput(t.id, { elev: out });
+  });
+  tstoreSave();
+}
+/* Attend la première carte des forêts utilisable : l'IGN de préférence, OpenStreetMap sinon.
+   Jamais plus de 25 s : au-delà, la heat map s'affiche quand même et s'affinera ensuite. */
+function firstForest(pIgn, pOsm) {
+  return new Promise(res => {
+    const st = { ign: null, osm: null, ignDone: false, osmDone: false };
+    let done = false, timer = null;
+    const finish = () => { if (!done) { done = true; clearTimeout(timer); clearTimeout(cap); res(st); } };
+    const check = () => {
+      if (st.ignDone && (st.ign || st.osmDone)) return finish();
+      if (st.osm && !st.ignDone && !timer) timer = setTimeout(finish, 8000);
+    };
+    const cap = setTimeout(finish, 25000);
+    pIgn.then(v => { st.ign = v; }, () => {}).then(() => { st.ignDone = true; check(); });
+    pOsm.then(v => { st.osm = v; }, () => {}).then(() => { st.osmDone = true; check(); });
+  });
+}
+function storeHab(tiles, ign, osm) {
   const N2 = TILE_N + 2;
+  tiles.forEach(t => {
+    const h22 = buildHabitat(tilePts(t.tx, t.ty, 1), N2, N2, ign, osm), h = [];
+    for (let j = 1; j <= TILE_N; j++) for (let i = 1; i <= TILE_N; i++) h.push(encodeHab(h22[j * N2 + i]));
+    tput(t.id, { hab: h, srcIgn: !!ign, srcOsm: !!osm, habAt: Date.now() });
+  });
+}
+function storeObs(tiles, obs) {
+  tiles.forEach(t => {
+    const b = tileBox(t.tx, t.ty), pd = 0.02;
+    tput(t.id, { obs: obs.filter(o => o[1] >= b.s - pd && o[1] <= b.n + pd && o[2] >= b.w - pd && o[2] <= b.e + pd) });
+  });
+}
+function terrOf(id) {
+  const c = tterrain(id);
+  return { elev: c.elev && c.elev.length === (TILE_N + 2) * (TILE_N + 2) ? c.elev : null, hab: c.hab ? decodeHab(c.hab) : null,
+    srcIgn: !!c.srcIgn, srcOsm: !!c.srcOsm, obs: Array.isArray(c.obs) ? c.obs : null,
+    acc: Array.isArray(c.acc) && c.acc.length === TILE_N * TILE_N ? c.acc : null };
+}
+function minePts() {
+  const mine = [];
+  state.logs.forEach(l => { const c = coinById(l.coin); if (c && l.result >= 2) mine.push([l.sp, c.lat, c.lon]); });
+  return mine;
+}
+/* Affinage en tâche de fond : relief, forêts manquantes et observations, puis la heat map se redessine seule */
+let BATCH = 0, refining = 0;
+function refineLater(list, bg, WG, box, batch, ready) {
+  refining++;
+  if (ZONES) renderSources();
+  Promise.all([Promise.allSettled(bg), ready]).then(() => {      // attend aussi la fin du premier calcul
+    tstoreSave();
+    const mine = minePts();
+    list.forEach(t => { const m = TILE_MEM.get(t.id); if (m && m.batch === batch) scoreTile(t, terrOf(t.id), WG, box, mine, false, batch); });
+    refining--;
+    if (zonesOn && ZONES && !zonesBusy) { stitch(ZONES.range); drawZones(); drawObs(); renderSources(); renderAccBtn(); }
+    else if (ZONES) renderSources();
+  });
+}
+
+/* Calcule une liste de secteurs : la heat map s'affiche dès que la météo et une carte des forêts sont là */
+async function computeTiles(list, auto) {
+  zonesBusy = true; $("zonesBtn").disabled = true; $("accBtn").disabled = true;
+  let stage = "", job = null, ok = false;
+  const N2 = TILE_N + 2, batch = ++BATCH;
   try {
     const box = boxOf(list, 1);
     const gx = 4, gy = 4, gpts = [];
     for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) gpts.push([box.n - j * (box.n - box.s) / (gy - 1), box.w + i * (box.e - box.w) / (gx - 1)]);
     const T = {};
-    let WG, demo = false;
+    let WG, demo = false, scored = () => {};
+    const ready = new Promise(r => { scored = r; });
     const title = (auto ? "Mise à jour des zones" : "Calcul des zones") + " · " + list.length + " secteur" + (list.length > 1 ? "s" : "");
     if (!DEMO) {
-      const needElev = list.filter(t => { const c = tterrain(t.id); return !(c.elev && c.elev.length === N2 * N2); });
+      const needElev = list.filter(t => !terrOf(t.id).elev);
       const needHab = list.filter(t => { const c = tterrain(t.id), fresh = (c.srcIgn && c.srcOsm) || Date.now() - (c.habAt || 0) < 6 * 3600e3; return !(c.hab && c.hab.length === TILE_N * TILE_N && fresh); });
       const needObs = list.filter(t => !Array.isArray(tterrain(t.id).obs));
-      const defs = {};
-      if (needElev.length) defs.relief = { w: 3, label: "relief" };
-      defs.meteo = { w: 2, label: "météo et sol", creep: true };
-      if (needHab.length) { defs.ign = { w: 2, label: "essences IGN", creep: true }; defs.osm = { w: 2, label: "forêts OSM", creep: true }; }
-      if (needObs.length) defs.gbif = { w: 1, label: "observations" };
-      defs.calc = { w: 2, label: "calcul" };
+      const defs = { meteo: { w: 2, label: "météo et sol", creep: true } };
+      if (needHab.length) defs.forest = { w: 2, label: "forêts", creep: true };
+      defs.calc = { w: 1, label: "calcul" };
       job = makeProg(title, defs);
-      const track = (k, pr) => { job.begin(k); return pr.then(x => { job.done(k); return x; }, er => { job.done(k, true); throw er; }); };
-      const none = Promise.resolve(null);
       const hb = needHab.length ? boxOf(needHab, 1) : null, ob = needObs.length ? boxOf(needObs, 0) : null;
-      const elevPts = []; needElev.forEach(t => elevPts.push(...tilePts(t.tx, t.ty, 1)));
-      const [rE, rM, rI, rO, rG] = await Promise.allSettled([
-        needElev.length ? fetchElevations(elevPts, (d, n) => job.set("relief", d / n, d + "/" + n)) : none,
-        track("meteo", fetchWeatherPts(gpts)),
-        hb ? track("ign", fetchIGNForest(hb.s, hb.w, hb.n, hb.e)) : none,
-        hb ? track("osm", fetchHabitat(hb.s, hb.w, hb.n, hb.e)) : none,
-        ob ? fetchGBIF(ob.s, ob.w, ob.n, ob.e, (d, n) => job.set("gbif", d / n, d + "/" + n)) : none
-      ]);
-      if (rE.status === "rejected") { stage = "le relief"; throw rE.reason; }
-      if (rM.status === "rejected") { stage = "la météo"; throw rM.reason; }
-      WG = rM.value;
-      needElev.forEach((t, k) => tput(t.id, { elev: rE.value.slice(k * N2 * N2, (k + 1) * N2 * N2).map(v => Math.round(v)) }));
-      if (needHab.length) {
-        const ign = rI.status === "fulfilled" ? rI.value : null, osm = rO.status === "fulfilled" ? rO.value : null;
-        if (ign || osm) needHab.forEach(t => {
-          const h22 = buildHabitat(tilePts(t.tx, t.ty, 1), N2, N2, ign, osm), h = [];
-          for (let j = 1; j <= TILE_N; j++) for (let i = 1; i <= TILE_N; i++) h.push(encodeHab(h22[j * N2 + i]));
-          tput(t.id, { hab: h, srcIgn: !!ign, srcOsm: !!osm, habAt: Date.now() });
-        });
-      }
-      if (needObs.length && rG.status === "fulfilled") needObs.forEach(t => {
-        const b = tileBox(t.tx, t.ty), pd = 0.02;
-        tput(t.id, { obs: rG.value.filter(o => o[1] >= b.s - pd && o[1] <= b.n + pd && o[2] >= b.w - pd && o[2] <= b.e + pd) });
-      });
+      // Tout part en même temps ; seules la météo et une carte des forêts sont attendues
+      const pElev = needElev.length ? fetchReliefTiles(needElev) : null;
+      const pMeteo = fetchWeatherPts(gpts);
+      const pIgn = hb ? fetchIGNForest(hb.s, hb.w, hb.n, hb.e) : null, pOsm = hb ? fetchHabitat(hb.s, hb.w, hb.n, hb.e) : null;
+      const pObs = ob ? fetchGBIF(ob.s, ob.w, ob.n, ob.e) : null;
+      [pElev, pIgn, pOsm, pObs].forEach(q => { if (q) q.catch(() => {}); });
+      job.begin("meteo"); if (hb) job.begin("forest");
+      const forestP = hb ? firstForest(pIgn, pOsm) : Promise.resolve(null);
+      try { WG = await pMeteo; job.done("meteo"); } catch (er) { job.done("meteo", true); stage = "la météo"; throw er; }
+      const fr = await forestP;
+      if (hb) job.done("forest");
+      if (fr && (fr.ign || fr.osm)) storeHab(needHab, fr.ign, fr.osm);
       tstoreSave();
-      list.forEach(t => {
-        const c = tterrain(t.id);
-        T[t.id] = { elev: c.elev, hab: c.hab ? decodeHab(c.hab) : null, srcIgn: !!c.srcIgn, srcOsm: !!c.srcOsm,
-          obs: Array.isArray(c.obs) ? c.obs : null, acc: Array.isArray(c.acc) && c.acc.length === TILE_N * TILE_N ? c.acc : null };
-      });
+      list.forEach(t => { T[t.id] = terrOf(t.id); });
+      const bg = [];
+      if (pElev) bg.push(pElev);
+      if (fr && !(fr.ignDone && fr.osmDone)) bg.push(Promise.allSettled([pIgn, pOsm]).then(([a, b]) => {
+        const ign = a.status === "fulfilled" ? a.value : null, osm = b.status === "fulfilled" ? b.value : null;
+        if (ign || osm) storeHab(needHab, ign, osm);
+      }));
+      if (pObs) bg.push(pObs.then(obs => storeObs(needObs, obs)));
+      if (bg.length) refineLater(list, bg, WG, box, batch, ready);
     } else {
       // Aperçu ou aucune météo réelle disponible : exemple fictif, signalé comme tel
       demo = true;
@@ -1652,27 +1737,28 @@ async function computeTiles(list, auto) {
       });
     }
     job.begin("calc"); await tick();
-    const mine = [];
-    state.logs.forEach(l => { const c = coinById(l.coin); if (c && l.result >= 2) mine.push([l.sp, c.lat, c.lon]); });
+    const mine = minePts();
     for (let k = 0; k < list.length; k++) {
-      scoreTile(list[k], T[list[k].id], WG, box, mine, demo);
+      scoreTile(list[k], T[list[k].id], WG, box, mine, demo, batch);
       job.set("calc", (k + 1) / list.length, (k + 1) + "/" + list.length);
       await tick();
     }
     ok = true;
+    scored();
     job.end(true);
   } catch (err) {
+    scored();
     if (job) job.end(false);
     const why = (stage ? stage.charAt(0).toUpperCase() + stage.slice(1) + " n'a pas pu se charger" : "Le calcul n'a pas abouti") +
       (err && err.name === "AbortError" ? " (le serveur a mis trop de temps à répondre)" : " (réseau faible ou serveur saturé)");
     zMsg(why + (ZONES ? ". Les zones déjà calculées restent affichées ; déplace la carte ou touche « Recalculer » pour réessayer." : ". Réessaie dans un instant."), true);
   } finally {
-    zonesBusy = false; $("zonesBtn").disabled = false;
+    zonesBusy = false; $("zonesBtn").disabled = false; $("accBtn").disabled = false;
   }
   return ok;
 }
 
-function scoreTile(t, terr, WG, box, mine, demo) {
+function scoreTile(t, terr, WG, box, mine, demo, batch) {
   const N2 = TILE_N + 2, gx = 4, gy = 4, nC = TILE_N * TILE_N;
   const pts = tilePts(t.tx, t.ty, 0);
   const soil = WG.every(x => x.soilT && x.soilM);
@@ -1687,13 +1773,19 @@ function scoreTile(t, terr, WG, box, mine, demo) {
   const obsBy = {}; species.forEach(sp => { obsBy[sp] = obs.filter(o => o[0] === sp); });
   const E = terr.elev, el = (j, i) => E[(j + 1) * N2 + (i + 1)];
   for (let j = 0; j < TILE_N; j++) for (let i = 0; i < TILE_N; i++) {
-    const k = j * TILE_N + i, z = el(j, i);
-    const dzdx = (el(j, i + 1) - el(j, i - 1)) / (2 * CELL_M), dzdy = (el(j - 1, i) - el(j + 1, i)) / (2 * CELL_M);
-    const slope = Math.atan(Math.hypot(dzdx, dzdy)) * 180 / Math.PI;
-    const aspect = Math.atan2(-dzdx, -dzdy);                 // direction vers laquelle la pente descend, 0 = nord
-    const etMul = 1 + 0.3 * Math.cos(aspect - Math.PI) * Math.min(slope / 20, 1);
+    const k = j * TILE_N + i;
     const fx = clamp((pts[k][1] - box.w) / (box.e - box.w), 0, 1) * (gx - 1), fy = clamp((box.n - pts[k][0]) / (box.n - box.s), 0, 1) * (gy - 1);
-    const corr = (interpSeries(WG, gx, gy, fx, fy, "elevation") - z) * LAPSE;
+    const zGrid = interpSeries(WG, gx, gy, fx, fy, "elevation");
+    // Sans relief (pas encore chargé ou en panne) : terrain supposé plat, à l'altitude moyenne de la météo
+    let z = zGrid, slope = 0, aspect = 0;
+    if (E) {
+      z = el(j, i);
+      const dzdx = (el(j, i + 1) - el(j, i - 1)) / (2 * CELL_M), dzdy = (el(j - 1, i) - el(j + 1, i)) / (2 * CELL_M);
+      slope = Math.atan(Math.hypot(dzdx, dzdy)) * 180 / Math.PI;
+      aspect = Math.atan2(-dzdx, -dzdy);                 // direction vers laquelle la pente descend, 0 = nord
+    }
+    const etMul = 1 + 0.3 * Math.cos(aspect - Math.PI) * Math.min(slope / 20, 1);
+    const corr = (zGrid - z) * LAPSE;
     const cw = {
       dates,
       rain: interpSeries(WG, gx, gy, fx, fy, "rain"),
@@ -1716,12 +1808,12 @@ function scoreTile(t, terr, WG, box, mine, demo) {
       const hf = habitatFactor(sp, hab[k]);
       days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? Math.min(100, scoreAt(cw, R, ti + d, sp).score * hf * bonus) : 0; });
     });
-    const inf = { z, slope, aspect, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near,
+    const inf = { z, slope, aspect, flat: !E, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near,
       st7: soil ? avg(cw.soilT, ti - 6, ti) : null, sm: soil ? avg(cw.soilM, ti - 2, ti) : null };
     inf.af = accessFactor(inf);
     info[k] = inf;
   }
-  TILE_MEM.set(t.id, { tx: t.tx, ty: t.ty, pts, scores, info, days, day: TODAY, at: Date.now(), demo, soil,
+  TILE_MEM.set(t.id, { tx: t.tx, ty: t.ty, pts, scores, info, days, day: TODAY, at: Date.now(), demo, soil, batch, hasElev: !!E,
     srcIgn: terr.srcIgn, srcOsm: terr.srcOsm, habOk: !!terr.hab, obsOk: !!terr.obs, obs, hasAcc: !!terr.acc });
 }
 
@@ -1748,7 +1840,7 @@ function stitch(r) {
   const seen = new Set(), obs = [];
   tiles.forEach(m => m.obs.forEach(o => { const key = o.join("|"); if (!seen.has(key)) { seen.add(key); obs.push(o); } }));
   const accN = tiles.filter(m => m.hasAcc).length;
-  const src = { n: tiles.length, ign: tiles.filter(m => m.srcIgn).length, osm: tiles.filter(m => m.srcOsm).length,
+  const src = { n: tiles.length, elev: tiles.filter(m => m.hasElev).length, ign: tiles.filter(m => m.srcIgn).length, osm: tiles.filter(m => m.srcOsm).length,
     gbif: tiles.some(m => m.obsOk) ? obs.length : null, accN, acc: accN === tiles.length, soil: tiles.every(m => m.soil), missing: r.list.length - tiles.length };
   ZONES = { s, w, n, e, nx, ny, cell: CELL_M, days, scores, info, pts, obs, src, range: r, tiles: tiles.map(m => m.tx + "_" + m.ty),
     demo: tiles.some(m => m.demo), forestOk: tiles.every(m => m.habOk), at: Math.min(...tiles.map(m => m.at)), day: TODAY };
@@ -1792,7 +1884,7 @@ async function ensureView(manual, force) {
 /* À l'ouverture de la carte et à chaque nouvelle météo */
 function maybeAutoZones() {
   if (!map || ui.mode || OFFLINE) return;
-  if (!zonesOn) { if (DEMO || !load(ZONES_ON_KEY, false)) return; zonesOn = true; }
+  if (!zonesOn) { if (!load(ZONES_ON_KEY, true)) return; zonesOn = true; }
   ensureView(false);
 }
 function onMapMoved() {
@@ -1911,12 +2003,13 @@ function renderSources() {
   const part = (k, label, miss) => (k === s.n ? label : k === 0 ? miss : label + " sur " + k + "/" + s.n + " secteurs");
   const parts = [
     "météo" + (s.soil ? " et sol" : "") + " (Open-Meteo)",
+    part(s.elev, "relief", "relief pas encore chargé (sans pente ni exposition)"),
     part(s.ign, "essences d'arbres (IGN)", "essences IGN indisponibles"),
     part(s.osm, "forêts, vergers et ruisseaux (OpenStreetMap)", "OpenStreetMap indisponible"),
     s.gbif == null ? "observations indisponibles" : s.gbif + " observation" + (s.gbif > 1 ? "s" : "") + " publiée" + (s.gbif > 1 ? "s" : "") + " (GBIF)",
     s.acc ? "accès par les chemins" : s.accN ? "accès calculé sur " + s.accN + "/" + s.n + " secteurs" : "accès pas encore calculé (seule la pente compte)"
   ];
-  el.textContent = "Données : " + parts.join(" · ") + ".";
+  el.textContent = "Données : " + parts.join(" · ") + "." + (refining ? " Affinage en cours (relief, forêts, observations)…" : "");
 }
 function hideZones(forget) {
   zonesOn = false; clearTimeout(moveTimer);
@@ -1947,7 +2040,7 @@ function zonePopup(ll) {
   const th = Z.th || zoneThresholds(out), zc = zClass(out[k], th.t);
   const lines = [`<b class="lvl${level(v)}">${v}</b>/100 · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`];
   if (zc && th.rel) lines.push("Dans le " + th.labels[zc - 1].toLowerCase() + " de la vue");
-  lines.push(`${Math.round(inf.z)} m · ${expo}`, esc(hab));
+  lines.push(inf.flat ? "Relief pas encore chargé : pente et exposition non prises en compte" : `${Math.round(inf.z)} m · ${expo}`, esc(hab));
   if (inf.st7 != null) lines.push("Sol " + inf.st7.toFixed(0) + " °C · " + (inf.sm > 0.3 ? "bien humide" : inf.sm > 0.2 ? "frais" : "sec"));
   if (inf.acc != null) lines.push(inf.acc < 0 ? "Loin de toute route connue" : "≈ " + fmtDist(inf.acc) + " de marche depuis une route (" + walkMin(inf.acc) + " min)");
   const sp = who[k];
