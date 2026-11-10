@@ -389,7 +389,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
   <section id="tab-reglages" class="stack" hidden>
     <div class="today">
       <h2>Réglages du score</h2>
-      <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie tombé entre 5 et 14 jours avant, qu'il faut pour un score plein. « Températures idéales » : moyenne des 7 derniers jours.</p>
+      <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie qu'il faut pour un score plein. Pour les cèpes, chaque jour passé compte selon son éloignement, avec un maximum il y a 17 jours ; pour les autres espèces, la pluie tombée entre 5 et 14 jours avant. « Températures idéales » : moyenne des 7 derniers jours.</p>
     </div>
     <form id="setForm" class="stack"></form>
     <div class="row">
@@ -400,7 +400,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
 
     <div class="panel">
       <h2>Sauvegarde</h2>
-      <p class="small muted">Version de l'appli : 15 (5 nov. 2026).</p>
+      <p class="small muted" id="verLine">Version de l'appli.</p>
       <p class="small muted">Tes coins, accès et carnet restent dans ce téléphone. Copie-les de temps en temps dans une note ou un mail pour ne rien perdre.</p>
       <div class="row">
         <button class="btn" type="button" id="exportBtn">Copier mes données</button>
@@ -410,7 +410,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <textarea id="backupText" aria-label="Données de sauvegarde" placeholder="Colle ici une sauvegarde, puis appuie sur Restaurer."></textarea>
     </div>
 
-    <p class="safety">Ce score dit si les conditions sont réunies, pas ce que tu as ramassé. Ne mange rien que tu ne connais pas parfaitement : fais contrôler par un pharmacien ou une société mycologique. Urgence vitale : 15 ou 112. Centre antipoison de Bordeaux : 05 56 96 40 80.</p>
+    <p class="safety">Ce score dit si les conditions sont réunies, pas ce que tu as ramassé. Ne mange rien que tu ne connais pas parfaitement : fais contrôler par un pharmacien ou une société mycologique. Les champignons appartiennent au propriétaire du terrain : ramasser ailleurs que chez toi est une tolérance, pas un droit, et des arrêtés locaux limitent souvent les quantités. Urgence vitale : 15 ou 112. Centre antipoison de Bordeaux : 05 56 96 40 80.</p>
   </section>
 </div>
 
@@ -428,11 +428,23 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
 "use strict";
 
 /* ---------- 1. Mes espèces et leurs réglages de départ ----------
-   rain : pluie déclenchante (mm entre J-14 et J-5) pour un score plein
+   rain : pluie déclenchante pour un score plein (mm entre J-14 et J-5, ou sur la fenêtre « lag » si elle existe)
+   lag, wTrig, scale (cèpes) : réglés sur les observations du banc d'essai V2, puis la fenêtre de pluie
+      rouverte le 10 nov. 2026 : la pluie qui compte est celle d'il y a deux à trois semaines, pas celle des
+      derniers jours. Un poids libre accordé à la pluie de J-13 à J-6 ressort à zéro sur les données.
+   lagK : [jour de pointe, étalement] d'une pondération en cloche de la pluie, qui remplace la fenêtre carrée
+      quand elle est présente ; lag ne sert alors plus qu'à surligner la zone sur le graphique
+   shock: false (cèpes) : bonus de choc thermique retiré, aucun effet mesurable sur les observations
+   edgeMul : effet d'une lisière (1.1 par défaut ; 1 pour les cèpes, car aucun effet n'a pu être démontré :
+      la BD Forêt ne voit que la bordure du massif, jamais le bord d'une clairière, et l'écart mesuré
+      peut venir de l'imprécision des positions)
+   near : [gain, longueur en m] du bonus de proximité des observations publiées (0.25 / 600 m par défaut)
+   dil : poids de l'habitat voisin [sur place, à 80 m, à 160 m] ; absent = habitat de la case seule
    t    : [début, idéal mini, idéal maxi, fin] de la température moyenne sur 7 jours (°C)
    season : poids de la saison, de janvier (index 0) à décembre (index 11) */
 const DEFAULTS = {
-  cepe:    { label: "Cèpes",    rain: 50, t: [8, 12, 20, 25], season: [0,0,0,0,.15,.3,.4,.6,1,1,.6,.1] },
+  cepe:    { label: "Cèpes",    rain: 98, t: [8, 12, 20, 25], season: [0,0,0,0,.1,.3,.6,1,1,1,.75,.2], lag: [13, 21], lagK: [17, 4], wTrig: 1, wMoist: 0, scale: 0.95,
+             shock: false, edgeMul: 1, near: [0.8, 900], dil: [1, 0.6, 0.45] },
   girolle: { label: "Girolles", rain: 35, t: [10, 14, 22, 27], season: [0,0,0,0,.3,.8,1,1,1,.8,.4,0] },
   morille: { label: "Morilles", rain: 25, t: [4, 8, 15, 20],  season: [0,.1,.6,1,.7,.1,0,0,0,0,0,0] }
 };
@@ -483,7 +495,7 @@ if (state.version !== 2) {           // passage à la version 2 : mes espèces, 
 function persist() { save(STORE_KEY, state); }
 function spConf(key) {
   const d = DEFAULTS[key], s = state.settings[key] || {};
-  return { label: d.label, season: d.season, rain: s.rain ?? d.rain, t: s.t ?? d.t };
+  return { label: d.label, season: d.season, rain: s.rain ?? d.rain, t: s.t ?? d.t, lag: d.lag || [5, 14], lagK: d.lagK || null, shock: d.shock, wTrig: d.wTrig ?? 0.55, wMoist: d.wMoist ?? 0.45, scale: d.scale ?? 1 };
 }
 function coinById(id) { return state.coins.find(c => c.id === id); }
 
@@ -616,15 +628,29 @@ function litterSeries(w) {
   return R;
 }
 function sum(arr, from, to) { let s = 0; for (let i = Math.max(0, from); i <= to; i++) s += arr[i] || 0; return s; }
+/* Pluie utile : chaque jour passé compte selon son éloignement, en cloche autour du jour de pointe.
+   Remplace la fenêtre carrée, qui faisait sauter le score quand une averse en sortait d'un jour à l'autre. */
+const KW = {};
+function rainWeights(pk, sig) {
+  const k = pk + "_" + sig;
+  if (!KW[k]) { const w = []; for (let d = 0; d <= pk + 4 * sig; d++) w.push(Math.exp(-0.5 * ((d - pk) / sig) ** 2)); KW[k] = w; }
+  return KW[k];
+}
+function rainUseful(rain, i, pk, sig) {
+  const w = rainWeights(pk, sig);
+  let s = 0;
+  for (let d = 0; d < w.length; d++) { const j = i - d; if (j < 0) break; s += w[d] * (rain[j] || 0); }
+  return s;
+}
 function avg(arr, from, to) { let s = 0, n = 0; for (let i = Math.max(0, from); i <= to; i++) { s += arr[i]; n++; } return n ? s / n : 0; }
 
 /* Température du sol à 6 cm (moyenne 7 jours) favorable à chaque espèce : [début, idéal mini, idéal maxi, fin] */
-const SOIL_T = { cepe: [8, 11, 17, 22], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17] };
+const SOIL_T = { cepe: [10, 13, 21, 26], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17] };
 function scoreAt(w, R, i, spKey) {
   const sp = spConf(spKey);
   const month = Number(w.dates[i].slice(5, 7)) - 1;
   const season = sp.season[month];
-  const trigMm = sum(w.rain, i - 14, i - 5);
+  const trigMm = sp.lagK ? rainUseful(w.rain, i, sp.lagK[0], sp.lagK[1]) : sum(w.rain, i - sp.lag[1], i - sp.lag[0]);
   const trig = clamp(trigMm / sp.rain, 0, 1);
   let moist = R[i] / LITTER_CAP;
   const t7 = avg(w.tmean, i - 6, i);
@@ -636,10 +662,10 @@ function scoreAt(w, R, i, spKey) {
   const frost = Math.min(...w.tmin.slice(Math.max(0, i - 2), i + 1)) < -1 ? 0.4 : 1;
   // Choc thermique : un net rafraîchissement quelques jours après la pluie lance souvent les cèpes
   let shock = false;
-  if (spKey === "cepe" && trig > 0.5) for (let j = Math.max(3, i - 10); j <= i - 3; j++) {
+  if (sp.shock !== false && spKey === "cepe" && trig > 0.5) for (let j = Math.max(3, i - 10); j <= i - 3; j++) {
     if (avg(w.tmean, j - 3, j - 1) - avg(w.tmean, j, j + 2) >= 3) { shock = true; break; }
   }
-  const raw = season * temp * frost * (0.55 * trig + 0.45 * moist) * (shock ? 1.15 : 1);
+  const raw = season * temp * frost * (sp.wTrig * trig + sp.wMoist * moist) * (shock ? 1.15 : 1) * sp.scale;
   return { score: Math.min(100, Math.round(100 * raw)), season, trig, trigMm, moist, t7, temp, frost, st7, sm, shock };
 }
 function level(s) { let l = 0; LEVELS.forEach((L, k) => { if (s >= L.min) l = k; }); return l; }
@@ -664,9 +690,10 @@ function analyse(coin, w) {
 }
 
 function explain(a) {
-  const t = a.lead.today, sp = a.lead.label.toLowerCase();
-  let txt = Math.round(t.trigMm) + " mm tombés il y a 5 à 14 jours, litière " +
-    (t.moist > 0.6 ? "bien humide" : t.moist > 0.3 ? "moyennement humide" : "sèche") + ", " +
+  const t = a.lead.today, sp = a.lead.label.toLowerCase(), lag = spConf(a.lead.key).lag;
+  const conf = spConf(a.lead.key);
+  let txt = Math.round(t.trigMm) + (conf.lagK ? " mm de pluie utile (surtout celle d'il y a " + lag[0] + " à " + lag[1] + " jours)" : " mm tombés il y a " + lag[0] + " à " + lag[1] + " jours") +
+    (conf.wMoist ? ", litière " + (t.moist > 0.6 ? "bien humide" : t.moist > 0.3 ? "moyennement humide" : "sèche") : "") + ", " +
     t.t7.toFixed(0) + " °C de moyenne sur 7 jours.";
   if (t.st7 != null) txt += " Sol à " + t.st7.toFixed(0) + " °C" + (t.sm != null ? (t.sm > 0.3 ? ", bien humide" : t.sm > 0.2 ? ", frais" : ", sec") : "") + ".";
   if (t.shock) txt += " Coup de frais après la pluie : bon signal pour les cèpes.";
@@ -699,7 +726,7 @@ function rainChart(w, a) {
     s += `<line x1="${padL}" x2="${W - 6}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
     s += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
   });
-  const w0 = a.ti - 14 - from, w1 = a.ti - 5 - from;
+  const lag = spConf(a.lead.key).lag, w0 = a.ti - lag[1] - from, w1 = a.ti - lag[0] - from;
   if (w1 >= 0) {
     const x0 = padL + Math.max(0, w0) * bw, x1 = padL + (w1 + 1) * bw;
     s += `<rect x="${x0}" y="${padT}" width="${x1 - x0}" height="${plotH}" fill="var(--rain-soft)" opacity="0.35"/>`;
@@ -1198,7 +1225,8 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "15 · 5 nov. 2026";
+const APP_VERSION = "19 · 10 nov. 2026";
+try { document.getElementById("verLine").textContent = "Version de l'appli : " + APP_VERSION + "."; } catch (e) {}
 const DIAG = { src: {}, errors: [] };
 const DIAG_LABELS = { meteo: "Météo et sol (Open-Meteo)", ign: "Essences d'arbres (IGN)", osm: "Forêts, vergers, ruisseaux (OpenStreetMap)",
   relief: "Relief (Open-Meteo)", gbif: "Observations (GBIF)", trails: "Chemins et routes (OpenStreetMap)" };
@@ -1453,9 +1481,30 @@ function buildHabitat(pts, nx, ny, ign, osm) {
 function habitatFactor(sp, h) {
   const H = HABITAT[sp];
   let f = h.kind === "forest" ? H[h.ess || "unknown"] : (H[h.kind] ?? 0);
-  if (sp !== "morille" && h.kind === "forest") { if (h.open) f *= 0.85; if (h.edge) f *= 1.1; }
+  if (sp !== "morille" && h.kind === "forest") { if (h.open) f *= 0.85; if (h.edge) f *= (DEFAULTS[sp].edgeMul ?? 1.1); }
   if (sp === "morille" && h.water) f *= 1.25;
   return Math.min(1.2, f);
+}
+
+/* Habitat étendu aux environs : une case découverte à moins de 160 m d'une forêt qui convient n'est plus
+   mise à zéro, parce que la BD Forêt ignore les petits bois et les haies, et qu'un coin n'est jamais placé
+   au mètre près. dil = [poids sur place, à 80 m, à 160 m] ; sans dil, la case ne compte qu'elle-même.
+   habB = grille avec bordure (pas de couture entre secteurs) ; hab = les cases du secteur seul. */
+function habFactorGrid(sp, habB, hab) {
+  const base = hab.map(h => habitatFactor(sp, h)), D = DEFAULTS[sp].dil, NB = TILE_N + 2 * HAB_B;
+  if (!D || !habB || habB.length !== NB * NB) return base;
+  const out = base.slice();
+  for (let j = 0; j < TILE_N; j++) for (let i = 0; i < TILE_N; i++) {
+    let best = out[j * TILE_N + i];
+    for (let dj = -HAB_B; dj <= HAB_B; dj++) for (let di = -HAB_B; di <= HAB_B; di++) {
+      const r = Math.round(Math.hypot(di, dj));
+      if (r < 1 || r > HAB_B || !D[r]) continue;
+      const v = D[r] * habitatFactor(sp, habB[(j + HAB_B + dj) * NB + (i + HAB_B + di)]);
+      if (v > best) best = v;
+    }
+    out[j * TILE_N + i] = best;
+  }
+  return out;
 }
 
 async function fetchGBIF(s, w, n, e, onProg) {
@@ -1466,12 +1515,14 @@ async function fetchGBIF(s, w, n, e, onProg) {
     const url = "https://api.gbif.org/v1/occurrence/search?" + names +
       "&decimalLatitude=" + (s - pad).toFixed(3) + "," + (n + pad).toFixed(3) +
       "&decimalLongitude=" + (w - pad).toFixed(3) + "," + (e + pad).toFixed(3) +
-      "&hasCoordinate=true&hasGeospatialIssue=false&occurrenceStatus=PRESENT&limit=300";
+      "&hasCoordinate=true&hasGeospatialIssue=false&occurrenceStatus=PRESENT&limit=300" +
+      "&license=CC0_1_0&license=CC_BY_4_0";   // observations librement réutilisables seulement
     const r = await fetchRetry(url, {}, 2, 20000);
     const j = await r.json();
     (j.results || []).forEach(o => {
       if (o.decimalLatitude == null || o.decimalLongitude == null) return;
       if (o.coordinateUncertaintyInMeters && o.coordinateUncertaintyInMeters > 2000) return;
+      if (!/(publicdomain\/zero|licenses\/by\/)/i.test(String(o.license || ""))) return;   // double sécurité : rien de « pas d'usage commercial »
       out.push([sp, +o.decimalLatitude.toFixed(5), +o.decimalLongitude.toFixed(5), o.year || null]);
     });
     done++; if (onProg) onProg(done, list.length);
@@ -1614,7 +1665,7 @@ function interpSeries(WG, gx, gy, fx, fy, key) {
    La carte est découpée en secteurs fixes de 1,6 km (20 × 20 cases de 80 m).
    Quand tu déplaces la carte, seuls les secteurs nouveaux ou périmés sont calculés ;
    le relief, les forêts, les observations et l'accès de chaque secteur restent en mémoire. */
-const CELL_M = 80, TILE_N = 20, MAX_TILES = 24;
+const CELL_M = 80, TILE_N = 20, MAX_TILES = 24, HAB_B = 2;   // HAB_B : cases d'habitat gardées autour du secteur
 const TILE_DLAT = CELL_M * TILE_N / 111320;
 const TILE_DLON = CELL_M * TILE_N / (111320 * Math.cos(HOME.lat * Math.PI / 180));
 const TILES_KEY = "meteo-coins-tiles", ZONES_ON_KEY = "meteo-coins-zones-on", MAPVIEW_KEY = "meteo-coins-mapview";
@@ -1716,11 +1767,10 @@ function firstForest(pIgn, pOsm) {
   });
 }
 function storeHab(tiles, ign, osm) {
-  const N2 = TILE_N + 2;
+  const NB = TILE_N + 2 * HAB_B;
   tiles.forEach(t => {
-    const h22 = buildHabitat(tilePts(t.tx, t.ty, 1), N2, N2, ign, osm), h = [];
-    for (let j = 1; j <= TILE_N; j++) for (let i = 1; i <= TILE_N; i++) h.push(encodeHab(h22[j * N2 + i]));
-    tput(t.id, { hab: h, srcIgn: !!ign, srcOsm: !!osm, habAt: Date.now() });
+    const g = buildHabitat(tilePts(t.tx, t.ty, HAB_B), NB, NB, ign, osm);
+    tput(t.id, { hab: g.map(encodeHab), srcIgn: !!ign, srcOsm: !!osm, habAt: Date.now() });
   });
 }
 function storeObs(tiles, obs) {
@@ -1731,7 +1781,7 @@ function storeObs(tiles, obs) {
 }
 function terrOf(id) {
   const c = tterrain(id);
-  return { elev: c.elev && c.elev.length === (TILE_N + 2) * (TILE_N + 2) ? c.elev : null, hab: c.hab ? decodeHab(c.hab) : null,
+  return { elev: c.elev && c.elev.length === (TILE_N + 2) * (TILE_N + 2) ? c.elev : null, hab: Array.isArray(c.hab) && c.hab.length === (TILE_N + 2 * HAB_B) ** 2 ? decodeHab(c.hab) : null,
     srcIgn: !!c.srcIgn, srcOsm: !!c.srcOsm, obs: Array.isArray(c.obs) ? c.obs : null,
     acc: Array.isArray(c.acc) && c.acc.length === TILE_N * TILE_N ? c.acc : null };
 }
@@ -1770,7 +1820,7 @@ async function computeTiles(list, auto) {
     const title = (auto ? "Mise à jour des zones" : "Calcul des zones") + " · " + list.length + " secteur" + (list.length > 1 ? "s" : "");
     if (!DEMO) {
       const needElev = list.filter(t => !terrOf(t.id).elev);
-      const needHab = list.filter(t => { const c = tterrain(t.id), fresh = (c.srcIgn && c.srcOsm) || Date.now() - (c.habAt || 0) < 6 * 3600e3; return !(c.hab && c.hab.length === TILE_N * TILE_N && fresh); });
+      const needHab = list.filter(t => { const c = tterrain(t.id), fresh = (c.srcIgn && c.srcOsm) || Date.now() - (c.habAt || 0) < 6 * 3600e3; return !(c.hab && c.hab.length === (TILE_N + 2 * HAB_B) ** 2 && fresh); });
       const needObs = list.filter(t => !Array.isArray(tterrain(t.id).obs));
       const defs = { meteo: { w: 2, label: "météo et sol", creep: true } };
       if (needHab.length) defs.forest = { w: 2, label: "forêts", creep: true };
@@ -1811,9 +1861,8 @@ async function computeTiles(list, auto) {
       const one = Object.values(dw)[0]; one.elevation = 450;
       WG = gpts.map(() => one);
       list.forEach(t => {
-        const dt = demoTile(tilePts(t.tx, t.ty, 1)), h = [];
-        for (let j = 1; j <= TILE_N; j++) for (let i = 1; i <= TILE_N; i++) h.push(dt.hab[j * N2 + i]);
-        T[t.id] = { elev: dt.elev, hab: h, srcIgn: false, srcOsm: false, obs: [], acc: null };
+        const dt = demoTile(tilePts(t.tx, t.ty, 1));
+        T[t.id] = { elev: dt.elev, hab: demoTile(tilePts(t.tx, t.ty, HAB_B)).hab, srcIgn: false, srcOsm: false, obs: [], acc: null };
       });
     }
     job.begin("calc"); await tick();
@@ -1849,7 +1898,10 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
   const scores = {}; species.forEach(sp => { scores[sp] = days.map(() => new Float32Array(nC)); });
   const pot = {}; species.forEach(sp => { pot[sp] = new Float32Array(nC); });
   const info = new Array(nC);
-  const hab = terr.hab || pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" }));
+  const NB = TILE_N + 2 * HAB_B, habB = terr.hab && terr.hab.length === NB * NB ? terr.hab : null;
+  const hab = habB ? pts.map((_, k) => habB[(((k / TILE_N) | 0) + HAB_B) * NB + (k % TILE_N) + HAB_B])
+                   : pts.map(() => ({ kind: "forest", ess: "unknown", open: false, src: "" }));
+  const hfG = {}; species.forEach(sp => { hfG[sp] = habFactorGrid(sp, habB, hab); });
   const obs = terr.obs || [];
   const obsBy = {}; species.forEach(sp => { obsBy[sp] = obs.filter(o => o[0] === sp); });
   const E = terr.elev, el = (j, i) => E[(j + 1) * N2 + (i + 1)];
@@ -1878,20 +1930,22 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
       cw.soilT = interpSeries(WG, gx, gy, fx, fy, "soilT").map(v => v + corr);
       cw.soilM = interpSeries(WG, gx, gy, fx, fy, "soilM");
     }
-    const R = litterSeries(cw), near = {};
+    const R = litterSeries(cw), near = {}, ext = {};
     species.forEach(sp => {
       // Observations publiées et tes bonnes récoltes à proximité : léger bonus
       let dObs = Infinity, dMine = Infinity;
       obsBy[sp].forEach(o => { dObs = Math.min(dObs, fastDist(pts[k], [o[1], o[2]])); });
       mine.forEach(o => { if (o[0] === sp) dMine = Math.min(dMine, fastDist(pts[k], [o[1], o[2]])); });
       near[sp] = { obs: dObs, mine: dMine };
-      const bonus = (1 + 0.25 * Math.exp(-dObs / 600)) * (1 + 0.2 * Math.exp(-dMine / 300));
-      const hf = habitatFactor(sp, hab[k]);
+      const nr = DEFAULTS[sp].near || [0.25, 600];
+      const bonus = (1 + nr[0] * Math.exp(-dObs / nr[1])) * (1 + 0.2 * Math.exp(-dMine / 300));
+      const hf = hfG[sp][k];
+      ext[sp] = hf > habitatFactor(sp, hab[k]) + 1e-6;
       days.forEach((_, d) => { scores[sp][d][k] = hf > 0 ? Math.min(100, scoreAt(cw, R, ti + d, sp).score * hf * bonus) : 0; });
       // Potentiel du terrain, sans la météo : essences, lisières, exposition fraîche, observations
       pot[sp][k] = Math.min(100, 80 * hf * bonus * (1 + 0.1 * Math.cos(aspect) * Math.min(slope / 20, 1)));
     });
-    const inf = { z, slope, aspect, flat: !E, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near,
+    const inf = { z, slope, aspect, flat: !E, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near, ext,
       st7: soil ? avg(cw.soilT, ti - 6, ti) : null, sm: soil ? avg(cw.soilM, ti - 2, ti) : null };
     inf.af = accessFactor(inf);
     info[k] = inf;
@@ -1909,7 +1963,7 @@ function stitch(r) {
   const scores = {}; species.forEach(sp => { scores[sp] = days.map(() => new Float32Array(nx * ny)); });
   const pot = {}; species.forEach(sp => { pot[sp] = new Float32Array(nx * ny); });
   const info = new Array(nx * ny), pts = new Array(nx * ny);
-  const empty = { missing: true, af: 0, z: 0, slope: 0, aspect: 0, hab: { kind: "none", ess: "unknown" }, acc: null, near: {} };
+  const empty = { missing: true, af: 0, z: 0, slope: 0, aspect: 0, hab: { kind: "none", ess: "unknown" }, acc: null, near: {}, ext: {} };
   const s = r.ty0 * TILE_DLAT, n = (r.ty1 + 1) * TILE_DLAT, w = r.tx0 * TILE_DLON, e = (r.tx1 + 1) * TILE_DLON;
   const dLat = TILE_DLAT / TILE_N, dLon = TILE_DLON / TILE_N;
   for (let J = 0; J < ny; J++) for (let I = 0; I < nx; I++) {
@@ -2167,6 +2221,7 @@ function zonePopup(ll) {
   if (inf.st7 != null) lines.push("Sol " + inf.st7.toFixed(0) + " °C · " + (inf.sm > 0.3 ? "bien humide" : inf.sm > 0.2 ? "frais" : "sec"));
   if (inf.acc != null) lines.push(inf.acc < 0 ? "Loin de toute route connue" : "≈ " + fmtDist(inf.acc) + " de marche depuis une route (" + walkMin(inf.acc) + " min)");
   const sp = who[k];
+  if (sp && inf.ext && inf.ext[sp]) lines.push("Bois à moins de 160 m : habitat du voisinage pris en compte");
   if (sp && inf.near[sp]) {
     if (inf.near[sp].mine < 400) lines.push("Près d'un de tes coins productifs");
     else if (inf.near[sp].obs < 2000) lines.push(DEFAULTS[sp].label + " observés à " + fmtDist(inf.near[sp].obs) + " (GBIF)");

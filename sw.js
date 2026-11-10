@@ -1,6 +1,6 @@
 // Garde l'appli en mémoire sur le téléphone pour qu'elle s'ouvre même sans réseau.
 // La météo, le relief, les forêts et les chemins viennent toujours d'Internet.
-const CACHE = "meteo-coins-v15";
+const CACHE = "meteo-coins-v19";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"];
 
