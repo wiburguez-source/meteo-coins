@@ -99,6 +99,14 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .btn.small { padding: 6px 10px; font-size: 0.86rem; }
 .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sm-row { display: grid; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.sm-row p { margin: 0; }
+.sm-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
+.sm-c { text-align: center; font-size: .66rem; padding: 5px 0; border-radius: 5px; background: var(--sunk, #e5e5e5); color: var(--muted, #666); border: 2px solid transparent; }
+.sm-c.low { background: color-mix(in srgb, var(--s1) 22%, var(--sunk)); color: inherit; }
+.sm-c.part { background: color-mix(in srgb, var(--s2) 35%, var(--sunk)); color: inherit; }
+.sm-c.full { background: var(--s3); color: var(--accent-fg); font-weight: 700; }
+.sm-c.now { border-color: var(--fg); }
 .rename-box { margin: 6px 0 2px; }
 .rename-box .rn-input { flex: 1; min-width: 0; }
 
@@ -393,6 +401,11 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <h2>Réglages du score</h2>
       <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie qu'il faut pour un score plein. Pour les cèpes, chaque jour passé compte selon son éloignement, avec un maximum il y a 17 jours ; pour les autres espèces, la pluie tombée entre 5 et 14 jours avant. « Températures idéales » : moyenne des 7 derniers jours.</p>
     </div>
+    <div class="today" style="margin-top:4px">
+      <h2>Mémo des saisons</h2>
+      <p class="muted small">Les mois que l'appli utilise réellement pour calculer le score. Le mois en cours est encadré. Un mois gris veut dire score à zéro, quelle que soit la météo.</p>
+    </div>
+    <div id="seasonMemo" class="stack"></div>
     <form id="setForm" class="stack"></form>
     <div class="row">
       <button class="btn primary" type="button" id="setSave">Enregistrer les réglages</button>
@@ -767,7 +780,7 @@ function coinCard(c) {
       <div class="bar"><i class="bg${level(d.score)}" style="height:${Math.max(4, d.score)}%"></i></div>
       <span class="d">${k === 0 ? "auj." : dayName(d.date)}</span>
     </div>`).join("");
-  const rows = a.perSp.map(p => `<tr><td>${esc(p.label)}</td><td class="n lvl${level(p.today.score)}">${p.today.score}</td><td>${p.best.date === TODAY ? "aujourd'hui" : dayName(p.best.date) + " " + Number(p.best.date.slice(8))} · ${p.best.score}</td></tr>`).join("");
+  const rows = a.perSp.map(p => `<tr><td>${esc(p.label)}</td><td class="n lvl${level(p.today.score)}">${p.today.score}</td><td>${p.best.score > 0 ? (p.best.date === TODAY ? "aujourd'hui" : dayName(p.best.date) + " " + Number(p.best.date.slice(8))) + " · " + p.best.score : esc(seasonNote(p.key))}</td></tr>`).join("");
   const elev = w.elevation != null ? ` · ${Math.round(w.elevation)} m` : "";
   return `
   <article class="coin">
@@ -827,6 +840,42 @@ function renameCoin(id) {
     if (ev.key === "Enter") { ev.preventDefault(); done(true); }
     if (ev.key === "Escape") done(false);
   });
+}
+
+const MONTH_SHORT = ["jan.", "fév.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const MONTH_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+/* Liste de mois en français : « mars à juin », ou « mars, mai et juillet » si la saison est coupée. */
+function monthSpan(ms) {
+  if (!ms.length) return "aucun mois";
+  const suite = ms.every((m, i) => i === 0 || m === ms[i - 1] + 1);
+  if (suite && ms.length > 1) return MONTH_LONG[ms[0]] + " à " + MONTH_LONG[ms[ms.length - 1]];
+  const n = ms.map(m => MONTH_LONG[m]);
+  return n.length > 1 ? n.slice(0, -1).join(", ") + " et " + n[n.length - 1] : n[0];
+}
+/* Ce que l'appli attend d'un mois donné, pour une espèce : 0 = rien, 1 = pleine saison. */
+function seasonOf(k) { return spConf(k).season || DEFAULTS[k].season; }
+/* Quand le score reste à zéro toute la semaine, dire pourquoi plutôt qu'afficher une date. */
+function seasonNote(k) {
+  const s = seasonOf(k), now = new Date().getMonth();
+  if (s[now] > 0) return "rien cette semaine";
+  for (let i = 1; i <= 12; i++) { const m = (now + i) % 12; if (s[m] > 0) return "à partir de " + MONTH_LONG[m]; }
+  return "hors saison";
+}
+function renderSeasonMemo() {
+  const box = $("seasonMemo");
+  if (!box) return;
+  const now = new Date().getMonth();
+  box.innerHTML = Object.keys(DEFAULTS).map(k => {
+    const s = seasonOf(k);
+    const cells = s.map((v, m) => `<span class="sm-c${v >= 0.8 ? " full" : v >= 0.3 ? " part" : v > 0 ? " low" : ""}${m === now ? " now" : ""}" title="${MONTH_LONG[m]} : ${Math.round(v * 100)} % du score possible">${MONTH_SHORT[m]}</span>`).join("");
+    const full = s.map((v, m) => (v >= 0.8 ? m : -1)).filter(m => m >= 0);
+    const any = s.map((v, m) => (v > 0 ? m : -1)).filter(m => m >= 0);
+    const ici = s[now] > 0
+      ? `En ${MONTH_LONG[now]}, le score peut atteindre ${Math.round(s[now] * 100)} % de son maximum.`
+      : `En ${MONTH_LONG[now]}, le score reste à zéro : ${seasonNote(k)}.`;
+    return `<div class="sm-row"><strong>${esc(DEFAULTS[k].label)}</strong><div class="sm-strip">${cells}</div>
+      <p class="small muted">Pleine saison : ${monthSpan(full)}. Possible : ${monthSpan(any)}. ${ici}</p></div>`;
+  }).join("");
 }
 
 function renderCoins() {
@@ -1257,7 +1306,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "20 · 10 nov. 2026";
+const APP_VERSION = "21 · 12 nov. 2026";
 try { document.getElementById("verLine").textContent = "Version de l'appli : " + APP_VERSION + "."; } catch (e) {}
 const DIAG = { src: {}, errors: [] };
 const DIAG_LABELS = { meteo: "Météo et sol (Open-Meteo)", ign: "Essences d'arbres (IGN)", osm: "Forêts, vergers, ruisseaux (OpenStreetMap)",
@@ -2569,7 +2618,7 @@ function computeAll() {
   ANALYSES = {};
   state.coins.forEach(c => { const w = WEATHER[wkey(c)]; if (w && c.species.length) ANALYSES[c.id] = analyse(c, w); });
 }
-function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLogForm(); renderLogs(); drawMap(); renderSheet(msg); }
+function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLogForm(); renderLogs(); renderSeasonMemo(); drawMap(); renderSheet(msg); }
 
 async function refresh(force, msg) {
   const now = isoLocal(new Date());
