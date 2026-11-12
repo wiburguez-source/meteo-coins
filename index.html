@@ -99,6 +99,8 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .btn.small { padding: 6px 10px; font-size: 0.86rem; }
 .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rename-box { margin: 6px 0 2px; }
+.rename-box .rn-input { flex: 1; min-width: 0; }
 
 .today { display: flex; flex-direction: column; gap: 4px; }
 .today strong { font-family: var(--font-display); font-size: 1.15rem; }
@@ -752,6 +754,7 @@ function coinCard(c) {
   const actions = `<div class="row">
       <a class="btn small access" href="${gmDirections(t.lat, t.lon)}" target="_blank" rel="noopener">${c.parking ? "Aller au parking" : "Y aller"} (Google Maps)</a>
       <button class="btn small" type="button" data-show="${c.id}">Voir sur la carte</button>
+      <button class="btn small" type="button" data-rename="${c.id}">Renommer</button>
     </div>`;
   if (!w || !a) {
     return `<article class="coin"><div class="coin-head"><div><h3 class="coin-name">${esc(c.name)}${ex}</h3><p class="tagline">Météo indisponible pour ce coin.</p></div></div>${actions}</article>`;
@@ -795,6 +798,35 @@ function coinCard(c) {
       </div>
     </details>
   </article>`;
+}
+
+/* Renommer depuis l'onglet Coins : c'est la première chose qu'on veut corriger,
+   et passer par la carte puis « modifier le coin » n'était pas trouvable. */
+function renameCoin(id) {
+  const c = coinById(id), btn = document.querySelector(`[data-rename="${id}"]`);
+  if (!c || !btn) return;
+  document.querySelectorAll(".rename-box").forEach(b => b.remove());
+  const card = btn.closest(".coin"), h = card.querySelector(".coin-name");
+  const box = document.createElement("div");
+  box.className = "row rename-box";
+  box.innerHTML = `<input type="text" class="rn-input" aria-label="Nouveau nom du coin" maxlength="60">
+    <button class="btn small primary" type="button" data-rn="ok">Enregistrer</button>
+    <button class="btn small ghost" type="button" data-rn="no">Annuler</button>`;
+  h.after(box);
+  const inp = box.querySelector(".rn-input");
+  inp.value = c.name;
+  inp.focus(); inp.select();
+  const done = ok => {
+    const v = inp.value.trim();
+    if (ok && v && v !== c.name) { c.name = v; c.example = false; persist(); refresh(false, "Coin renommé."); return; }
+    box.remove();
+  };
+  box.querySelector('[data-rn="ok"]').onclick = () => done(true);
+  box.querySelector('[data-rn="no"]').onclick = () => done(false);
+  inp.addEventListener("keydown", ev => {
+    if (ev.key === "Enter") { ev.preventDefault(); done(true); }
+    if (ev.key === "Escape") done(false);
+  });
 }
 
 function renderCoins() {
@@ -1055,7 +1087,7 @@ function renderSheet(msg) {
       <button class="btn small" type="button" id="cRecord">Enregistrer le chemin en marchant</button>
     </div>
     <div class="row">
-      <button class="btn small" type="button" id="cEdit">Modifier / déplacer le coin</button>
+      <button class="btn small" type="button" id="cEdit">Renommer, déplacer ou modifier</button>
       <button class="btn small danger" type="button" id="cDel">Supprimer</button>
       <button class="btn small ghost" type="button" id="cClose">Fermer</button>
     </div>`;
@@ -1225,7 +1257,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "19 · 10 nov. 2026";
+const APP_VERSION = "20 · 10 nov. 2026";
 try { document.getElementById("verLine").textContent = "Version de l'appli : " + APP_VERSION + "."; } catch (e) {}
 const DIAG = { src: {}, errors: [] };
 const DIAG_LABELS = { meteo: "Météo et sol (Open-Meteo)", ign: "Essences d'arbres (IGN)", osm: "Forêts, vergers, ruisseaux (OpenStreetMap)",
@@ -2615,6 +2647,8 @@ $("zonesMode").onchange = () => {
   drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Couleurs changées : relance la recherche de chemin."); }
 };
 $("coinList").addEventListener("click", ev => {
+  const r = ev.target.closest("[data-rename]");
+  if (r) { renameCoin(r.dataset.rename); return; }
   const s = ev.target.closest("[data-show]");
   if (s) { showTab("carte"); setTimeout(() => selectCoin(s.dataset.show, true), 80); }
 });
