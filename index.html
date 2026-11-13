@@ -340,12 +340,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <p class="small muted" id="zonesIntro">Montre les endroits qui réunissent les conditions, en croisant pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Les zones se calculent par secteurs de 1,6 km et suivent la carte quand tu la déplaces. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
       <div class="grid2" id="zonesCtrls" hidden>
         <div class="f span2"><span>Espèces affichées</span>
-          <div class="spchips" id="zonesSpChips" role="group" aria-label="Espèces affichées">
-            <button type="button" data-sp="all">Toutes</button>
-            <button type="button" data-sp="cepe">Cèpes</button>
-            <button type="button" data-sp="girolle">Girolles</button>
-            <button type="button" data-sp="morille">Morilles</button>
-          </div>
+          <div class="spchips" id="zonesSpChips" role="group" aria-label="Espèces affichées"></div>
         </div>
         <label class="f">Jour <select id="zonesDay"></select></label>
         <label class="f">Couleurs
@@ -433,7 +428,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
   <section id="tab-reglages" class="stack" hidden>
     <div class="today">
       <h2>Réglages du score</h2>
-      <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie qu'il faut pour un score plein. Pour les cèpes, chaque jour passé compte selon son éloignement, avec un maximum il y a 17 jours ; pour les autres espèces, la pluie tombée entre 5 et 14 jours avant. « Températures idéales » : moyenne des 7 derniers jours.</p>
+      <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie qu'il faut pour un score plein. Pour les cèpes, chaque jour passé compte selon son éloignement, avec un maximum il y a 17 jours ; pour les autres espèces, la pluie tombée dans une fenêtre propre à chacune (girolles et morilles 5 à 14 jours avant, trompettes 8 à 22, chanterelles en tube 8 à 25). « Températures idéales » : moyenne des 7 derniers jours.</p>
     </div>
     <div class="today" style="margin-top:4px">
       <h2>Mémo des saisons</h2>
@@ -496,12 +491,22 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
    near : [gain, longueur en m] du bonus de proximité des observations publiées (0.25 / 600 m par défaut)
    dil : poids de l'habitat voisin [sur place, à 80 m, à 160 m] ; absent = habitat de la case seule
    t    : [début, idéal mini, idéal maxi, fin] de la température moyenne sur 7 jours (°C)
-   season : poids de la saison, de janvier (index 0) à décembre (index 11) */
+   season : poids de la saison, de janvier (index 0) à décembre (index 11)
+   frostMin : température mini (°C) en dessous de laquelle une gelée des 3 derniers jours freine la pousse
+      (−1 par défaut). Les espèces d'arrière-saison tiennent le gel : sans ce réglage, la première gelée
+      de novembre éteindrait la carte au moment précis où elles poussent. */
 const DEFAULTS = {
   cepe:    { label: "Cèpes",    rain: 98, t: [8, 12, 20, 25], season: [0,0,0,0,.1,.3,.6,1,1,1,.75,.2], lag: [13, 21], lagK: [17, 4], wTrig: 1, wMoist: 0, scale: 0.95,
              shock: false, edgeMul: 1, near: [0.8, 900], dil: [1, 0.6, 0.45] },
   girolle: { label: "Girolles", rain: 35, t: [10, 14, 22, 27], season: [0,0,0,0,.3,.8,1,1,1,.8,.4,0] },
-  morille: { label: "Morilles", rain: 25, t: [4, 8, 15, 20],  season: [0,.1,.6,1,.7,.1,0,0,0,0,0,0] }
+  morille: { label: "Morilles", rain: 25, t: [4, 8, 15, 20],  season: [0,.1,.6,1,.7,.1,0,0,0,0,0,0] },
+  /* Arrière-saison : elles prennent le relais des cèpes dans les mêmes bois, puis vont jusqu'à l'hiver.
+     Moins dépendantes d'une grosse pluie déclenchante que les cèpes, mais il leur faut un sol qui reste humide,
+     d'où un seuil de pluie bas et un poids donné à l'humidité de la litière plutôt qu'au déclenchement. */
+  trompette:   { label: "Trompettes", rain: 45, t: [3, 7, 16, 22], season: [0,0,0,0,0,0,0,.1,.45,1,1,.4],
+                 lag: [8, 22], wTrig: 0.4, wMoist: 0.6, edgeMul: 1.25, frostMin: -3, dil: [1, 0.6, 0.45] },
+  chanterelle: { label: "Chanterelles en tube", rain: 40, t: [0, 4, 14, 20], season: [.25,.05,0,0,0,0,0,0,.2,.7,1,1],
+                 lag: [8, 25], wTrig: 0.35, wMoist: 0.65, edgeMul: 1.15, frostMin: -7, dil: [1, 0.6, 0.45] }
 };
 const RESULTS = ["Rien", "Quelques-uns", "Bonne récolte", "Grosse poussée"];
 const LEVELS = [
@@ -579,7 +584,7 @@ function spConf(key) {
   const d = DEFAULTS[key], s = state.settings[key] || {};
   const st = Array.isArray(s.t) && s.t.length === 4 && s.t.every(Number.isFinite) ? s.t : d.t;
   const sr = Number.isFinite(s.rain) && s.rain > 0 ? s.rain : d.rain;
-  return { label: d.label, season: d.season, rain: sr, t: st, lag: d.lag || [5, 14], lagK: d.lagK || null, shock: d.shock, wTrig: d.wTrig ?? 0.55, wMoist: d.wMoist ?? 0.45, scale: d.scale ?? 1 };
+  return { label: d.label, season: d.season, rain: sr, t: st, lag: d.lag || [5, 14], lagK: d.lagK || null, shock: d.shock, wTrig: d.wTrig ?? 0.55, wMoist: d.wMoist ?? 0.45, scale: d.scale ?? 1, frostMin: d.frostMin ?? -1 };
 }
 function coinById(id) { return state.coins.find(c => c.id === id); }
 
@@ -732,7 +737,7 @@ function rainUseful(rain, i, pk, sig) {
 function avg(arr, from, to) { let s = 0, n = 0; for (let i = Math.max(0, from); i <= to; i++) { s += arr[i]; n++; } return n ? s / n : 0; }
 
 /* Température du sol à 6 cm (moyenne 7 jours) favorable à chaque espèce : [début, idéal mini, idéal maxi, fin] */
-const SOIL_T = { cepe: [10, 13, 21, 26], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17] };
+const SOIL_T = { cepe: [10, 13, 21, 26], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17], trompette: [4, 8, 17, 23], chanterelle: [1, 5, 15, 21] };
 function scoreAt(w, R, i, spKey) {
   const sp = spConf(spKey);
   const month = Number(w.dates[i].slice(5, 7)) - 1;
@@ -746,7 +751,7 @@ function scoreAt(w, R, i, spKey) {
   // Sol : sa température compte autant que celle de l'air, son humidité autant que celle de la litière
   if (w.soilT) { st7 = avg(w.soilT, i - 6, i); temp = Math.sqrt(temp * trapeze(st7, SOIL_T[spKey] || sp.t)); }
   if (w.soilM) { sm = avg(w.soilM, i - 2, i); moist = 0.5 * moist + 0.5 * clamp((sm - 0.12) / 0.18, 0, 1); }
-  const frost = Math.min(...w.tmin.slice(Math.max(0, i - 2), i + 1)) < -1 ? 0.4 : 1;
+  const frost = Math.min(...w.tmin.slice(Math.max(0, i - 2), i + 1)) < sp.frostMin ? 0.4 : 1;
   // Choc thermique : un net rafraîchissement quelques jours après la pluie lance souvent les cèpes
   let shock = false;
   if (sp.shock !== false && spKey === "cepe" && trig > 0.5) for (let j = Math.max(3, i - 10); j <= i - 3; j++) {
@@ -920,8 +925,16 @@ const MONTH_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juil
 /* Liste de mois en français : « mars à juin », ou « mars, mai et juillet » si la saison est coupée. */
 function monthSpan(ms) {
   if (!ms.length) return "aucun mois";
+  if (ms.length === 12) return "toute l'année";
   const suite = ms.every((m, i) => i === 0 || m === ms[i - 1] + 1);
   if (suite && ms.length > 1) return MONTH_LONG[ms[0]] + " à " + MONTH_LONG[ms[ms.length - 1]];
+  /* Saison à cheval sur l'année (chanterelles en tube : septembre → février) : la dire d'un trait
+     plutôt que « janvier, février, septembre… », qui donne l'impression de deux saisons séparées. */
+  const abs = [...Array(12).keys()].filter(m => !ms.includes(m));
+  if (abs.length && abs.every((m, i) => i === 0 || m === abs[i - 1] + 1)) {
+    const deb = (abs[abs.length - 1] + 1) % 12, fin = (abs[0] + 11) % 12;
+    return MONTH_LONG[deb] + " à " + MONTH_LONG[fin];
+  }
   const n = ms.map(m => MONTH_LONG[m]);
   return n.length > 1 ? n.slice(0, -1).join(", ") + " et " + n[n.length - 1] : n[0];
 }
@@ -1421,7 +1434,11 @@ const LAPSE = 0.0065;        // °C perdus par mètre d'altitude
 const HABITAT = {
   cepe:    { oak: 1, beech: 1, chestnut: 1, broad: 0.9, mixed: 0.95, firspruce: 0.85, pine: 0.7, conif: 0.7, douglas: 0.5, larch: 0.4, robinia: 0.2, poplar: 0.1, unknown: 0.85, orchard: 0, scrub: 0.15, heath: 0.15, none: 0 },
   girolle: { oak: 1, beech: 1, chestnut: 1, broad: 0.85, mixed: 0.9, firspruce: 0.8, pine: 0.6, conif: 0.65, douglas: 0.5, larch: 0.4, robinia: 0.2, poplar: 0.2, unknown: 0.85, orchard: 0, scrub: 0.15, heath: 0.15, none: 0 },
-  morille: { oak: 0.4, beech: 0.4, chestnut: 0.3, broad: 0.7, mixed: 0.5, firspruce: 0.25, pine: 0.25, conif: 0.25, douglas: 0.2, larch: 0.3, robinia: 0.5, poplar: 0.9, unknown: 0.5, orchard: 1, scrub: 0.5, heath: 0.3, none: 0.1 }
+  morille: { oak: 0.4, beech: 0.4, chestnut: 0.3, broad: 0.7, mixed: 0.5, firspruce: 0.25, pine: 0.25, conif: 0.25, douglas: 0.2, larch: 0.3, robinia: 0.5, poplar: 0.9, unknown: 0.5, orchard: 1, scrub: 0.5, heath: 0.3, none: 0.1 },
+  // Trompettes : feuillus avant tout, hêtres et chênes, sur sol frais et moussu ; presque rien sous résineux.
+  trompette:   { oak: 1, beech: 1, chestnut: 0.85, broad: 0.95, mixed: 0.6, firspruce: 0.15, pine: 0.15, conif: 0.15, douglas: 0.1, larch: 0.1, robinia: 0.2, poplar: 0.2, unknown: 0.8, orchard: 0, scrub: 0.15, heath: 0.1, none: 0 },
+  // Chanterelles en tube : l'inverse, résineux moussus surtout, et hêtraies acides ; faibles sous chênes.
+  chanterelle: { oak: 0.55, beech: 0.9, chestnut: 0.65, broad: 0.7, mixed: 0.95, firspruce: 1, pine: 0.95, conif: 1, douglas: 0.85, larch: 0.8, robinia: 0.1, poplar: 0.2, unknown: 0.8, orchard: 0, scrub: 0.2, heath: 0.2, none: 0 }
 };
 const ESS_TXT = { oak: "chênes", beech: "hêtres", chestnut: "châtaigniers", robinia: "robiniers", poplar: "peupliers", broad: "feuillus", pine: "pins",
   firspruce: "sapins, épicéas", larch: "mélèzes", douglas: "douglas", conif: "conifères", mixed: "feuillus et conifères", unknown: "essences non renseignées" };
@@ -1432,7 +1449,9 @@ const LEAF2ESS = { broadleaved: "broad", needleleaved: "conif", mixed: "mixed", 
 const GBIF_SP = {
   cepe: ["Boletus edulis", "Boletus aereus", "Boletus reticulatus", "Boletus aestivalis", "Boletus pinophilus"],
   girolle: ["Cantharellus cibarius", "Cantharellus pallens", "Cantharellus friesii"],
-  morille: ["Morchella"]
+  morille: ["Morchella"],
+  trompette: ["Craterellus cornucopioides"],
+  chanterelle: ["Craterellus tubaeformis", "Craterellus lutescens", "Cantharellus tubaeformis"]
 };
 let ZONES = null, zonesLayer = null, zonesBusy = false;
 const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
@@ -1481,7 +1500,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "25 · 12 nov. 2026";
+const APP_VERSION = "26 · 13 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -2351,8 +2370,14 @@ function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("")
 const SP_KEY = "meteo-coins-zonesp";
 let SP_SEL = (() => { const v = load(SP_KEY, null); return Array.isArray(v) && v.length && v.every(k => DEFAULTS[k]) ? v : Object.keys(DEFAULTS); })();
 function renderSpChips() {
-  const all = Object.keys(DEFAULTS).every(k => SP_SEL.includes(k));
-  document.querySelectorAll("#zonesSpChips button").forEach(b => {
+  const box = document.getElementById("zonesSpChips");
+  if (!box) return;
+  const keys = Object.keys(DEFAULTS), all = keys.every(k => SP_SEL.includes(k));
+  if (box.children.length !== keys.length + 1) {   // construit une fois, depuis la config : plus de liste en double dans le HTML
+    box.innerHTML = `<button type="button" data-sp="all">Toutes</button>` +
+      keys.map(k => `<button type="button" data-sp="${k}">${esc(DEFAULTS[k].label)}</button>`).join("");
+  }
+  box.querySelectorAll("button").forEach(b => {
     b.setAttribute("aria-pressed", b.dataset.sp === "all" ? String(all) : String(SP_SEL.includes(b.dataset.sp)));
   });
 }

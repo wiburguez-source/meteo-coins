@@ -1,6 +1,6 @@
 // Garde l'appli en mémoire sur le téléphone pour qu'elle s'ouvre même sans réseau.
 // La météo, le relief, les forêts et les chemins viennent toujours d'Internet.
-const CACHE = "meteo-coins-v25";
+const CACHE = "meteo-coins-v26";
 const MAPS = "meteo-coins-fonds";      // fonds de carte déjà regardés
 const MAPS_MAX = 2500;                 // environ 60 Mo au pire ; au-delà, on jette les plus anciens
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
