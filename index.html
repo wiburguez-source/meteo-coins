@@ -23,6 +23,7 @@
   --fg: #1c2419;
   --muted: #5b6656;
   --line: #cdd6c6;
+  --line-ctrl: #8a957f;     /* bordure d'un controle : 3,14:1 sur blanc, la ou --line n'est qu'a 1,58 */
   --accent: #2f5a35;        /* mousse */
   --accent-fg: #ffffff;
   --bark: #8a5a2b;          /* écorce : accès, chemins */
@@ -38,8 +39,8 @@
   --me: #2b6fd6;
   --trail: #e06a12;         /* sentiers et pistes */
   --z1: #f4a9cf;            /* zones : bonnes */
-  --z2: #d9378f;            /* zones : très bonnes */
-  --z3: #7d0a4e;            /* zones : meilleures */
+  --z2: #9a6fb0;            /* zones : très bonnes (palier incomplet en mode filtre, hachuré) */
+  --z3: #e0117f;            /* zones : meilleures — le résultat, donc le plus visible */
   --route: #6a2bd6;         /* chemin proposé */
   --font-display: "Bricolage Grotesque", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
@@ -49,14 +50,14 @@
   :root:not([data-theme="light"]) {
     --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
     --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #d9378f; --z3: #7d0a4e;
+    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #9a6fb0; --z3: #e0117f;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
   --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #d9378f; --z3: #7d0a4e;
+  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #9a6fb0; --z3: #e0117f;
   color-scheme: dark;
 }
 
@@ -92,7 +93,7 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .banner button { align-self: flex-start; }
 .banner.bad { background: color-mix(in srgb, var(--danger) 14%, var(--surface)); color: var(--danger); }
 
-.btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn { min-height: 48px; border: 1px solid var(--line-ctrl); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .btn.access { color: var(--bark); border-color: var(--bark); }
 .btn.ghost { background: transparent; }
@@ -103,12 +104,12 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .sm-row { display: grid; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .sm-row p { margin: 0; }
 .sm-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
-.sm-c { text-align: center; font-size: .66rem; padding: 5px 0; border-radius: 5px; background: var(--sunk, #e5e5e5); color: var(--muted, #666); border: 2px solid transparent; }
+.sm-c { text-align: center; font-size: .82rem; padding: 5px 0; border-radius: 5px; background: var(--sunk, #e5e5e5); color: var(--muted, #666); border: 2px solid transparent; }
 .sm-c.low { background: color-mix(in srgb, var(--s1) 22%, var(--sunk)); color: inherit; }
 .sm-c.part { background: color-mix(in srgb, var(--s2) 35%, var(--sunk)); color: inherit; }
 .sm-c.full { background: var(--s3); color: var(--accent-fg); font-weight: 700; }
 .sm-c.now { border-color: var(--fg); }
-.day .sp1 { display: block; font-size: .62rem; color: var(--muted); line-height: 1; }
+.day .sp1 { display: none; font-size: .82rem; color: var(--muted); line-height: 1; }
 .quick-box { display: grid; gap: 8px; margin: 8px 0; padding: 10px; background: var(--sunk); border-radius: 10px; }
 .quick-box p { margin: 0; }
 .quick-res { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -122,7 +123,7 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .zdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .zd { display: grid; gap: 2px; justify-items: center; padding: 6px 2px; border: 0; border-radius: 8px; background: var(--sunk); color: inherit; font: inherit; cursor: pointer; min-height: 56px; }
 .zd b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-.zd span { font-size: .66rem; color: var(--muted); }
+.zd span { font-size: .82rem; color: var(--muted); }
 .zd.on { outline: 2px solid var(--accent); }
 .zd.has b { color: var(--accent); }
 .zd.zero b { color: var(--muted); font-weight: 400; }
@@ -164,7 +165,7 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .fact { background: var(--sunk); border-radius: 10px; padding: 8px 10px; min-width: 0; }
 .fact b { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-.fact span { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.fact span { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
 details.more { border-top: 1px solid var(--line); padding-top: 10px; }
 details.more summary { cursor: pointer; font-weight: 700; color: var(--accent); list-style: none; }
@@ -182,9 +183,84 @@ details.more[open] summary::after { content: " ▴"; }
 /* Carte */
 .map-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
-.seg button { border: 0; background: none; padding: 7px 11px; font-size: 0.86rem; font-weight: 700; color: var(--muted); }
+.seg button { min-height: 48px; display: inline-flex; align-items: center; border: 0; background: none; padding: 7px 13px; font-size: 0.86rem; font-weight: 700; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
 .map-frame { position: relative; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); }
+
+/* ---------- Onglet Carte : la carte prend l'écran, le reste est posé dessus ---------- */
+:root { --navh: 51px; --sheeth: 76px; }
+body.on-carte header.top { display: none; }
+body.on-carte .wrap { gap: 0; padding-bottom: 0; }
+#tab-carte:not([hidden]) { display: block; position: relative;
+  height: calc(100dvh - var(--navh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+#tab-carte .map-frame { position: absolute; inset: 0; border-radius: 0; border: 0; }
+#tab-carte #map { height: 100%; }
+/* Les avertissements de perte de données doivent couvrir la carte, jamais se ranger avec l'en-tête. */
+body.on-carte #banner:not([hidden]), body.on-carte #updBanner:not([hidden]), body.on-carte #storeWarn:not([hidden]) {
+  position: fixed; left: 10px; right: 10px; top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 1200; margin: 0; }
+
+.map-fab { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex; flex-direction: column; gap: 8px; }
+.fab { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--fg);
+  border: 1px solid var(--line-ctrl); box-shadow: 0 2px 8px rgba(0,0,0,.2); font: inherit; font-size: .78rem; display: grid; place-items: center; }
+.fab[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.fab-menu { position: absolute; top: 10px; right: 66px; z-index: 505; background: var(--surface);
+  border: 1px solid var(--line-ctrl); border-radius: 12px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.22);
+  display: flex; flex-direction: column; gap: 2px; }
+.fab-menu label { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px 0 8px; white-space: nowrap; }
+.fab-go { position: absolute; right: 10px; bottom: calc(var(--sheeth) + 12px); z-index: 520; min-height: 56px;
+  padding: 0 20px; border-radius: 28px; background: var(--accent); color: var(--accent-fg); border: 0;
+  font: inherit; font-weight: 700; box-shadow: 0 3px 12px rgba(0,0,0,.28); }
+.fab-go[disabled] { opacity: .6; }
+/* Le zoom Leaflet était à 30 px, sous la cible tactile. */
+.leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
+
+.zsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 510; background: var(--surface);
+  border-top: 1px solid var(--line-ctrl); border-radius: 16px 16px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.18);
+  display: flex; flex-direction: column; overflow: hidden; transition: height .18s ease; }
+.zsheet[data-snap="peek"] { height: 76px; }
+.zsheet[data-snap="half"] { height: min(400px, 62%); }
+.zsheet[data-snap="full"] { height: calc(100% - 72px); }
+.zsheet[data-snap="peek"] .zs-sp, .zsheet[data-snap="peek"] .zs-body { display: none; }
+.zsheet:not([data-snap="full"]) .zs-more { display: none; }
+.zs-grab { height: 18px; border: 0; background: none; display: grid; place-items: center; flex: 0 0 auto; width: 100%; }
+.zs-grab::before { content: ""; width: 36px; height: 4px; border-radius: 2px; background: var(--line-ctrl); }
+.zs-head { flex: 0 0 auto; padding: 0 14px 6px; display: flex; flex-direction: column; gap: 6px; }
+.zs-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+#zView { flex: 1 1 auto; }
+#zView button { white-space: nowrap; font-size: .88rem; padding: 0 10px; flex: 1 1 0; justify-content: center; }
+.zs-row .chip { flex: 0 0 auto; white-space: nowrap; font-size: .76rem; padding: 4px 9px; }
+/* L'attribution IGN doit rester lisible : elle remonte au-dessus de la feuille au lieu de passer dessous. */
+.leaflet-control-attribution { margin-bottom: calc(var(--sheeth) - 8px) !important; }
+.zs-sp { min-height: 48px; width: 100%; text-align: left; border: 1px solid var(--line-ctrl); border-radius: 10px;
+  background: var(--bg); color: var(--fg); font: inherit; font-weight: 700; padding: 0 12px;
+  display: flex; align-items: center; justify-content: space-between; }
+.zs-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 14px 16px;
+  display: flex; flex-direction: column; gap: 8px; }
+.zs-more { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
+#zSheet #sheet { overflow-y: auto; padding: 0 14px 16px; }
+.spchips.grid2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.spchips.grid2col button { min-height: 48px; border-radius: 10px; padding: 0 12px; justify-content: flex-start; width: 100%; font-size: .95rem; }
+.spchips.grid2col button[data-sp="all"] { grid-column: 1 / -1; }
+/* Tant que l'accueil est là, rien d'autre : ni en-tête annonçant un secteur qu'il n'a pas choisi,
+   ni réglages de zones, ni fonds de carte. Une seule chose à l'écran, une seule décision à prendre. */
+body.welcoming header.top, body.welcoming .map-tools, body.welcoming .side-col, body.welcoming nav.tabs { display: none; }
+body.welcoming #map { height: calc(100dvh - 128px); }
+/* Écran d'accueil, posé sur la carte : il ne pousse rien vers le bas et disparaît pour de bon. */
+.welcome { position: absolute; inset: 0; z-index: 1100; background: color-mix(in srgb, var(--bg) 88%, transparent); display: flex; align-items: flex-start; justify-content: center; overflow: auto; padding: 12px; }
+.welcome-card { background: var(--surface); border: 1px solid var(--line-ctrl); border-radius: var(--r); padding: 18px 16px 16px; max-width: 460px; box-shadow: 0 8px 28px rgba(0,0,0,.18); }
+.welcome-card h2 { margin: 0 0 10px; }
+.welcome-card p { margin: 0 0 10px; }
+.w-lead { font-size: 1.1rem; line-height: 1.45; }
+.w-honest { color: var(--muted); }
+.w-go { width: 100%; justify-content: center; min-height: 56px; font-size: 1.02rem; margin-top: 4px; }
+.w-or { text-align: center; color: var(--muted); font-size: .88rem; margin: 10px 0 8px; }
+.w-field { display: block; font-weight: 700; font-size: .92rem; }
+.w-field input { width: 100%; margin-top: 6px; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line-ctrl); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; }
+.w-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.w-list button { min-height: 48px; text-align: left; padding: 8px 12px; border: 1px solid var(--line-ctrl); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; }
+.w-list button b { display: block; }
+.w-list button span { color: var(--muted); font-size: .85rem; }
+.w-foot { margin-top: 12px !important; color: var(--muted); font-size: .85rem; }
 #map { height: max(340px, calc(100dvh - 380px)); background: var(--sunk); }
 .map-note { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 500; background: var(--surface); color: var(--fg); font-size: 0.82rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); }
 .mode-bar { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 500; background: var(--bark); color: var(--surface); font-weight: 700; font-size: 0.9rem; padding: 8px 12px; border-radius: 10px; }
@@ -201,7 +277,7 @@ details.more[open] summary::after { content: " ▴"; }
 .zbest { font-weight: 700; font-size: .92rem; }
 .span2 { grid-column: 1 / -1; }
 .spchips { display: flex; flex-wrap: wrap; gap: 8px; }
-.spchips button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 13px; font-weight: 700; font-size: .9rem; color: var(--muted); }
+.spchips button { min-height: 48px; display: inline-flex; align-items: center; border: 1px solid var(--line-ctrl); background: var(--bg); border-radius: 999px; padding: 7px 15px; font-weight: 700; font-size: .9rem; color: var(--muted); }
 .spchips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 details.diag { border-top: 1px solid var(--line); padding-top: 8px; font-size: .86rem; }
 details.diag summary { cursor: pointer; font-weight: 700; color: var(--muted); }
@@ -210,7 +286,9 @@ details.diag summary { cursor: pointer; font-weight: 700; color: var(--muted); }
 .diag-list li > span:last-child { min-width: 0; overflow-wrap: anywhere; }
 .d-ok { color: var(--s2); } .d-fail { color: var(--danger); } .d-wait { color: var(--s1); } .d-mem { color: var(--muted); }
 .sw.z1, .sw.z2, .sw.z3 { box-shadow: 0 0 0 1px var(--line); }
-.sw.z1 { background: var(--z1); opacity: 1; } .sw.z2 { background: var(--z2); opacity: 1; } .sw.z3 { background: var(--z3); opacity: 1; }
+.sw.z1 { background: var(--z1); opacity: 1; }
+.sw.z2.hach { background: repeating-linear-gradient(45deg, var(--z2) 0 3px, transparent 3px 9px), var(--surface); }
+.sw.z3 { box-shadow: 0 0 0 2px #fff inset, 0 0 0 3px var(--line-ctrl); } .sw.z2 { background: var(--z2); opacity: 1; } .sw.z3 { background: var(--z3); opacity: 1; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.84rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { display: inline-block; width: 16px; height: 12px; border-radius: 3px; opacity: .8; }
@@ -237,7 +315,7 @@ input[type=text], input[type=number], input[type=date], select, textarea {
 }
 textarea { min-height: 110px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8rem; }
 .checks { display: flex; flex-wrap: wrap; gap: 8px; }
-.checks label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 0.9rem; background: var(--bg); }
+.checks label { min-height: 48px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line-ctrl); border-radius: 999px; font-size: 0.9rem; background: var(--bg); }
 .msg { font-size: 0.88rem; color: var(--muted); }
 .msg.err { color: var(--danger); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -294,110 +372,113 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
   <header class="top">
     <div class="top-row">
       <h1>Météo des Coins</h1>
-      <div class="row"><span id="dataChip" class="chip">Chargement…</span><button class="btn small" type="button" id="refreshBtn">Actualiser</button><button class="btn small" type="button" id="fsBtn" hidden>Plein écran</button></div>
+      <div class="row"><span id="dataChip" class="chip">Chargement…</span><button class="btn small" type="button" id="refreshBtn">Actualiser</button></div>
     </div>
     <p class="muted small" id="todayLine"></p>
   </header>
 
   <div id="banner" class="banner" hidden></div>
+  <div id="updBanner" class="banner" hidden></div>
   <div id="storeWarn" class="banner bad" hidden></div>
 
   <!-- Onglet COINS -->
-  <section id="tab-coins" class="stack">
+  <section id="tab-coins" class="stack" role="tabpanel" aria-labelledby="tb-coins" tabindex="0">
     <div class="today" id="summary"></div>
     <div id="coinList" class="stack"></div>
     <button class="btn primary" type="button" id="addFromList" style="align-self:flex-start">Ajouter un coin sur la carte</button>
   </section>
 
   <!-- Onglet CARTE -->
-  <section id="tab-carte" class="stack" hidden>
-    <div class="map-col stack">
-    <div class="map-tools">
-      <div class="seg" role="group" aria-label="Fond de carte">
-        <button type="button" data-base="plan" aria-pressed="true">Plan IGN</button>
-        <button type="button" data-base="photo" aria-pressed="false">Photo</button>
-        <button type="button" data-base="topo" aria-pressed="false">Relief</button>
-      </div>
-      <button class="btn small" type="button" id="locateBtn" aria-pressed="false">Me localiser</button>
-    </div>
+  <!-- La carte occupe toute la hauteur. Tout le reste est posé dessus : trois boutons ronds, une action,
+       et une feuille coulissante à trois crans. Les contrôles que le moteur lit par identifiant sont
+       conservés dans le document, déplacés ou cachés — jamais supprimés. -->
+  <section id="tab-carte" role="tabpanel" aria-labelledby="tb-carte" tabindex="0" hidden>
     <div class="map-frame">
       <div id="map" aria-label="Carte des coins"></div>
       <div id="modeBar" class="mode-bar" hidden></div>
       <div id="mapNote" class="map-note" hidden></div>
-      <div class="prog map-prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
-    </div>
-    </div>
-    <div class="side-col stack">
-    <div id="zonesPanel" class="panel">
-      <div class="row" style="justify-content:space-between">
-        <h3>Zones favorables</h3>
-        <div class="row">
-          <button class="btn small ghost" type="button" id="zonesHide" hidden>Masquer</button>
-          <button class="btn small primary" type="button" id="zonesBtn">Afficher les zones</button>
-        </div>
+      <div class="map-fab">
+        <button id="baseBtn" class="fab" type="button" aria-label="Fond de carte : Plan IGN"><b>IGN</b></button>
+        <button id="layersBtn" class="fab" type="button" aria-label="Couches affichées" aria-expanded="false"><b>≡</b></button>
+        <button id="locateBtn" class="fab" type="button" aria-label="Me localiser" aria-pressed="false"><b>◎</b></button>
       </div>
-      <div class="prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
-      <p class="small muted" id="zonesIntro">Montre les endroits qui réunissent les conditions, en croisant pluie, température de l'air et du sol, altitude, exposition, essences d'arbres et observations connues. Les zones se calculent par secteurs de 1,6 km et suivent la carte quand tu la déplaces. L'accès depuis les routes se calcule ensuite avec son propre bouton.</p>
-      <div class="grid2" id="zonesCtrls" hidden>
-        <div class="f span2"><span>Espèces affichées</span>
-          <div class="spchips" id="zonesSpChips" role="group" aria-label="Espèces affichées"></div>
-        </div>
-        <label class="f">Jour <select id="zonesDay"></select></label>
-        <label class="f">Couleurs
-          <select id="zonesMode">
-            <option value="rel">Meilleures zones</option>
-            <option value="abs">Score sur 100</option>
-            <option value="pot">Potentiel du terrain</option>
-          </select>
-        </label>
-        <label class="f">Opacité <input type="range" id="zonesOp" min="0.2" max="1" step="0.05" value="0.8"></label>
-      </div>
-      <div class="filtbox" id="filtBox" hidden>
-        <label class="filtmain"><input type="checkbox" id="zonesFilter"> <b>N'afficher que les coins qui remplissent mes critères</b></label>
-        <p class="small muted">Saison, pluie déclenchante tombée, températures dans la plage, essence qui convient. Si rien ne passe, l'appli te le dit au lieu de colorer quand même.</p>
-        <p id="filtResult" class="filtres" hidden></p>
-        <div id="filtDays" class="zdays" hidden></div>
-        <div id="filtSpots" hidden></div>
-      </div>
-      <div class="checks" id="zonesOpts" hidden>
-        <label><input type="checkbox" id="zonesAcc" checked> Privilégier les zones accessibles</label>
+      <div id="layersMenu" class="fab-menu" hidden>
+        <label><input type="checkbox" id="trailsChk"> Chemins</label>
         <label><input type="checkbox" id="zonesObs" checked> Observations publiées</label>
       </div>
-      <div class="row" id="accRow" hidden>
-        <button class="btn small" type="button" id="accBtn">Calculer l'accès depuis les routes</button>
-        <span class="small muted" id="accHint"></span>
+      <button id="zonesBtn" class="fab-go" type="button">Chercher ici</button>
+      <div class="prog map-prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
+      <!-- Premier lancement : ce que voit quelqu'un qui vient d'acheter l'appli et n'a encore rien. -->
+      <div id="welcome" class="welcome" hidden>
+        <div class="welcome-card">
+          <h2>Météo des Coins</h2>
+          <p class="w-lead">Elle ne te dit pas où sont les champignons.<br><strong>Elle éteint tout le reste.</strong></p>
+          <p>Elle n'allume que les endroits où les quatre conditions sont réunies : la <strong>saison</strong>, l'<strong>eau</strong> tombée au bon moment, la <strong>température</strong>, le <strong>terrain</strong>. Et elle te dit lequel des sept prochains jours est le bon.</p>
+          <p class="w-honest">Quand rien ne passe, elle te le dit. Parfois tout est réuni et on rentre bredouille : c'est la forêt, pas l'appli.</p>
+          <button class="btn primary w-go" type="button" id="wGeo">Chercher autour de moi</button>
+          <div class="w-or">ou</div>
+          <label class="w-field">Entre ta commune
+            <input type="text" id="wTown" placeholder="Oloron-Sainte-Marie" autocomplete="off" enterkeyhint="search">
+          </label>
+          <div id="wList" class="w-list" hidden></div>
+          <p id="wMsg" class="msg" hidden></p>
+          <p class="w-foot">Les coins que tu placeras restent dans ce téléphone. Ils n'en sortent jamais.</p>
+        </div>
       </div>
-      <p class="zbest" id="zonesBest" hidden></p>
-      <div class="legend" id="zonesLegend" hidden>
-        <span><i class="sw z1"></i><b id="lg1">Top 30 %</b></span>
-        <span><i class="sw z2"></i><b id="lg2">Top 15 %</b></span>
-        <span><i class="sw z3"></i><b id="lg3">Top 5 %</b></span>
+    </div>
+
+    <div id="zSheet" class="zsheet" data-snap="peek">
+      <button class="zs-grab" type="button" id="zsGrab" aria-expanded="false" aria-controls="zsBody" aria-label="Ouvrir le panneau"></button>
+      <div class="zs-head">
+        <div class="zs-row">
+          <div class="seg" id="zView" role="group" aria-label="Ce que montre la carte">
+            <button type="button" data-view="filtre" aria-pressed="true">Ce qui passe</button>
+            <button type="button" data-view="score" aria-pressed="false">Les meilleures</button>
+          </div>
+          <span id="dataChip2" class="chip">Chargement…</span>
+        </div>
+        <button type="button" id="spSummary" class="zs-sp" aria-expanded="false"><span id="spSummaryTxt">Toutes les espèces</span> <span aria-hidden="true">⌄</span></button>
       </div>
-      <p class="msg" id="zonesMsg" aria-live="polite"></p>
-      <p class="small muted" id="zonesSrc"></p>
-      <details class="diag" id="diag">
-        <summary id="diagSum">État des données</summary>
-        <ul class="diag-list" id="diagList"></ul>
-        <div class="row"><button class="btn small" type="button" id="diagCopy">Copier le diagnostic</button><span class="msg" id="diagMsg"></span></div>
-        <textarea id="diagText" aria-label="Diagnostic" hidden></textarea>
-      </details>
-    </div>
-    <div id="trailsPanel" class="panel">
-      <div class="row" style="justify-content:space-between">
-        <h3>Chemins</h3>
-        <button class="btn small" type="button" id="trailsBtn" aria-pressed="false">Afficher les chemins</button>
+      <div id="zsBody" class="zs-body">
+        <div class="prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
+        <p id="filtResult" class="filtres" hidden></p>
+        <p class="zbest" id="zonesBest" hidden></p>
+        <p class="small muted" id="daysTitle" hidden></p>
+        <div id="filtDays" class="zdays" hidden></div>
+        <div id="filtSpots" hidden></div>
+        <p class="msg" id="zonesMsg" aria-live="polite"></p>
+        <p class="msg" id="trailsMsg" aria-live="polite"></p>
+        <div class="zs-more" id="zsMore">
+          <div class="f"><span id="spLabel">Espèces affichées</span>
+            <div class="spchips grid2col" id="zonesSpChips" role="group" aria-labelledby="spLabel"></div>
+          </div>
+          <div class="legend" id="zonesLegend" hidden>
+            <span><i class="sw z1"></i><b id="lg1">Top 30 %</b></span>
+            <span><i class="sw z2"></i><b id="lg2">Top 15 %</b></span>
+            <span><i class="sw z3"></i><b id="lg3">Top 5 %</b></span>
+          </div>
+          <div class="legend"><span><i class="sw trail"></i>Chemin</span><span><i class="sw route"></i>Chemin proposé</span></div>
+          <div class="row">
+            <button class="btn small" type="button" id="routeBtn">Trouver un chemin vers la meilleure zone</button>
+            <button class="btn small" type="button" id="accBtn">Recalculer la marche depuis la route</button>
+            <button class="btn small ghost" type="button" id="zonesHide" hidden>Masquer les zones</button>
+          </div>
+          <p class="small muted" id="zonesSrc"></p>
+        </div>
       </div>
-      <p class="small muted">Sentiers, pistes forestières et chemins connus d'OpenStreetMap, en orange. Les chemins privés sont en pointillés et ne sont jamais proposés. Une fois les zones calculées, l'appli trouve le chemin qui t'y mène.</p>
-      <div class="legend"><span><i class="sw trail"></i>Chemin</span><span><i class="sw route"></i>Chemin proposé</span></div>
-      <div class="row"><button class="btn primary small" type="button" id="routeBtn">Trouver un chemin vers les zones</button></div>
-      <p class="msg" id="trailsMsg" aria-live="polite"></p>
+      <div id="sheet" class="panel" hidden></div>
     </div>
-    <div id="sheet" class="panel"></div>
-    </div>
+
+    <!-- Lus par le moteur à chaque calcul : déplacés hors de l'écran, jamais retirés du document. -->
+    <select id="zonesDay" hidden></select>
+    <input type="hidden" id="zonesOp" value="0.85">
+    <input type="checkbox" id="zonesFilter" checked hidden>
+    <button type="button" id="trailsBtn" aria-pressed="false" hidden></button>
+    <span id="accHint" hidden></span>
   </section>
 
   <!-- Onglet CARNET -->
-  <section id="tab-carnet" class="stack" hidden>
+  <section id="tab-carnet" class="stack" role="tabpanel" aria-labelledby="tb-carnet" tabindex="0" hidden>
     <div class="today">
       <h2>Carnet de sorties</h2>
       <p class="muted small">Note chaque sortie, même bredouille. En comparant ce que tu trouves au score du jour, tu sauras s'il faut ajuster les réglages.</p>
@@ -425,7 +506,29 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
   </section>
 
   <!-- Onglet RÉGLAGES -->
-  <section id="tab-reglages" class="stack" hidden>
+  <section id="tab-reglages" class="stack" role="tabpanel" aria-labelledby="tb-reglages" tabindex="0" hidden>
+    <!-- Ce qui ne se touche presque jamais vit ici, pas sur la carte. -->
+    <div class="today">
+      <h2>Affichage de la carte</h2>
+      <p class="muted small">Réglages fins. L'essentiel se pilote depuis la carte elle-même.</p>
+    </div>
+    <div class="panel stack">
+      <label class="f">Ce que montrent les couleurs en position « Les meilleures »
+        <select id="zonesMode">
+          <option value="rel">Meilleures zones de la vue</option>
+          <option value="abs">Score sur 100</option>
+          <option value="pot">Potentiel du terrain</option>
+        </select>
+      </label>
+      <div class="checks">
+        <label><input type="checkbox" id="zonesAcc" checked> Privilégier les zones accessibles</label>
+      </div>
+      <div class="row">
+        <button class="btn small" type="button" id="homeBtn">Changer de secteur</button>
+        <button class="btn small" type="button" id="fsBtn" hidden>Plein écran</button>
+      </div>
+      <p class="small muted">« Changer de secteur » rouvre l'écran de départ pour choisir une autre commune. Tes coins et ton carnet ne bougent pas.</p>
+    </div>
     <div class="today">
       <h2>Réglages du score</h2>
       <p class="muted small">Valeurs de départ, à ajuster avec ton carnet. « Pluie déclenchante » : cumul de pluie qu'il faut pour un score plein. Pour les cèpes, chaque jour passé compte selon son éloignement, avec un maximum il y a 17 jours ; pour les autres espèces, la pluie tombée dans une fenêtre propre à chacune (girolles et morilles 5 à 14 jours avant, trompettes 8 à 22, chanterelles en tube 8 à 25). « Températures idéales » : moyenne des 7 derniers jours.</p>
@@ -461,15 +564,38 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
     </div>
 
     <p class="safety">Ce score dit si les conditions sont réunies, pas ce que tu as ramassé. Ne mange rien que tu ne connais pas parfaitement : fais contrôler par un pharmacien ou une société mycologique. Les champignons appartiennent au propriétaire du terrain : ramasser ailleurs que chez toi est une tolérance, pas un droit, et des arrêtés locaux limitent souvent les quantités. Urgence vitale : 15 ou 112. Centre antipoison de Bordeaux : 05 56 96 40 80.</p>
+    <div class="today" style="margin-top:4px">
+      <h2>Sources et mentions</h2>
+      <p class="muted small">Cette page reste lisible hors connexion. Les licences des données utilisées l'exigent.</p>
+    </div>
+    <div class="panel stack">
+      <p class="small"><b>Fonds de carte, essences forestières et altitudes</b><br>
+        IGN — Géoplateforme : BD Forêt® V2 pour les essences, RGE ALTI® pour les altitudes et les pentes, Plan IGN, photographies aériennes et relief ombré. © IGN, Licence Ouverte Etalab 2.0.</p>
+      <p class="small"><b>Météo, températures et humidité du sol, recherche de commune</b><br>
+        Open-Meteo — <span class="muted">open-meteo.com</span>, CC BY 4.0. Données issues des modèles des services météorologiques nationaux. Utilisé pour la météo seule ; les altitudes viennent de l'IGN.</p>
+      <p class="small"><b>Bois, vergers, cours d'eau et chemins</b><br>
+        © les contributeurs d'OpenStreetMap, sous licence ODbL — <span class="muted">openstreetmap.org/copyright</span>. Interrogés via Overpass API.</p>
+      <p class="small"><b>Observations de champignons publiées</b><br>
+        GBIF — Global Biodiversity Information Facility. L'appli ne récupère que les observations en CC0 ou CC BY ; rien en « pas d'usage commercial ».</p>
+      <p class="small"><b>Affichage de la carte</b><br>
+        Leaflet, licence BSD 2 clauses. Police Atkinson Hyperlegible, Braille Institute of America, licence SIL Open Font.</p>
+      <p class="small muted">Les conditions et les scores affichés sont une aide à la promenade, pas une garantie. L'appli n'identifie aucun champignon : en cas de doute sur une récolte, demande à un pharmacien ou à une société mycologique avant de consommer.</p>
+    </div>
+    <details class="diag" id="diag">
+      <summary id="diagSum">Si quelque chose ne marche pas</summary>
+      <ul class="diag-list" id="diagList"></ul>
+      <div class="row"><button class="btn small" type="button" id="diagCopy">Copier le diagnostic</button><span class="msg" id="diagMsg"></span></div>
+      <textarea id="diagText" aria-label="Diagnostic" hidden></textarea>
+    </details>
   </section>
 </div>
 
 <nav class="tabs" aria-label="Sections">
   <div class="in" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="coins">Coins</button>
-    <button role="tab" aria-selected="false" data-tab="carte">Carte</button>
-    <button role="tab" aria-selected="false" data-tab="carnet">Carnet</button>
-    <button role="tab" aria-selected="false" data-tab="reglages">Réglages</button>
+    <button role="tab" id="tb-coins" aria-controls="tab-coins" aria-selected="true" data-tab="coins">Coins</button>
+    <button role="tab" id="tb-carte" aria-controls="tab-carte" aria-selected="false" data-tab="carte">Carte</button>
+    <button role="tab" id="tb-carnet" aria-controls="tab-carnet" aria-selected="false" data-tab="carnet">Carnet</button>
+    <button role="tab" id="tb-reglages" aria-controls="tab-reglages" aria-selected="false" data-tab="reglages">Réglages</button>
   </div>
 </nav>
 
@@ -515,8 +641,15 @@ const LEVELS = [
   { min: 50, label: "Favorable" },
   { min: 75, label: "Très favorable" }
 ];
-const HOME = { lat: 43.115, lon: -0.545, zoom: 14, label: "Bois du Bager" };
+/* Le secteur de départ. C'était le Bois du Bager en dur : un acheteur de Dordogne ouvrait l'appli
+   au-dessus d'un bois qui n'est pas le sien. Il est maintenant choisi au premier lancement et enregistré. */
+const HOME_DEF = { lat: 43.115, lon: -0.545, zoom: 14, label: "Bois du Bager" };
+let HOME = { ...HOME_DEF };
 const LITTER_CAP = 30;   // réserve en eau de la litière (mm)
+/* Part du seuil de pluie qu'il faut avoir reçue, au minimum, pour que l'humidité du sol porte le score.
+   Ne s'applique qu'aux espèces réglées sur l'humidité durable : sans ce plancher, un sol simplement pas
+   sec leur donnait un score de 60 après quarante jours sans pluie. Les cèpes ne sont pas concernés. */
+const RAIN_FLOOR = 0.5;
 const ET_FACTOR = 0.7;   // part de l'évapotranspiration qui sèche la litière sous couvert forestier
 const WALK_KMH = 3.5;    // allure en sous-bois
 const CACHE_HOURS = 3;
@@ -541,19 +674,13 @@ function save(key, value) {
 }
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
-function exampleCoin() {
-  return {
-    id: uid(), name: "Exemple · sous les chênes", lat: 43.1158, lon: -0.5437, species: ["cepe", "girolle"],
-    note: "Coin d'exemple, à supprimer quand tu auras placé les tiens", example: true,
-    parking: { lat: 43.12348, lon: -0.53938 },
-    path: [[43.12348, -0.53938], [43.1218, -0.5401], [43.1196, -0.5412], [43.1179, -0.5425], [43.1158, -0.5437]]
-  };
-}
 let state = load(STORE_KEY, null);
-if (!state) state = { version: 2, coins: [exampleCoin()], logs: [], settings: {} };
-const STATE_VERSION = 2;
+/* Installation neuve : aucun coin, et aucun secteur. Pas de coin d'exemple — un tableau de bord rempli
+   de chiffres qui ne sont pas les siens n'apprend rien à personne. L'écran d'accueil s'en charge. */
+if (!state) state = { version: 3, coins: [], logs: [], settings: {} };
+const STATE_VERSION = 3;
 let STATE_TOO_NEW = state && state.version > STATE_VERSION;
-if (STATE_TOO_NEW) state = { version: STATE_VERSION, coins: [exampleCoin()], logs: [], settings: {} };   // on n'écrit rien par-dessus
+if (STATE_TOO_NEW) state = { version: STATE_VERSION, coins: [], logs: [], settings: {} };   // on n'écrit rien par-dessus
 if (!STATE_TOO_NEW && (!state.version || state.version < STATE_VERSION)) {           // passage à la version 2 : mes espèces, accès, secteur du Bager
   state.coins.forEach(c => { if (c.parking || (c.path && c.path.length)) c.example = false; });   // un coin d'exemple adopté n'est plus un exemple
   state.coins = state.coins.filter(c => !c.example);
@@ -562,10 +689,16 @@ if (!STATE_TOO_NEW && (!state.version || state.version < STATE_VERSION)) {      
     if (!c.species.length) c.species = ["cepe"];
     c.parking = c.parking || null; c.path = c.path || [];
   });
-  if (!state.coins.length) state.coins.push(exampleCoin());
   Object.keys(state.settings).forEach(k => { if (!DEFAULTS[k]) delete state.settings[k]; });
   state.version = 2;
 }
+if (!STATE_TOO_NEW && state.version < 3) {
+  // Déjà installée : on ne lui remontre pas l'accueil, et son secteur reste celui qu'il connaît.
+  if (!state.home) state.home = { ...HOME_DEF };
+  state.version = 3;
+}
+if (state.home && isFinite(state.home.lat) && isFinite(state.home.lon)) HOME = { ...HOME_DEF, ...state.home };
+const FIRST_RUN = !state.home;
 /* Un enregistrement raté ne doit jamais passer inaperçu : ce sont ses coins. */
 function persist() {
   let ok = save(STORE_KEY, state);
@@ -757,7 +890,9 @@ function scoreAt(w, R, i, spKey) {
   if (sp.shock !== false && spKey === "cepe" && trig > 0.5) for (let j = Math.max(3, i - 10); j <= i - 3; j++) {
     if (avg(w.tmean, j - 3, j - 1) - avg(w.tmean, j, j + 2) >= 3) { shock = true; break; }
   }
-  const raw = season * temp * frost * (sp.wTrig * trig + sp.wMoist * moist) * (shock ? 1.15 : 1) * sp.scale;
+  let eau = sp.wTrig * trig + sp.wMoist * moist;
+  if (parHumidite(sp) && trig < RAIN_FLOOR) eau *= trig / RAIN_FLOOR;   // cf. RAIN_FLOOR
+  const raw = season * temp * frost * eau * (shock ? 1.15 : 1) * sp.scale;
   return { score: Math.min(100, Math.round(100 * raw)), season, trig, trigMm, moist, t7, temp, frost, st7, sm, shock };
 }
 function level(s) { let l = 0; LEVELS.forEach((L, k) => { if (s >= L.min) l = k; }); return l; }
@@ -1016,7 +1151,7 @@ let ORDER = { key: "", ids: [] };
 function renderCoins() {
   const list = $("coinList");
   if (!state.coins.length) {
-    list.innerHTML = `<p class="empty">Aucun coin pour l'instant. Touche « Ajouter un coin sur la carte » puis l'endroit dans le bois.</p>`;
+    list.innerHTML = `<p class="empty">Tes coins viendront ici, et ils resteront dans ce téléphone : ils n'en sortent jamais.<br>Touche « Ajouter un coin sur la carte », puis l'endroit dans le bois.</p>`;
     $("summary").innerHTML = "";
     return;
   }
@@ -1054,10 +1189,20 @@ function initMap() {
   layers = {
     plan: L.tileLayer(ign("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", "image/png"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" }),
     photo: L.tileLayer(ign("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" }),
-    topo: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", { subdomains: "abc", maxNativeZoom: 17, maxZoom: 20, attribution: "© OpenStreetMap, © OpenTopoMap" })
+    /* Le relief venait d'OpenTopoMap, des serveurs bénévoles qui découragent le trafic d'une appli
+       diffusée. Il vient maintenant du même fournisseur que les deux autres fonds. Si la couche ne
+       répond pas, le bouton l'enlève de lui-même du cycle plutôt que d'afficher un fond vide. */
+    topo: L.tileLayer(ign("ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW", "image/png"), { maxNativeZoom: 17, maxZoom: 20, attribution: "© IGN" })
   };
   Object.values(layers).forEach(l => l.on("tileerror", () => { if (!tileFailed) { tileFailed = true; showMapNote(); } }));
   layers.plan.addTo(map);
+  /* Si un fond ne sert rien, le bouton le retire du cycle au lieu de laisser l'utilisateur sur un écran vide. */
+  let topoFails = 0;
+  layers.topo.on("tileerror", () => {
+    if (++topoFails < 4 || typeof baseOk === "undefined" || !baseOk[2]) return;
+    baseOk[2] = false;
+    if (baseIdx === 2) { setBase(0); zMsg("Le fond « Relief » ne répond pas : retour au Plan IGN."); }
+  });
   map.createPane("zones");
   map.getPane("zones").style.zIndex = 350;
   map.getPane("zones").style.pointerEvents = "none";
@@ -1412,15 +1557,30 @@ function stopRecording() {
 }
 
 /* Les quatre conditions, telles qu'on peut les dire en français. Un coin « qualifié » les remplit toutes :
-   c'est un filtre, pas une prédiction. Ce qui pousse ensuite ne dépend plus de l'appli. */
+   c'est un filtre, pas une prédiction. Ce qui pousse ensuite ne dépend plus de l'appli.
+
+   La deuxième porte sur l'eau, et ce n'est pas la même eau selon l'espèce. Les cèpes attendent une vraie
+   pluie déclenchante ; les espèces d'arrière-saison veulent un sol qui reste humide. Le libellé affiché
+   suit donc le test réellement appliqué : sans ça, le score regarderait une chose et le critère une autre. */
 const CRIT = [
   { bit: 1, nom: "Saison" },
   { bit: 2, nom: "Pluie déclenchante" },
   { bit: 4, nom: "Températures" },
   { bit: 8, nom: "Terrain" }
 ];
-function critMask(a, hfOwn) {
-  return (a.season > 0 ? 1 : 0) | (a.trig >= 0.8 ? 2 : 0) | (a.temp >= 0.6 && a.frost >= 1 ? 4 : 0) | (hfOwn >= 0.6 ? 8 : 0);
+/* Espèce portée par l'humidité durable plutôt que par l'averse. */
+const parHumidite = c => (c.wMoist ?? 0.45) > (c.wTrig ?? 0.55);
+function critsDe(spKey) {
+  const c = CRIT.slice();
+  if (parHumidite(spConf(spKey))) c[1] = { bit: 2, nom: "Sol humide" };
+  return c;
+}
+function critMask(a, hfOwn, spKey) {
+  const c = spConf(spKey);
+  /* Dans les deux cas il faut un minimum d'eau réellement tombée : un sol « pas sec » en novembre,
+     c'est l'état par défaut du Béarn, pas une bonne nouvelle. */
+  const eau = parHumidite(c) ? (a.moist >= 0.7 && a.trig >= RAIN_FLOOR) : (a.trig >= 0.8);
+  return (a.season > 0 ? 1 : 0) | (eau ? 2 : 0) | (a.temp >= 0.6 && a.frost >= 1 ? 4 : 0) | (hfOwn >= 0.6 ? 8 : 0);
 }
 const critCount = m => CRIT.reduce((n, c) => n + ((m & c.bit) ? 1 : 0), 0);
 
@@ -1500,7 +1660,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "26 · 13 nov. 2026";
+const APP_VERSION = "1.0.1 · 16 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -1603,25 +1763,58 @@ const tick = () => new Promise(r => setTimeout(r, 0));
 
 function zMsg(t, err) { const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
 
+/* ---------- Altitudes ----------
+   Elles viennent du RGE ALTI de l'IGN, service de calcul altimétrique de la Géoplateforme, sous Licence
+   Ouverte Etalab : gratuit, usage commercial compris, et c'est déjà le fournisseur des fonds de carte et
+   de la BD Forêt. Avant, l'altitude partait chez Open-Meteo et représentait 22 des 23 requêtes d'une
+   recherche — alors que le relief ne change jamais et qu'Open-Meteo est payant dès qu'on vend l'appli.
+   Un point hors couverture française renvoie -99999 : dans ce cas, et si le service ne répond pas,
+   on repart sur Open-Meteo, qui couvre le monde entier.
+   Contraintes du service : 5 000 points par requête mais une URL reste limitée en longueur, donc des
+   paquets de 400 ; et 5 requêtes par seconde et par adresse IP, donc 3 en parallèle au plus. */
+const ALTI_IGN = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json";
+const ALTI_CHUNK = 400;
+let altiIgnOk = true;
+
+async function altiFromIgn(ch) {
+  const url = ALTI_IGN + "?resource=ign_rge_alti_wld&delimiter=%7C&indent=false&measures=false&zonly=true" +
+    "&lon=" + ch.map(p => p[1].toFixed(5)).join("%7C") +
+    "&lat=" + ch.map(p => p[0].toFixed(5)).join("%7C");
+  const r = await fetchRetry(url, {}, 2, 20000);
+  const j = await r.json();
+  const z = j && (Array.isArray(j.elevations) ? j.elevations : null);
+  if (!z || z.length !== ch.length) throw new Error("altitude IGN");
+  if (z.some(v => typeof v !== "number" || v <= -9999)) throw new Error("hors couverture IGN");
+  return z;
+}
+
+async function altiFromOpenMeteo(ch) {
+  const url = "https://api.open-meteo.com/v1/elevation?latitude=" + ch.map(p => p[0].toFixed(5)).join(",") +
+    "&longitude=" + ch.map(p => p[1].toFixed(5)).join(",");
+  const r = await fetchRetry(url);
+  const j = await r.json();
+  if (!Array.isArray(j.elevation) || j.elevation.length !== ch.length) throw new Error("altitude");
+  return j.elevation;
+}
+
 async function fetchElevations(pts, onProg) {
   const chunks = [];
-  for (let k = 0; k < pts.length; k += 100) chunks.push(pts.slice(k, k + 100));
+  for (let k = 0; k < pts.length; k += ALTI_CHUNK) chunks.push(pts.slice(k, k + ALTI_CHUNK));
   const res = new Array(chunks.length);
   let next = 0, done = 0;
   if (onProg) onProg(0, chunks.length);
-  const worker = async () => {                 // 4 requêtes à la fois
+  const worker = async () => {                 // 3 requêtes à la fois : la Géoplateforme en accepte 5 par seconde
     while (next < chunks.length) {
       const c = next++, ch = chunks[c];
-      const url = "https://api.open-meteo.com/v1/elevation?latitude=" + ch.map(p => p[0].toFixed(5)).join(",") +
-        "&longitude=" + ch.map(p => p[1].toFixed(5)).join(",");
-      const r = await fetchRetry(url);
-      const j = await r.json();
-      if (!Array.isArray(j.elevation) || j.elevation.length !== ch.length) throw new Error("altitude");
-      res[c] = j.elevation;
+      if (altiIgnOk) {
+        try { res[c] = await altiFromIgn(ch); done++; if (onProg) onProg(done, chunks.length); continue; }
+        catch (e) { altiIgnOk = false; }       // une fois de trop, on ne réessaie plus de la session
+      }
+      res[c] = await altiFromOpenMeteo(ch);
       done++; if (onProg) onProg(done, chunks.length);
     }
   };
-  await Promise.all([worker(), worker(), worker(), worker()]);
+  await Promise.all([worker(), worker(), worker()]);
   return res.flat();
 }
 
@@ -1953,7 +2146,12 @@ function interpSeries(WG, gx, gy, fx, fy, key) {
    le relief, les forêts, les observations et l'accès de chaque secteur restent en mémoire. */
 const CELL_M = 80, TILE_N = 20, MAX_TILES = 24, HAB_B = 2;   // HAB_B : cases d'habitat gardées autour du secteur
 const TILE_DLAT = CELL_M * TILE_N / 111320;
-const TILE_DLON = CELL_M * TILE_N / (111320 * Math.cos(HOME.lat * Math.PI / 180));
+/* La largeur d'un secteur en longitude depend de la latitude. C'etait un const evalue au chargement,
+   donc toujours calcule pour le Bager : un testeur a Lille obtenait des cases 15 % trop larges, une pente
+   et une exposition fausses, et le defaut se reparait tout seul au relancement suivant — introuvable.
+   Recalcule des que le secteur change, et le cache de secteurs est vide avec, car les identifiants en derivent. */
+function tileDlon() { return CELL_M * TILE_N / (111320 * Math.cos(HOME.lat * Math.PI / 180)); }
+let TILE_DLON = tileDlon();
 const TILES_KEY = "meteo-coins-tiles", ZONES_ON_KEY = "meteo-coins-zones-on", MAPVIEW_KEY = "meteo-coins-mapview";
 const TILE_MEM = new Map();
 let TSTORE = null, zonesOn = false, zonesPending = false, moveTimer = null;
@@ -2007,23 +2205,9 @@ async function fetchReliefTiles(tiles) {
       all.push([b.n - (cj - 0.5) * dLat, b.w + (ci - 0.5) * dLon]);
     }
   });
-  const chunks = [];
-  for (let k = 0; k < all.length; k += 100) chunks.push(all.slice(k, k + 100));
-  const res = new Array(chunks.length);
-  let next = 0;
-  const worker = async () => {                 // 2 requêtes à la fois : le service d'altitude sature vite
-    while (next < chunks.length) {
-      const c = next++, ch = chunks[c];
-      const url = "https://api.open-meteo.com/v1/elevation?latitude=" + ch.map(q => q[0].toFixed(5)).join(",") +
-        "&longitude=" + ch.map(q => q[1].toFixed(5)).join(",");
-      const r = await fetchRetry(url, {}, 3, 20000);
-      const j = await r.json();
-      if (!Array.isArray(j.elevation) || j.elevation.length !== ch.length) throw new Error("altitude");
-      res[c] = j.elevation;
-    }
-  };
-  await Promise.all([worker(), worker()]);
-  const flat = res.flat(), S = ELEV_S;
+  // Même chemin que fetchElevations : IGN d'abord, Open-Meteo en secours. Cf. ALTI_IGN.
+  const flat = await fetchElevations(all);
+  const S = ELEV_S;
   tiles.forEach((t, k) => {
     const g = flat.slice(k * S * S, (k + 1) * S * S), out = [];
     for (let j = 0; j < N2; j++) for (let i = 0; i < N2; i++) {
@@ -2231,7 +2415,7 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
       days.forEach((_, d) => {
         const a = scoreAt(cw, R, ti + d, sp);
         scores[sp][d][k] = hf > 0 ? Math.min(100, a.score * hf * bonus) : 0;
-        crit[sp][d][k] = critMask(a, habitatFactor(sp, hab[k]));   // la case elle-même, pas le bois voisin
+        crit[sp][d][k] = critMask(a, habitatFactor(sp, hab[k]), sp);   // la case elle-même, pas le bois voisin
       });
       // Potentiel du terrain, sans la météo : essences, lisières, exposition fraîche, observations
       pot[sp][k] = Math.min(100, 80 * hf * bonus * (1 + 0.1 * Math.cos(aspect) * Math.min(slope / 20, 1)));
@@ -2287,9 +2471,9 @@ function stitch(r) {
 }
 
 function showZonesUI(on) {
-  ["zonesCtrls", "zonesLegend", "zonesOpts", "accRow", "filtBox"].forEach(id => { $(id).hidden = !on; });
-  $("zonesHide").hidden = !on; $("zonesIntro").hidden = on;
-  $("zonesBtn").textContent = on ? "Recalculer" : "Afficher les zones";
+  ["zonesLegend", "zonesHide"].forEach(id => { const e = $(id); if (e) e.hidden = !on; });
+  $("zonesBtn").textContent = on ? "Recalculer ici" : "Chercher ici";
+  if (on) snapSheet("half");
 }
 const hhmmOf = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 
@@ -2297,6 +2481,13 @@ const hhmmOf = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", m
 async function ensureView(manual, force) {
   if (!map) return;
   if (zonesBusy) { zonesPending = true; return; }
+  /* Sans réseau, les services partaient quand même : Overpass seul pouvait tenir quatre minutes
+     avant d'échouer, barre de progression à l'écran. On répond maintenant tout de suite. */
+  if (navigator.onLine === false) {
+    zMsg(ZONES ? "Pas de réseau. Les zones déjà calculées restent affichées ; les nouvelles se calculeront au retour du réseau."
+               : "Pas de réseau. Les zones se calculeront dès que la connexion revient.", !!manual);
+    return;
+  }
   if (map.getZoom() < 12) { zMsg("Zoome davantage pour afficher les zones : elles se calculent par secteurs de 1,6 km.", !!manual); return; }
   const b = map.getBounds(), r = tilesFor(b.getSouth(), b.getWest(), b.getNorth(), b.getEast());
   let partial = false;
@@ -2380,6 +2571,16 @@ function renderSpChips() {
   box.querySelectorAll("button").forEach(b => {
     b.setAttribute("aria-pressed", b.dataset.sp === "all" ? String(all) : String(SP_SEL.includes(b.dataset.sp)));
   });
+  /* Au-delà de trois, on compte : une énumération de quatre noms déborde et ne se lit plus d'un coup d'œil. */
+  const t = $("spSummaryTxt");
+  if (t) {
+    const noms = SP_SEL.map(k => DEFAULTS[k] && DEFAULTS[k].label).filter(Boolean);
+    t.textContent = all ? "Toutes les espèces"
+      : !noms.length ? "Aucune espèce"
+      : noms.length === 1 ? noms[0] + " seulement"
+      : noms.length <= 3 ? noms.join(", ").replace(/, ([^,]*)$/, " et $1")
+      : noms.length + " espèces sur " + keys.length;
+  }
 }
 /* Mode effectif : « Potentiel du terrain » si choisi, ou en secours quand la météo ne donne rien à l'écran */
 function effMode() { if (filterOn()) return "abs"; return ZONES && ZONES.fallback ? "pot" : $("zonesMode").value; }
@@ -2398,10 +2599,10 @@ function filterGrid(d) {
   });
   return { out, who };
 }
-function zoneGrid(forceMode) {
-  const d0 = Number($("zonesDay").value || 0);
+function zoneGrid(forceMode, dayOverride) {
+  const d0 = dayOverride != null ? dayOverride : Number($("zonesDay").value || 0);
   if (!forceMode && filterOn()) return filterGrid(d0);
-  const mode = forceMode || effMode(), d = Number($("zonesDay").value || 0);
+  const mode = forceMode || effMode(), d = d0;
   const useAcc = $("zonesAcc").checked;
   const out = new Float32Array(ZONES.nx * ZONES.ny), who = new Array(out.length);
   SP_SEL.forEach(k => {
@@ -2462,11 +2663,18 @@ function drawZones() {
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d"), img = ctx.createImageData(W, H);
   const pal = [css("--z1"), css("--z2"), css("--z3")].map(c => hexRgb(c || "#cc3399"));
-  const alpha = [0, 140, 185, 225];
+  const alpha = [0, 110, 150, 217];
+  /* En mode filtre, seules deux classes sortent (3 sur 4 → 60, les 4 → 100). Le palier incomplet est
+     hachuré : un canal qui ne dépend pas de la couleur, donc lisible par un daltonien et à travers une
+     goutte d'eau, et qui le laisse murmurer au lieu de crier plus fort que le résultat. */
+  const hachure = filterOn();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const p = y * W + x, c = cls[p];
     if (!c) continue;
+    if (hachure && c === 2 && (x + y) % 9 >= 3) continue;
     const edge = (x > 0 && cls[p - 1] < c) || (x < W - 1 && cls[p + 1] < c) || (y > 0 && cls[p - W] < c) || (y < H - 1 && cls[p + W] < c);
+    // Le résultat qui compte est cerné de blanc : il tient sur l'orthophoto sombre comme sur le plan clair.
+    if (edge && c === 3) { img.data[p * 4] = 255; img.data[p * 4 + 1] = 255; img.data[p * 4 + 2] = 255; img.data[p * 4 + 3] = 255; continue; }
     const col = pal[c - 1], k = edge ? 0.6 : 1;
     img.data[p * 4] = col[0] * k; img.data[p * 4 + 1] = col[1] * k; img.data[p * 4 + 2] = col[2] * k; img.data[p * 4 + 3] = edge ? 255 : alpha[c];
   }
@@ -2481,6 +2689,8 @@ function drawZones() {
   renderFilter();
   // Légende et meilleur score
   th.labels.forEach((l, i) => { $("lg" + (i + 1)).textContent = l; });
+  // La pastille du palier incomplet est hachurée comme sur la carte, et seulement en mode filtre.
+  const sw2 = document.querySelector(".sw.z2"); if (sw2) sw2.classList.toggle("hach", filterOn());
   const bk = Math.max(0, th.bk);
   const best = $("zonesBest"); best.hidden = filterOn();
   const lv = level(Math.round(th.vmax));
@@ -2499,8 +2709,30 @@ function drawZones() {
 function renderFilter() {
   const res = $("filtResult"), dayBox = $("filtDays"), spotBox = $("filtSpots");
   if (!res) return;
-  if (!ZONES || !filterOn()) { [res, dayBox, spotBox].forEach(e => { if (e) e.hidden = true; }); return; }
+  const title = $("daysTitle");
+  if (!ZONES) { [res, dayBox, spotBox, title].forEach(e => { if (e) e.hidden = true; }); return; }
   const d = Number($("zonesDay").value || 0), vis = visibleMask();
+  /* Le select « Jour » a disparu : la bande des 7 jours est le seul moyen de changer de jour,
+     elle doit donc s'afficher dans les deux vues. Ce qu'elle compte change avec la vue, et le titre
+     le dit — sinon « 62 » se lirait « 62 cases » en vue score. */
+  if (!filterOn()) {
+    const best = ZONES.days.map((_, dd) => {
+      const g = zoneGrid(null, dd); let m = 0;
+      for (let k = 0; k < g.out.length; k++) if (vis[k] && g.out[k] > m) m = g.out[k];
+      return Math.round(m);
+    });
+    [res, spotBox].forEach(e => { if (e) e.hidden = true; });
+    title.hidden = false; title.textContent = "Meilleur score de la vue, sur 100";
+    dayBox.hidden = false;
+    dayBox.innerHTML = ZONES.days.map((iso, dd) =>
+      `<button type="button" class="zd ${dd === d ? "on " : ""}${best[dd] ? "has" : "zero"}" data-fday="${dd}">
+         <b>${best[dd]}</b><span>${esc(dayName(iso))} ${Number(iso.slice(8))}</span></button>`).join("");
+    dayBox.querySelectorAll("[data-fday]").forEach(b => {
+      b.onclick = () => { $("zonesDay").value = b.dataset.fday; drawZones(); };
+    });
+    return;
+  }
+  title.hidden = false; title.textContent = "Cases qui remplissent les 4 conditions";
   const qual = dd => {
     const out = [];
     const g = filterGrid(dd);
@@ -2524,14 +2756,16 @@ function renderFilter() {
     res.textContent = here.length + (here.length > 1 ? " cases remplissent" : " case remplit") + " les 4 conditions dans cette vue.";
   } else {
     res.className = "filtres none";
-    const manque = {}; CRIT.forEach(c => { manque[c.nom] = 0; });
+    const manque = {};
     let n = 0;
     SP_SEL.forEach(sp => {
       const c = ZONES.crit && ZONES.crit[sp] && ZONES.crit[sp][d];
       if (!c) return;
+      const cr = critsDe(sp);   // « Sol humide » ou « Pluie déclenchante » selon l'espèce
+      cr.forEach(x => { if (manque[x.nom] == null) manque[x.nom] = 0; });
       for (let k = 0; k < c.length; k++) {
         if (!vis[k] || ZONES.info[k].missing) continue;
-        n++; CRIT.forEach(x => { if (!(c[k] & x.bit)) manque[x.nom]++; });
+        n++; cr.forEach(x => { if (!(c[k] & x.bit)) manque[x.nom]++; });
       }
     });
     const pire = Object.keys(manque).sort((a, b) => manque[b] - manque[a])[0];
@@ -2608,7 +2842,7 @@ function zonePopup(ll) {
   const v = Math.round(out[k]);
   const dSel = Number($("zonesDay").value || 0), spSel = who[k] || SP_SEL[0];
   const mask = ZONES.crit && ZONES.crit[spSel] && ZONES.crit[spSel][dSel] ? ZONES.crit[spSel][dSel][k] : null;
-  const critHtml = mask == null ? "" : '<div class="critlist">' + CRIT.map(c =>
+  const critHtml = mask == null ? "" : '<div class="critlist">' + critsDe(spSel).map(c =>
     `<span class="${(mask & c.bit) ? "ok" : "ko"}">${(mask & c.bit) ? "✓" : "✕"} ${c.nom}</span>`).join("") + '</div>';
   const dirs = ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"];
   const az = ((inf.aspect * 180 / Math.PI) + 360) % 360;
@@ -2692,6 +2926,7 @@ function setTrails(on) {
   const b = $("trailsBtn");
   b.setAttribute("aria-pressed", on ? "true" : "false");
   b.textContent = on ? "Masquer les chemins" : "Afficher les chemins";
+  const c = $("trailsChk"); if (c && c.checked !== on) c.checked = on;   // la case du menu Couches suit
   if (on && map) map.attributionControl.addAttribution("Chemins © OpenStreetMap");
   drawTrails();
 }
@@ -2920,6 +3155,8 @@ function renderSettings() {
 
 function renderStatus() {
   const chip = $("dataChip"), b = $("banner");
+  const mirror = () => { const c2 = $("dataChip2"); if (c2) { c2.className = chip.className; c2.textContent = chip.textContent; } };
+  try { setTimeout(mirror, 0); } catch (e) {}
   const wd = new Date(WEATHER_AT), hh = wd.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
   const at = !DEMO && WEATHER_AT ? (isoLocal(wd) === TODAY ? " · météo de " + hh : " · météo du " + wd.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " à " + hh) : "";
   $("todayLine").textContent = HOME.label + " · " + longDate(TODAY) + at;
@@ -2936,8 +3173,8 @@ function renderStatus() {
       return;
     }
     chip.className = "chip live"; chip.textContent = "Météo réelle";
-    b.hidden = !state.coins.some(c => c.example);
-    if (!b.hidden) b.innerHTML = `<p>Le coin marqué « Exemple » montre le fonctionnement, avec un parking et un chemin. Place les tiens depuis l'onglet Carte, puis supprime-le.</p>`;
+    b.hidden = true;   // le bandeau de mise à jour a le sien (#updBanner) : celui-ci ne doit plus l'écraser
+
   }
 }
 
@@ -2967,21 +3204,39 @@ function parseCoords(txt) {
 
 /* ---------- 10. Actions ---------- */
 function showTab(name) {
+  if (FIRST_RUN && !state.home) name = "carte";   // tant que le secteur n'est pas choisi, pas d'autre écran
   document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false"));
   ["coins", "carte", "carnet", "reglages"].forEach(t => { $("tab-" + t).hidden = t !== name; });
+  document.body.classList.toggle("on-carte", name === "carte");
   if (name === "carte") { initMap(); setTimeout(() => map && map.invalidateSize(), 50); }
   // on ne remonte plus la page de force : on perdait sa place à chaque aller-retour
 }
 document.querySelectorAll("nav.tabs button").forEach(btn => { btn.onclick = () => showTab(btn.dataset.tab); });
 
-document.querySelectorAll("[data-base]").forEach(b => {
-  b.onclick = () => {
-    if (!map) return;
-    document.querySelectorAll("[data-base]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
-    Object.values(layers).forEach(l => map.removeLayer(l));
-    layers[b.dataset.base].addTo(map);
-  };
-});
+/* Un seul bouton rond au lieu de trois segments de 34 px : il fait défiler les fonds. */
+const BASES = [["plan", "IGN", "Plan IGN"], ["photo", "Photo", "Photo aérienne"], ["topo", "Relief", "Relief ombré"]];
+let baseIdx = 0, baseOk = [true, true, true];
+function setBase(i) {
+  if (!map) return;
+  baseIdx = i;
+  const [key, court, long] = BASES[i];
+  Object.values(layers).forEach(l => map.removeLayer(l));
+  layers[key].addTo(map);
+  const b = $("baseBtn"); b.querySelector("b").textContent = court; b.setAttribute("aria-label", "Fond de carte : " + long);
+}
+$("baseBtn").onclick = () => {
+  let i = baseIdx;
+  for (let n = 0; n < BASES.length; n++) { i = (i + 1) % BASES.length; if (baseOk[i]) break; }
+  setBase(i);
+};
+
+$("layersBtn").onclick = () => {
+  const m = $("layersMenu"), open = m.hidden;
+  m.hidden = !open; $("layersBtn").setAttribute("aria-expanded", String(open));
+};
+$("trailsChk").onchange = () => toggleTrails();
+$("spSummary").onclick = () => { snapSheet("full"); setTimeout(() => $("zonesSpChips").scrollIntoView({ block: "nearest" }), 220); };
+$("homeBtn").onclick = () => { showTab("carte"); const w = $("welcome"); if (w) { w.hidden = false; document.body.classList.add("welcoming"); } };
 
 $("addFromList").onclick = () => { showTab("carte"); startAdd(); };
 $("zonesHide").onclick = () => hideZones(true);
@@ -3013,7 +3268,17 @@ $("diagCopy").onclick = async () => {
   catch (e) { ta.hidden = false; ta.value = t; ta.focus(); ta.select(); $("diagMsg").textContent = "Texte sélectionné : copie-le à la main."; }
 };
 renderDiag();
+/* Un seul endroit nomme le langage des couleurs, et il est toujours visible en tête de feuille.
+   « Ce qui passe » = le filtre, deux paliers, aucun nombre sur 100 peint.
+   « Les meilleures » = le score, trois paliers, réglage fin en Réglages. */
 $("zonesFilter").onchange = () => { drawZones(); };
+function setView(v) {
+  const f = v === "filtre";
+  $("zonesFilter").checked = f;
+  document.querySelectorAll("#zView button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  drawZones();
+}
+document.querySelectorAll("#zView button").forEach(b => { b.onclick = () => setView(b.dataset.view); });
 $("zonesAcc").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Réglage changé : relance la recherche de chemin."); } };
 $("zonesObs").onchange = drawObs;
 $("accBtn").onclick = computeAccess;
@@ -3077,7 +3342,7 @@ if (mc) mc.onclick = async () => {
   renderMapsInfo();
 };
 $("exportBtn").onclick = async () => {
-  const txt = JSON.stringify({ version: 2, coins: state.coins, logs: state.logs, settings: state.settings });
+  const txt = JSON.stringify({ version: STATE_VERSION, coins: state.coins, logs: state.logs, settings: state.settings, home: state.home });
   const ta = $("backupText"); ta.value = txt;
   try { await navigator.clipboard.writeText(txt); $("backupMsg").textContent = "Copié. Colle-le dans une note ou un mail."; }
   catch (e) { ta.focus(); ta.select(); $("backupMsg").textContent = "Texte sélectionné : copie-le à la main."; }
@@ -3091,11 +3356,48 @@ $("importBtn").onclick = () => {
   if (!importArmed) { importArmed = true; $("importBtn").textContent = "Confirmer : remplacer mes données"; setTimeout(() => { importArmed = false; $("importBtn").textContent = "Restaurer"; }, 5000); return; }
   importArmed = false; $("importBtn").textContent = "Restaurer";
   data.coins.forEach(c => { c.species = (c.species || []).filter(k => DEFAULTS[k]); if (!c.species.length) c.species = ["cepe"]; c.parking = c.parking || null; c.path = c.path || []; });
-  state = { version: 2, coins: data.coins, logs: data.logs || [], settings: data.settings || {} };
+  state = { version: STATE_VERSION, coins: data.coins, logs: data.logs || [], settings: data.settings || {}, home: data.home || state.home };
   persist(); m.className = "msg"; m.textContent = "Données restaurées.";
   ui.sel = null; ui.mode = null; ui.draft = null; ui.path = [];
   renderSettings(); refresh(true);
 };
+
+/* ---------- 10 ter. Feuille coulissante de l'onglet Carte ----------
+   Trois crans. La carte reste visible dans les trois : c'est tout l'intérêt par rapport aux neuf
+   contrôles empilés qui la poussaient hors de l'écran. */
+const SNAPS = ["peek", "half", "full"];
+/* Hauteur visée d'un cran. Calculée, pas mesurée : la feuille est en transition au moment du calcul,
+   et le bouton flottant doit se replacer tout de suite, sinon il recouvre l'en-tête de la feuille. */
+function sheetTarget(to) {
+  const tab = $("tab-carte"), H = tab ? tab.getBoundingClientRect().height : 800;
+  return to === "peek" ? 76 : to === "half" ? Math.min(400, Math.round(H * 0.62)) : Math.round(H - 72);
+}
+function snapSheet(to) {
+  const e = $("zSheet"); if (!e) return;
+  e.dataset.snap = to;
+  const g = $("zsGrab"); if (g) { g.setAttribute("aria-expanded", String(to !== "peek")); g.setAttribute("aria-label", to === "peek" ? "Ouvrir le panneau" : "Replier le panneau"); }
+  document.documentElement.style.setProperty("--sheeth", sheetTarget(to) + "px");
+  // En cran plein la feuille occupe l'écran : l'action principale n'a plus de place et se retire.
+  const go = $("zonesBtn"); if (go) go.hidden = (to === "full");
+}
+(() => {
+  const g = $("zsGrab"); if (!g) return;
+  g.onclick = () => { const i = SNAPS.indexOf($("zSheet").dataset.snap); snapSheet(SNAPS[(i + 1) % 3]); };
+  let y0 = null, s0 = "peek";
+  g.addEventListener("touchstart", e => { y0 = e.touches[0].clientY; s0 = $("zSheet").dataset.snap; }, { passive: true });
+  g.addEventListener("touchmove", e => {
+    if (y0 == null) return;
+    const dy = e.touches[0].clientY - y0;
+    if (Math.abs(dy) < 40) return;
+    const i = SNAPS.indexOf(s0), n = clamp(i + (dy < 0 ? 1 : -1), 0, 2);
+    y0 = null; snapSheet(SNAPS[n]);
+  }, { passive: true });
+  window.addEventListener("resize", () => snapSheet($("zSheet").dataset.snap || "peek"));
+})();
+
+/* Retour du réseau : on relance ce qui avait été refusé, sans que l'utilisateur ait à y penser. */
+window.addEventListener("online", () => { OFFLINE = false; renderStatus(); if (zonesOn) ensureView(false); });
+window.addEventListener("offline", () => { OFFLINE = true; renderStatus(); });
 
 /* ---------- 11. Démarrage ---------- */
 $("refreshBtn").onclick = async () => {
@@ -3141,6 +3443,75 @@ renderSheet();
   }
   offerResume();
 })();
+
+/* ---------- Premier lancement ----------
+   Pas de coin d'exemple, pas de tutoriel, rien à régler : une phrase qui dit ce que fait l'appli,
+   et un seul geste pour choisir le secteur. Tant que le secteur n'est pas choisi, HOME vaut le défaut
+   mais rien n'est enregistré, donc l'accueil revient si l'utilisateur quitte en cours de route. */
+function setHome(lat, lon, label) {
+  HOME = { ...HOME_DEF, lat, lon, label };
+  state.home = { lat, lon, label, zoom: HOME.zoom };
+  TILE_DLON = tileDlon();                       // la grille suit la latitude du nouveau secteur
+  try { TSTORE = {}; localStorage.removeItem(TILES_KEY); } catch (e) {}   // les identifiants de secteurs en dérivent
+  persist();
+  const w = $("welcome"); if (w) w.hidden = true;
+  document.body.classList.remove("welcoming");
+  if (map) setTimeout(() => map.invalidateSize(), 60);
+  if (map) map.setView([lat, lon], HOME.zoom);
+  refresh(true);
+}
+async function townSearch(q) {
+  const url = "https://geocoding-api.open-meteo.com/v1/search?count=6&language=fr&format=json&country=FR&name=" + encodeURIComponent(q);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("recherche indisponible");
+  return (await r.json()).results || [];
+}
+function initWelcome() {
+  const box = $("welcome");
+  if (!box) return;
+  if (FIRST_RUN) {
+    showTab("carte");                    // le produit, c'est la carte ; Coins est un classeur
+    document.body.classList.add("welcoming");
+    box.hidden = false;
+  }
+  const msg = $("wMsg"), list = $("wList"), inp = $("wTown");
+  const say = t => { msg.hidden = !t; msg.textContent = t || ""; };
+
+  $("wGeo").onclick = () => {
+    if (!navigator.geolocation) return say("Ce téléphone ne donne pas la position. Entre ta commune juste en dessous.");
+    say("Recherche de ta position…");
+    navigator.geolocation.getCurrentPosition(
+      p => setHome(p.coords.latitude, p.coords.longitude, "Autour de moi"),
+      () => say("Position refusée ou indisponible. Entre ta commune juste en dessous."),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  };
+
+  let tmr = null;
+  const chercher = async () => {
+    const q = inp.value.trim();
+    list.hidden = true; list.innerHTML = "";
+    if (q.length < 2) return say("");
+    say("Recherche…");
+    try {
+      const res = await townSearch(q);
+      if (!res.length) return say("Aucune commune de ce nom. Vérifie l'orthographe.");
+      say("");
+      list.hidden = false;
+      list.innerHTML = res.map((r, i) =>
+        `<button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${esc([r.admin2, r.admin1].filter(Boolean).join(" · "))}</span></button>`).join("");
+      list.querySelectorAll("button").forEach(b => {
+        b.onclick = () => { const r = res[Number(b.dataset.i)]; setHome(r.latitude, r.longitude, r.name); };
+      });
+    } catch (e) {
+      say("Recherche impossible : pas de réseau. Tu peux aussi toucher « Chercher autour de moi ».");
+    }
+  };
+  inp.oninput = () => { clearTimeout(tmr); tmr = setTimeout(chercher, 350); };
+  inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); clearTimeout(tmr); chercher(); } };
+}
+snapSheet("peek");
+initWelcome();
 refresh(false);
 </script>
 
@@ -3151,7 +3522,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (reloaded) return;
     reloaded = true;
-    const b = document.getElementById("banner");
+    const b = document.getElementById("updBanner");
     if (!b) return;
     b.hidden = false;
     b.innerHTML = '<p><b>Une nouvelle version de l\'appli est prête.</b> Recharge pour en profiter : tes coins et ton carnet ne bougent pas.</p><div class="row"><button class="btn primary" type="button" id="swReload">Recharger</button></div>';
