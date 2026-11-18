@@ -109,6 +109,8 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .sm-c.part { background: color-mix(in srgb, var(--s2) 35%, var(--sunk)); color: inherit; }
 .sm-c.full { background: var(--s3); color: var(--accent-fg); font-weight: 700; }
 .sm-c.now { border-color: var(--fg); }
+.sm-look { font-size: .92rem; line-height: 1.45; background: var(--sunk); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 8px 10px; margin-top: 2px !important; }
+.sm-look b { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 2px; }
 .day .sp1 { display: none; font-size: .82rem; color: var(--muted); line-height: 1; }
 .quick-box { display: grid; gap: 8px; margin: 8px 0; padding: 10px; background: var(--sunk); border-radius: 10px; }
 .quick-box p { margin: 0; }
@@ -758,7 +760,7 @@ async function fetchWeather(coins, force) {
   const fresh = Date.now() - cache.at < CACHE_HOURS * 3600e3 && cache.day === TODAY;
   const haveAll = coins.every(c => cache.data[wkey(c)] && cache.data[wkey(c)].dates.includes(TODAY));
   if (!force && fresh && haveAll) { WEATHER_AT = cache.at; OFFLINE = false; return cache.data; }
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + coins.map(c => c.lat).join(",") +
+  const url = wxUrl("/v1/forecast", "latitude=" + coins.map(c => c.lat).join(",")) +
     "&longitude=" + coins.map(c => c.lon).join(",") +
     "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
     "&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm" +
@@ -870,6 +872,17 @@ function rainUseful(rain, i, pk, sig) {
 function avg(arr, from, to) { let s = 0, n = 0; for (let i = Math.max(0, from); i <= to; i++) { s += arr[i]; n++; } return n ? s / n : 0; }
 
 /* Température du sol à 6 cm (moyenne 7 jours) favorable à chaque espèce : [début, idéal mini, idéal maxi, fin] */
+/* Où regarder, une fois sur place. L'appli calcule déjà la saison, l'eau, la température et l'essence :
+   ce mémo dit ce qu'elle ne peut pas voir, le micro-terrain qu'on lit avec les yeux et les genoux.
+   Rien ici ne sert à identifier un champignon — c'est un choix, l'appli n'identifie pas. */
+const LOOK = {
+  cepe: "Les lisières et les bords de chemin avant le cœur du bois, et partout où la lumière passe : clairières, trouées, layons. Mousse et myrtille sont bon signe. Quand il fait encore chaud, cherche les versants nord ; quand ça fraîchit, les versants sud. Ils viennent par petits groupes : un trouvé, ralentis et fouille dix mètres autour.",
+  girolle: "En troupes dans la mousse, sur sol plutôt acide et pauvre. Talus, bords de fossés, pentes. Elles repoussent au même endroit d'année en année : note le coin, il resservira. Souvent sous les feuilles — regarde les petites bosses du tapis.",
+  morille: "Les terrains remués plus que la forêt profonde : vieux vergers, bords de rivière et zones d'alluvions, frênes et ormes morts, anciens feux, remblais. Sols calcaires. Marche lentement, elles se confondent avec les feuilles mortes.",
+  trompette: "Hêtraies et chênaies sur sol frais, dans les creux et les dépressions humides, souvent sur argile. Elles sont noires dans des feuilles brunes : accroupis-toi, change d'angle, regarde à contre-jour. En troupes serrées — la première en annonce des dizaines à un mètre.",
+  chanterelle: "Mousse épaisse sous les conifères, bois mort en décomposition, pentes fraîches et bords de ruisseau. Après les premières gelées, quand tout le reste est fini. Petites et nombreuses : ça se récolte accroupi."
+};
+
 const SOIL_T = { cepe: [10, 13, 21, 26], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17], trompette: [4, 8, 17, 23], chanterelle: [1, 5, 15, 21] };
 function scoreAt(w, R, i, spKey) {
   const sp = spConf(spKey);
@@ -1110,8 +1123,9 @@ function renderSeasonMemo() {
     const ici = s[now] > 0
       ? `En ${MONTH_LONG[now]}, le score peut atteindre ${Math.round(s[now] * 100)} % de son maximum.`
       : `En ${MONTH_LONG[now]}, le score reste à zéro : ${seasonNote(k)}.`;
+    const ou = LOOK[k] ? `<p class="sm-look"><b>Où regarder</b> ${esc(LOOK[k])}</p>` : "";
     return `<div class="sm-row"><strong>${esc(DEFAULTS[k].label)}</strong><div class="sm-strip">${cells}</div>
-      <p class="small muted">Pleine saison : ${monthSpan(full)}. Possible : ${monthSpan(any)}. ${ici}</p></div>`;
+      <p class="small muted">Pleine saison : ${monthSpan(full)}. Possible : ${monthSpan(any)}. ${ici}</p>${ou}</div>`;
   }).join("");
 }
 
@@ -1660,7 +1674,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "1.0.1 · 16 nov. 2026";
+const APP_VERSION = "1.1 · 18 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -1763,6 +1777,20 @@ const tick = () => new Promise(r => setTimeout(r, 0));
 
 function zMsg(t, err) { const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
 
+/* ---------- D'où vient la météo ----------
+   Un seul endroit à changer selon la route retenue pour la vente :
+     • gratuit, usage non commercial   WX_HOST = "https://api.open-meteo.com",        WX_KEY = ""
+     • abonnement Open-Meteo payant    WX_HOST = "https://customer-api.open-meteo.com", WX_KEY = "<ta clé>"
+     • instance auto-hébergée          WX_HOST = "https://meteo.ton-domaine.fr",      WX_KEY = ""
+   Les altitudes ne passent plus par ici : elles viennent du RGE ALTI de l'IGN (cf. ALTI_IGN).
+   Open-Meteo est gratuit pour un usage non commercial seulement ; une appli vendue est un usage
+   commercial. Le logiciel est sous AGPLv3 et les données de leur distribution S3 sous CC BY 4.0,
+   donc une instance à soi est permise, mais elle demande 16 Go de RAM et 100 Go de SSD. */
+const WX_HOST = "https://api.open-meteo.com";
+const WX_KEY = "";
+const wxUrl = (chemin, params) => WX_HOST + chemin + "?" + (WX_KEY ? "apikey=" + encodeURIComponent(WX_KEY) + "&" : "") + params;
+const GEO_HOST = "https://geocoding-api.open-meteo.com";
+
 /* ---------- Altitudes ----------
    Elles viennent du RGE ALTI de l'IGN, service de calcul altimétrique de la Géoplateforme, sous Licence
    Ouverte Etalab : gratuit, usage commercial compris, et c'est déjà le fournisseur des fonds de carte et
@@ -1789,7 +1817,7 @@ async function altiFromIgn(ch) {
 }
 
 async function altiFromOpenMeteo(ch) {
-  const url = "https://api.open-meteo.com/v1/elevation?latitude=" + ch.map(p => p[0].toFixed(5)).join(",") +
+  const url = wxUrl("/v1/elevation", "latitude=" + ch.map(p => p[0].toFixed(5)).join(",")) +
     "&longitude=" + ch.map(p => p[1].toFixed(5)).join(",");
   const r = await fetchRetry(url);
   const j = await r.json();
@@ -1819,7 +1847,7 @@ async function fetchElevations(pts, onProg) {
 }
 
 async function fetchWeatherPts(pts) {
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + pts.map(p => p[0].toFixed(4)).join(",") +
+  const url = wxUrl("/v1/forecast", "latitude=" + pts.map(p => p[0].toFixed(4)).join(",")) +
     "&longitude=" + pts.map(p => p[1].toFixed(4)).join(",") +
     "&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min,et0_fao_evapotranspiration" +
     "&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm" +
@@ -3461,7 +3489,7 @@ function setHome(lat, lon, label) {
   refresh(true);
 }
 async function townSearch(q) {
-  const url = "https://geocoding-api.open-meteo.com/v1/search?count=6&language=fr&format=json&country=FR&name=" + encodeURIComponent(q);
+  const url = GEO_HOST + "/v1/search?count=6&language=fr&format=json&country=FR&name=" + encodeURIComponent(q);
   const r = await fetch(url);
   if (!r.ok) throw new Error("recherche indisponible");
   return (await r.json()).results || [];
