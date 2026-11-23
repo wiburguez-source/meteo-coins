@@ -137,6 +137,9 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .spot { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; padding: 10px; min-height: 48px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .spot b { font-variant-numeric: tabular-nums; }
 .spot .sp-why { color: var(--muted); font-size: .8rem; }
+.faits { display: flex; flex-direction: column; gap: 2px; font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
+.faits b { color: var(--fg); }
+.faits .ko { color: var(--danger); }
 .critlist { display: grid; gap: 2px; margin: 6px 0 0; }
 .critlist span { font-size: .82rem; }
 .critlist .ko { color: var(--muted); }
@@ -656,7 +659,11 @@ const DEFAULTS = {
   trompette:   { label: "Trompettes", rain: 45, t: [3, 7, 16, 22], season: [0,0,0,0,0,0,0,.1,.45,1,1,.4],
                  lag: [8, 22], wTrig: 0.4, wMoist: 0.6, edgeMul: 1.25, frostMin: -3, dil: [1, 0.6, 0.45] },
   chanterelle: { label: "Chanterelles en tube", rain: 40, t: [0, 4, 14, 20], season: [.25,.05,0,0,0,0,0,0,.2,.7,1,1],
-                 lag: [8, 25], wTrig: 0.35, wMoist: 0.65, edgeMul: 1.15, frostMin: -7, dil: [1, 0.6, 0.45] }
+                 lag: [8, 25], wTrig: 0.35, wMoist: 0.65, edgeMul: 1.15, frostMin: -7, dil: [1, 0.6, 0.45] },
+  /* Le plus accommodant des cinq : feuillus comme résineux, il tient le gel et reste bon vieux.
+     Souvent là quand les trompettes ne sont pas au rendez-vous, et sans sosie dangereux. */
+  piedmouton:  { label: "Pieds-de-mouton", rain: 50, t: [2, 6, 17, 23], season: [0,0,0,0,0,0,.05,.25,.7,1,1,.6],
+                 lag: [8, 20], wTrig: 0.45, wMoist: 0.55, edgeMul: 1.1, frostMin: -5, dil: [1, 0.6, 0.45] }
 };
 const RESULTS = ["Rien", "Quelques-uns", "Bonne récolte", "Grosse poussée"];
 const LEVELS = [
@@ -902,10 +909,11 @@ const LOOK = {
   girolle: "En troupes dans la mousse, sur sol plutôt acide et pauvre. Talus, bords de fossés, pentes. Elles repoussent au même endroit d'année en année : note le coin, il resservira. Souvent sous les feuilles — regarde les petites bosses du tapis.",
   morille: "Les terrains remués plus que la forêt profonde : vieux vergers, bords de rivière et zones d'alluvions, frênes et ormes morts, anciens feux, remblais. Sols calcaires. Marche lentement, elles se confondent avec les feuilles mortes.",
   trompette: "Hêtraies et chênaies sur sol frais, dans les creux et les dépressions humides, souvent sur argile. Elles sont noires dans des feuilles brunes : accroupis-toi, change d'angle, regarde à contre-jour. En troupes serrées — la première en annonce des dizaines à un mètre.",
+  piedmouton: "Partout où le sol est moussu et frais, sous feuillus comme sous résineux — c'est le moins regardant des cinq. Souvent en lignes ou en ronds, à demi enfoui sous les feuilles : repère les bosses du tapis et gratte du pied. Il tient le gel et reste bon même vieux, donc un coin visité il y a une semaine vaut la peine d'être revu.",
   chanterelle: "Mousse épaisse sous les conifères, bois mort en décomposition, pentes fraîches et bords de ruisseau. Après les premières gelées, quand tout le reste est fini. Petites et nombreuses : ça se récolte accroupi."
 };
 
-const SOIL_T = { cepe: [10, 13, 21, 26], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17], trompette: [4, 8, 17, 23], chanterelle: [1, 5, 15, 21] };
+const SOIL_T = { cepe: [10, 13, 21, 26], girolle: [10, 13, 20, 25], morille: [5, 8, 13, 17], trompette: [4, 8, 17, 23], chanterelle: [1, 5, 15, 21], piedmouton: [3, 7, 18, 24] };
 function scoreAt(w, R, i, spKey) {
   const sp = spConf(spKey);
   const month = Number(w.dates[i].slice(5, 7)) - 1;
@@ -1663,7 +1671,9 @@ const HABITAT = {
   // Trompettes : feuillus avant tout, hêtres et chênes, sur sol frais et moussu ; presque rien sous résineux.
   trompette:   { oak: 1, beech: 1, chestnut: 0.85, broad: 0.95, mixed: 0.6, firspruce: 0.15, pine: 0.15, conif: 0.15, douglas: 0.1, larch: 0.1, robinia: 0.2, poplar: 0.2, unknown: 0.8, orchard: 0, scrub: 0.15, heath: 0.1, none: 0 },
   // Chanterelles en tube : l'inverse, résineux moussus surtout, et hêtraies acides ; faibles sous chênes.
-  chanterelle: { oak: 0.55, beech: 0.9, chestnut: 0.65, broad: 0.7, mixed: 0.95, firspruce: 1, pine: 0.95, conif: 1, douglas: 0.85, larch: 0.8, robinia: 0.1, poplar: 0.2, unknown: 0.8, orchard: 0, scrub: 0.2, heath: 0.2, none: 0 }
+  chanterelle: { oak: 0.55, beech: 0.9, chestnut: 0.65, broad: 0.7, mixed: 0.95, firspruce: 1, pine: 0.95, conif: 1, douglas: 0.85, larch: 0.8, robinia: 0.1, poplar: 0.2, unknown: 0.8, orchard: 0, scrub: 0.2, heath: 0.2, none: 0 },
+  // Pieds-de-mouton : peu regardants, feuillus et résineux, du moment que le sol est moussu et frais.
+  piedmouton:  { oak: 0.9, beech: 1, chestnut: 0.85, broad: 0.9, mixed: 1, firspruce: 0.95, pine: 0.9, conif: 0.95, douglas: 0.8, larch: 0.75, robinia: 0.2, poplar: 0.25, unknown: 0.85, orchard: 0, scrub: 0.2, heath: 0.15, none: 0 }
 };
 const ESS_TXT = { oak: "chênes", beech: "hêtres", chestnut: "châtaigniers", robinia: "robiniers", poplar: "peupliers", broad: "feuillus", pine: "pins",
   firspruce: "sapins, épicéas", larch: "mélèzes", douglas: "douglas", conif: "conifères", mixed: "feuillus et conifères", unknown: "essences non renseignées" };
@@ -1676,7 +1686,8 @@ const GBIF_SP = {
   girolle: ["Cantharellus cibarius", "Cantharellus pallens", "Cantharellus friesii"],
   morille: ["Morchella"],
   trompette: ["Craterellus cornucopioides"],
-  chanterelle: ["Craterellus tubaeformis", "Craterellus lutescens", "Cantharellus tubaeformis"]
+  chanterelle: ["Craterellus tubaeformis", "Craterellus lutescens", "Cantharellus tubaeformis"],
+  piedmouton: ["Hydnum repandum", "Hydnum rufescens"]
 };
 let ZONES = null, zonesLayer = null, zonesBusy = false;
 const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
@@ -1725,7 +1736,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "1.1.2 · 21 nov. 2026";
+const APP_VERSION = "1.3 · 23 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -2508,6 +2519,7 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
     [...TILE_MEM.entries()].sort((a, b) => a[1].at - b[1].at).slice(0, TILE_MEM.size - 45).forEach(([k]) => TILE_MEM.delete(k));
   }
   TILE_MEM.set(t.id, { tx: t.tx, ty: t.ty, pts, scores, pot, crit, info, days, day: TODAY, at: Date.now(), demo, soil, batch, hasElev: !!E,
+    wg: { WG, gx, gy, box, dates, ti, soil },   // garde de quoi rouvrir les chiffres d'une case à la demande
     srcIgn: terr.srcIgn, srcOsm: terr.srcOsm, habOk: !!terr.hab, obsOk: !!terr.obs, obs, hasAcc: !!terr.acc });
 }
 
@@ -2545,6 +2557,7 @@ function stitch(r) {
   const src = { n: tiles.length, elev: tiles.filter(m => m.hasElev).length, ign: tiles.filter(m => m.srcIgn).length, osm: tiles.filter(m => m.srcOsm).length,
     gbif: tiles.some(m => m.obsOk) ? obs.length : null, accN, acc: accN === tiles.length, soil: tiles.every(m => m.soil), missing: r.list.length - tiles.length };
   ZONES = { s, w, n, e, nx, ny, cell: CELL_M, days, scores, pot, crit, info, pts, obs, src, range: r, tiles: tiles.map(m => m.tx + "_" + m.ty),
+    wg: (tiles.find(m => m.wg) || {}).wg || null,
     demo: tiles.some(m => m.demo), forestOk: tiles.every(m => m.habOk), at: Math.min(...tiles.map(m => m.at)), day: TODAY };
   return true;
 }
@@ -2911,6 +2924,7 @@ function hideZones(forget) {
   $("zonesBest").hidden = true;
   zMsg("");
 }
+const fr1 = v => v.toFixed(1).replace(".", ",");   // virgule décimale
 function zonePopup(ll) {
   const Z = ZONES;
   if (ll.lat < Z.s || ll.lat > Z.n || ll.lng < Z.w || ll.lng > Z.e) return;
@@ -2929,6 +2943,35 @@ function zonePopup(ll) {
   const h = inf.hab;
   const hab = KIND_TXT[h.kind] + (h.kind === "forest" ? (h.open ? " ouverte" : "") + " : " + ESS_TXT[h.ess || "unknown"] : "") +
     (h.src === "ign" ? " (IGN)" : h.src === "osm" ? " (OSM)" : "") + (h.edge ? " · lisière" : "") + (h.water ? " · près d'un ruisseau" : "");
+  /* Les chiffres derrière les coches. Une case qui dit « ✓ Sol humide » doit dire combien d'eau
+     elle a comptée, sinon la coche est un verdict et non une observation — et c'est tout le contraire
+     de ce que fait cette appli. Recalculé à la demande depuis la grille météo de la vue. */
+  let faits = "";
+  if (Z.wg && spSel) {
+    try {
+      const W = Z.wg, gx2 = W.gx, gy2 = W.gy;
+      const fx = clamp((ll.lng - W.box.w) / (W.box.e - W.box.w), 0, 1) * (gx2 - 1);
+      const fy = clamp((W.box.n - ll.lat) / (W.box.n - W.box.s), 0, 1) * (gy2 - 1);
+      const zG = interpSeries(W.WG, gx2, gy2, fx, fy, "elevation"), corr = (zG - inf.z) * LAPSE;
+      const cw = { dates: W.dates,
+        rain: interpSeries(W.WG, gx2, gy2, fx, fy, "rain"),
+        tmean: interpSeries(W.WG, gx2, gy2, fx, fy, "tmean").map(v => v + corr),
+        tmin: interpSeries(W.WG, gx2, gy2, fx, fy, "tmin").map(v => v + corr),
+        et0: interpSeries(W.WG, gx2, gy2, fx, fy, "et0") };
+      if (W.soil) {
+        cw.soilT = interpSeries(W.WG, gx2, gy2, fx, fy, "soilT").map(v => v + corr);
+        cw.soilM = interpSeries(W.WG, gx2, gy2, fx, fy, "soilM");
+      }
+      const a = scoreAt(cw, litterSeries(cw), W.ti + dSel, spSel), cf = spConf(spSel);
+      const lag = cf.lagK ? "autour de J−" + cf.lagK[0] : "entre J−" + cf.lag[1] + " et J−" + cf.lag[0];
+      faits = `<div class="faits">
+        <span><b>${Math.round(a.trigMm)} mm</b> de pluie utile ${lag}, il en faut ${cf.rain}</span>
+        <span><b>${fr1(a.t7)} °C</b> de moyenne sur 7 jours${a.st7 != null ? `, sol à ${fr1(a.st7)} °C` : ""}</span>
+        <span>litière et sol humides à <b>${Math.round(a.moist * 100)} %</b></span>
+        ${a.frost < 1 ? `<span class="ko">gelée sous ${cf.frostMin} °C ces trois derniers jours</span>` : ""}
+      </div>`;
+    } catch (e) { faits = ""; }
+  }
   const th = Z.th || zoneThresholds(out), zc = zClass(out[k], th.t);
 const nOk = mask == null ? 0 : critCount(mask);
   const lines = filterOn()
@@ -2937,6 +2980,7 @@ const nOk = mask == null ? 0 : critCount(mask);
     ? [`Potentiel du terrain <b>${v}</b>/100${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`]
     : [`<b class="lvl${level(v)}">${v}</b>/100 · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`];
   if (critHtml) lines.push(critHtml);
+  if (faits) lines.push(faits);
   if (zc && th.rel) lines.push("Dans le " + th.labels[zc - 1].toLowerCase() + " de la vue");
   lines.push(inf.flat ? "Relief pas encore chargé : pente et exposition non prises en compte" : `${Math.round(inf.z)} m · ${expo}`, esc(hab));
   if (inf.st7 != null) lines.push("Sol " + inf.st7.toFixed(0) + " °C · " + (inf.sm > 0.3 ? "bien humide" : inf.sm > 0.2 ? "frais" : "sec"));
