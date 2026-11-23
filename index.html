@@ -206,12 +206,25 @@ body.on-carte #banner:not([hidden]), body.on-carte #updBanner:not([hidden]), bod
   position: fixed; left: 10px; right: 10px; top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 1200; margin: 0; }
 
 .map-fab { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex; flex-direction: column; gap: 8px; }
-.fab { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--fg);
-  border: 1px solid var(--line-ctrl); box-shadow: 0 2px 8px rgba(0,0,0,.2); font: inherit; font-size: .78rem; display: grid; place-items: center; }
+.fab { width: 54px; height: 54px; border-radius: 50%; background: var(--surface); color: var(--fg);
+  border: 1px solid var(--line-ctrl); box-shadow: 0 2px 8px rgba(0,0,0,.2); font: inherit;
+  display: grid; place-items: center; align-content: center; gap: 0; line-height: 1.05; }
+.fab b { font-size: .84rem; font-weight: 700; }
+.fab i { font-style: normal; font-size: .58rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+.fab[aria-pressed="true"] i { color: inherit; }
+.fab-me b { font-size: 1.15rem; color: var(--me); }
+.fab-me[aria-pressed="true"] b { color: inherit; }
 .fab[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .fab-menu { position: absolute; top: 10px; right: 66px; z-index: 505; background: var(--surface);
   border: 1px solid var(--line-ctrl); border-radius: 12px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.22);
   display: flex; flex-direction: column; gap: 2px; }
+/* Quand la feuille montre un formulaire ou une fiche, le commutateur de vue et le résumé d'espèces
+   n'ont rien à y faire : ils volaient 110 px au formulaire. */
+.zsheet.fiche .zs-head { display: none; }
+/* En cran plein, les boutons ronds sont derrière la feuille : on les retire plutôt que de les laisser dépasser. */
+body.sheet-full .map-fab { display: none; }
+/* La consigne du mode « ajouter » passait sous la colonne de boutons ronds. */
+.mode-bar { left: 68px !important; right: 76px !important; }   /* dégage le zoom Leaflet à gauche, les boutons ronds à droite */
 .fab-menu label { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px 0 8px; white-space: nowrap; }
 .fab-go { position: absolute; right: 10px; bottom: calc(var(--sheeth) + 12px); z-index: 520; min-height: 56px;
   padding: 0 20px; border-radius: 28px; background: var(--accent); color: var(--accent-fg); border: 0;
@@ -409,9 +422,9 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div id="modeBar" class="mode-bar" hidden></div>
       <div id="mapNote" class="map-note" hidden></div>
       <div class="map-fab">
-        <button id="baseBtn" class="fab" type="button" aria-label="Fond de carte : Plan IGN"><b>IGN</b></button>
-        <button id="layersBtn" class="fab" type="button" aria-label="Couches affichées" aria-expanded="false"><b>≡</b></button>
-        <button id="locateBtn" class="fab" type="button" aria-label="Me localiser" aria-pressed="false"><b>◎</b></button>
+        <button id="baseBtn" class="fab" type="button" aria-label="Fond de carte : Plan IGN"><b>IGN</b><i>fond</i></button>
+        <button id="layersBtn" class="fab" type="button" aria-label="Couches affichées" aria-expanded="false"><b>≡</b><i>couches</i></button>
+        <button id="locateBtn" class="fab fab-me" type="button" aria-label="Me localiser" aria-pressed="false"><b>◉</b><i>moi</i></button>
       </div>
       <div id="layersMenu" class="fab-menu" hidden>
         <label><input type="checkbox" id="trailsChk"> Chemins</label>
@@ -1278,6 +1291,22 @@ function drawMap() {
     const draggable = ui.mode === "edit" && ui.sel === c.id;
     const m = L.marker([c.lat, c.lon], { icon: coinIcon(c, ui.sel === c.id), title: c.name, draggable });
     m.on("click", () => { if (!ui.mode || ui.mode === "edit") selectCoin(c.id); });
+    /* Appui long sur le coin : on l'ouvre et on passe direct en modification, pour renommer ou
+       déplacer sans chercher un bouton. Le geste naturel sur un téléphone. */
+    (() => {
+      let t = null;
+      const el = m.getElement ? null : null;
+      const start = () => { clearTimeout(t); t = setTimeout(() => { t = null; selectCoin(c.id); ui.mode = "edit";
+        ui.draft = { name: c.name, lat: c.lat, lon: c.lon, species: c.species.slice(), note: c.note || "" };
+        drawMap(); renderSheet(); snapSheet("full"); }, 550); };
+      const stop = () => { clearTimeout(t); t = null; };
+      m.on("mousedown", start); m.on("mouseup", stop); m.on("mouseout", stop);
+      m.on("dragstart", stop); m.on("move", stop);
+      m.on("add", () => { const e = m.getElement(); if (!e) return;
+        e.addEventListener("touchstart", start, { passive: true });
+        ["touchend", "touchmove", "touchcancel"].forEach(k => e.addEventListener(k, stop, { passive: true }));
+      });
+    })();
     if (draggable) m.on("dragend", e => { const p = e.target.getLatLng(); ui.draft.lat = +p.lat.toFixed(5); ui.draft.lon = +p.lng.toFixed(5); $("edCoords").value = ui.draft.lat + ", " + ui.draft.lon; });
     m.addTo(overlay);
   });
@@ -1289,7 +1318,7 @@ function drawMap() {
   }
   const bar = $("modeBar");
   const MODE_TXT = {
-    add: "Touche la carte à l'emplacement du coin (tu peux ensuite déplacer le repère).",
+    add: "Touche la carte à l'endroit du coin. Tu pourras déplacer le repère ensuite.",
     parking: "Touche la carte là où tu gares la voiture.",
     path: "Touche la carte point par point, du parking jusqu'au coin.",
     record: "Enregistrement en cours : marche jusqu'au coin, l'écran reste allumé.",
@@ -1359,6 +1388,19 @@ function editorHTML(d, isNew) {
 function renderSheet(msg) {
   const sh = $("sheet");
   const m = ui.mode, c = ui.sel ? coinById(ui.sel) : null;
+  /* La feuille basse a deux visages : le panneau de recherche, ou la fiche d'un coin. Quand il y a
+     quelque chose à remplir ou à valider, on bascule dessus ET on ouvre la feuille — sinon le
+     formulaire existe mais reste coupé par les 76 px du cran replié, et plus rien n'est validable. */
+  const fiche = !!(m || c || ROUTE);
+  const body = $("zsBody");
+  if (sh) sh.hidden = !fiche;
+  if (body) body.hidden = fiche;
+  const zs = $("zSheet"); if (zs) zs.classList.toggle("fiche", fiche);
+  if (fiche) {
+    const cran = $("zSheet") && $("zSheet").dataset.snap;
+    if (m) { if (cran !== "full") snapSheet("full"); }           // à remplir ou à valider : toute la place
+    else if (cran === "peek") snapSheet("half");                  // simple consultation d'un coin
+  }
   if (!c && (m === "parking" || m === "path" || m === "record" || m === "edit")) { ui.mode = null; ui.draft = null; }   // le coin visé a disparu (restauration, suppression)
 
   if (m === "add" || m === "edit") {
@@ -1683,7 +1725,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "1.1.1 · 19 nov. 2026";
+const APP_VERSION = "1.1.2 · 21 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -3423,6 +3465,7 @@ function snapSheet(to) {
   e.dataset.snap = to;
   const g = $("zsGrab"); if (g) { g.setAttribute("aria-expanded", String(to !== "peek")); g.setAttribute("aria-label", to === "peek" ? "Ouvrir le panneau" : "Replier le panneau"); }
   document.documentElement.style.setProperty("--sheeth", sheetTarget(to) + "px");
+  document.body.classList.toggle("sheet-full", to === "full");
   // En cran plein la feuille occupe l'écran : l'action principale n'a plus de place et se retire.
   const go = $("zonesBtn"); if (go) go.hidden = (to === "full");
 }
