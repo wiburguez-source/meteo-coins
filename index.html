@@ -12,7 +12,10 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#2f5a35">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<!-- Chargée sans bloquer : sur un réseau de village, le lien bloquant laissait la page blanche
+     jusqu'au délai du serveur de polices. La page s'affiche d'abord, les polices arrivent après. -->
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap"></noscript>
 <style>.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane { z-index: 400; } .leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane { z-index: 500; } .leaflet-marker-pane { z-index: 600; } .leaflet-tooltip-pane { z-index: 650; } .leaflet-popup-pane { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition: -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition: transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor: -moz-grab; cursor: grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor: -moz-grabbing; cursor: grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }</style>
 <style>
 /* Layout : une colonne pensée pour le téléphone en forêt ; tableau de bord des coins, carte pour placer coins et accès, onglets en bas d'écran. */
@@ -140,6 +143,9 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .faits { display: flex; flex-direction: column; gap: 2px; font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
 .faits b { color: var(--fg); }
 .faits .ko { color: var(--danger); }
+.btn.lien { min-height: 0; padding: 2px 0; border: 0; background: none; color: var(--accent); text-decoration: underline; font-weight: 600; }
+.lab-top { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); line-height: 1.2; }
+.chk1 { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; }
 .critlist { display: grid; gap: 2px; margin: 6px 0 0; }
 .critlist span { font-size: .82rem; }
 .critlist .ko { color: var(--muted); }
@@ -244,15 +250,14 @@ body.sheet-full .map-fab { display: none; }
 .zsheet[data-snap="full"] { height: calc(100% - 104px); }   /* la poignée reste toujours visible et atteignable */
 .zsheet[data-snap="peek"] .zs-sp, .zsheet[data-snap="peek"] .zs-body { display: none; }
 .zsheet:not([data-snap="full"]) .zs-more { display: none; }
-.zs-grab { height: 34px; border: 0; background: none; display: grid; place-items: center; flex: 0 0 auto; width: 100%; }
+.zs-grab { height: 48px; border: 0; background: none; display: grid; place-items: center; flex: 0 0 auto; width: 100%; }
 .zs-grab::before { content: ""; width: 44px; height: 5px; border-radius: 3px; background: var(--line-ctrl); }
 .zs-grab::after { content: "Replier"; position: absolute; right: 14px; font-size: .78rem; color: var(--muted); }
 .zsheet[data-snap="peek"] .zs-grab::after { content: "Ouvrir"; }
 .zs-grab { position: relative; }
 .zs-head { flex: 0 0 auto; padding: 0 14px 6px; display: flex; flex-direction: column; gap: 6px; }
 .zs-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
-#zView { flex: 1 1 auto; }
-#zView button { white-space: nowrap; font-size: .88rem; padding: 0 10px; flex: 1 1 0; justify-content: center; }
+.zs-titre { font-weight: 700; font-size: .98rem; }
 .zs-row .chip { flex: 0 0 auto; white-space: nowrap; font-size: .76rem; padding: 4px 9px; }
 /* L'attribution IGN doit rester lisible : elle remonte au-dessus de la feuille au lieu de passer dessous. */
 .leaflet-control-attribution { margin-bottom: calc(var(--sheeth) - 8px) !important; }
@@ -287,6 +292,7 @@ body.welcoming #map { height: calc(100dvh - 128px); }
 .w-list button { min-height: 48px; text-align: left; padding: 8px 12px; border: 1px solid var(--line-ctrl); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; }
 .w-list button b { display: block; }
 .w-list button span { color: var(--muted); font-size: .85rem; }
+.w-later { width: 100%; justify-content: center; margin-top: 10px; }
 .w-foot { margin-top: 12px !important; color: var(--muted); font-size: .85rem; }
 #map { height: max(340px, calc(100dvh - 380px)); background: var(--sunk); }
 .map-note { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 500; background: var(--surface); color: var(--fg); font-size: 0.82rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); }
@@ -426,12 +432,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div id="mapNote" class="map-note" hidden></div>
       <div class="map-fab">
         <button id="baseBtn" class="fab" type="button" aria-label="Fond de carte : Plan IGN"><b>IGN</b><i>fond</i></button>
-        <button id="layersBtn" class="fab" type="button" aria-label="Couches affichées" aria-expanded="false"><b>≡</b><i>couches</i></button>
         <button id="locateBtn" class="fab fab-me" type="button" aria-label="Me localiser" aria-pressed="false"><b>◉</b><i>moi</i></button>
-      </div>
-      <div id="layersMenu" class="fab-menu" hidden>
-        <label><input type="checkbox" id="trailsChk"> Chemins</label>
-        <label><input type="checkbox" id="zonesObs" checked> Observations publiées</label>
       </div>
       <button id="zonesBtn" class="fab-go" type="button">Chercher ici</button>
       <div class="prog map-prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
@@ -449,6 +450,8 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           </label>
           <div id="wList" class="w-list" hidden></div>
           <p id="wMsg" class="msg" hidden></p>
+          <button class="btn w-later" type="button" id="wLater">Je choisirai plus tard</button>
+          <p class="small muted" style="margin-top:10px">Le premier calcul demande une minute et du réseau. Ensuite ça va vite, même hors connexion.</p>
           <p class="w-foot">Les coins que tu placeras restent dans ce téléphone. Ils n'en sortent jamais.</p>
         </div>
       </div>
@@ -458,10 +461,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <button class="zs-grab" type="button" id="zsGrab" aria-expanded="false" aria-controls="zsBody" aria-label="Ouvrir le panneau"></button>
       <div class="zs-head">
         <div class="zs-row">
-          <div class="seg" id="zView" role="group" aria-label="Ce que montre la carte">
-            <button type="button" data-view="filtre" aria-pressed="true">Ce qui passe</button>
-            <button type="button" data-view="score" aria-pressed="false">Les meilleures</button>
-          </div>
+          <span class="zs-titre">Ce qui passe aujourd'hui</span>
           <span id="dataChip2" class="chip">Chargement…</span>
         </div>
         <button type="button" id="spSummary" class="zs-sp" aria-expanded="false"><span id="spSummaryTxt">Toutes les espèces</span> <span class="zs-chev" aria-hidden="true">⌄</span></button>
@@ -486,7 +486,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           </div>
           <div class="legend"><span><i class="sw trail"></i>Chemin</span><span><i class="sw route"></i>Chemin proposé</span></div>
           <div class="row">
-            <button class="btn small" type="button" id="routeBtn">Trouver un chemin vers la meilleure zone</button>
+            <label class="chk1"><input type="checkbox" id="trailsChk"> Afficher les chemins</label>
             <button class="btn small" type="button" id="accBtn">Recalculer la marche depuis la route</button>
             <button class="btn small ghost" type="button" id="zonesHide" hidden>Masquer les zones</button>
           </div>
@@ -499,7 +499,8 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
     <!-- Lus par le moteur à chaque calcul : déplacés hors de l'écran, jamais retirés du document. -->
     <select id="zonesDay" hidden></select>
     <input type="hidden" id="zonesOp" value="0.85">
-    <input type="checkbox" id="zonesFilter" checked hidden>
+    <input type="checkbox" id="zonesAcc" checked hidden>
+    <input type="checkbox" id="zonesObs" hidden>   <!-- couche retirée de la carte : voir le commentaire de drawObs -->   <!-- lu par accessFactor ; plus de case à cocher : la pondération était invisible -->
     <button type="button" id="trailsBtn" aria-pressed="false" hidden></button>
     <span id="accHint" hidden></span>
   </section>
@@ -540,16 +541,6 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <p class="muted small">Réglages fins. L'essentiel se pilote depuis la carte elle-même.</p>
     </div>
     <div class="panel stack">
-      <label class="f">Ce que montrent les couleurs en position « Les meilleures »
-        <select id="zonesMode">
-          <option value="rel">Meilleures zones de la vue</option>
-          <option value="abs">Score sur 100</option>
-          <option value="pot">Potentiel du terrain</option>
-        </select>
-      </label>
-      <div class="checks">
-        <label><input type="checkbox" id="zonesAcc" checked> Privilégier les zones accessibles</label>
-      </div>
       <div class="row">
         <button class="btn small" type="button" id="homeBtn">Changer de secteur</button>
         <button class="btn small" type="button" id="fsBtn" hidden>Plein écran</button>
@@ -575,10 +566,13 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
     <div class="panel">
       <h2>Sauvegarde</h2>
       <p class="small muted" id="verLine">Version de l'appli.</p>
-      <p class="small muted">Tes coins, accès et carnet restent dans ce téléphone. Copie-les de temps en temps dans une note ou un mail pour ne rien perdre.</p>
+      <p class="small muted">Tes coins, accès et carnet restent dans ce téléphone, et nulle part ailleurs. Enregistre-les de temps en temps dans un fichier : si tu changes de téléphone ou que celui-ci fait le ménage, c'est ce qui te les rendra.</p>
       <div class="row">
+        <button class="btn primary" type="button" id="saveFileBtn">Enregistrer dans un fichier</button>
         <button class="btn" type="button" id="exportBtn">Copier mes données</button>
+        <button class="btn" type="button" id="loadFileBtn">Ouvrir un fichier</button>
         <button class="btn" type="button" id="importBtn">Restaurer</button>
+        <input type="file" id="loadFile" accept=".json,application/json" hidden>
         <span class="msg" id="backupMsg"></span>
       </div>
       <textarea id="backupText" aria-label="Données de sauvegarde" placeholder="Colle ici une sauvegarde, puis appuie sur Restaurer."></textarea>
@@ -648,22 +642,50 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
    frostMin : température mini (°C) en dessous de laquelle une gelée des 3 derniers jours freine la pousse
       (−1 par défaut). Les espèces d'arrière-saison tiennent le gel : sans ce réglage, la première gelée
       de novembre éteindrait la carte au moment précis où elles poussent. */
+/* SAISONS MESURÉES — banc du 23 nov. 2026, 3487 observations françaises (GBIF), 5 espèces.
+   Le piège : octobre domine les comptages de TOUTES les espèces, parce que c'est le mois où les gens
+   marchent en forêt, pas seulement celui où ça pousse. Deux hypothèses opposées encadrent la vérité —
+   « l'effort est constant » (qui surestime l'automne) et « la pousse totale est constante » (qui le
+   sous-estime) — et les tableaux ci-dessous sont au milieu des deux. Les RAPPORTS entre deux espèces
+   d'un même mois, eux, ne dépendent d'aucune hypothèse : ils sont exacts, et ils sont respectés.
+   Un mois gardé tel quel quand l'espèce y a moins de 8 trouvailles, ou quand le mois pèse moins de 3 %
+   des observations (janvier à mars) : diviser par un si petit nombre amplifie le bruit au lieu de corriger.
+   Réserve : la saison reste la partie la moins solide de l'appli. La forme est fiable, pas le centième. */
 const DEFAULTS = {
-  cepe:    { label: "Cèpes",    rain: 98, t: [8, 12, 20, 25], season: [0,0,0,0,.1,.3,.6,1,1,1,.75,.2], lag: [13, 21], lagK: [17, 4], wTrig: 1, wMoist: 0, scale: 0.95,
+  cepe:    { label: "Cèpes",    rain: 98, t: [8, 12, 20, 25], season: [0,0,0,0,.1,.11,.17,.45,.74,1,.43,.17], lag: [13, 21], lagK: [17, 4], wTrig: 1, wMoist: 0, scale: 0.95,
              shock: false, edgeMul: 1, near: [0.8, 900], dil: [1, 0.6, 0.45] },
-  girolle: { label: "Girolles", rain: 35, t: [10, 14, 22, 27], season: [0,0,0,0,.3,.8,1,1,1,.8,.4,0] },
-  morille: { label: "Morilles", rain: 25, t: [4, 8, 15, 20],  season: [0,.1,.6,1,.7,.1,0,0,0,0,0,0] },
+  girolle: { label: "Girolles", rain: 35, t: [10, 14, 22, 27], season: [0,0,0,0,.26,.97,1,.89,.84,.5,.32,.12] },
+  /* Morilles : aucune fenêtre de pluie ne tient la vérification, et celle qui était réglée là (J-5 à J-14)
+     a été mesurée inutile dans les deux sens (0,47 puis 0,51 — le hasard donne 0,50). L'eau passe donc
+     par l'humidité du sol seule. Une cloche autour de J-25 ressort des deux moitiés mais ne se confirme
+     que d'un côté : 278 trouvailles, c'est trop peu pour trancher. À reprendre avec un banc plus gros. */
+  morille: { label: "Morilles", rain: 25, t: [4, 8, 15, 20],  season: [0,.1,.6,1,.48,.1,0,0,0,0,0,0],
+             wTrig: 0, wMoist: 1 },
   /* Arrière-saison : elles prennent le relais des cèpes dans les mêmes bois, puis vont jusqu'à l'hiver.
      Moins dépendantes d'une grosse pluie déclenchante que les cèpes, mais il leur faut un sol qui reste humide,
      d'où un seuil de pluie bas et un poids donné à l'humidité de la litière plutôt qu'au déclenchement. */
-  trompette:   { label: "Trompettes", rain: 45, t: [3, 7, 16, 22], season: [0,0,0,0,0,0,0,.1,.45,1,1,.4],
-                 lag: [8, 22], wTrig: 0.4, wMoist: 0.6, edgeMul: 1.25, frostMin: -3, dil: [1, 0.6, 0.45] },
-  chanterelle: { label: "Chanterelles en tube", rain: 40, t: [0, 4, 14, 20], season: [.25,.05,0,0,0,0,0,0,.2,.7,1,1],
-                 lag: [8, 25], wTrig: 0.35, wMoist: 0.65, edgeMul: 1.15, frostMin: -7, dil: [1, 0.6, 0.45] },
+  /* Trompettes : la pluie compte, mais bien plus tard que je ne l'avais réglé. Une cloche centrée sur
+     J-25 sort première des DEUX moitiés du banc et se vérifie des deux côtés (0,57 et 0,59) ; l'ancienne
+     fenêtre J-8 à J-22 ne valait rien (0,46 puis 0,55). Seuil porté de 45 à 60 mm parce que la cloche
+     cumule deux fois plus de jours que l'ancienne somme (Σ des poids 20,0 contre 15). */
+  trompette:   { label: "Trompettes", rain: 60, t: [3, 7, 16, 22], season: [0,0,0,0,0,0,.27,.4,.73,1,.68,.33],
+                 lag: [21, 29], lagK: [25, 8], wTrig: 0.4, wMoist: 0.6, edgeMul: 1.25, frostMin: -3, dil: [1, 0.6, 0.45] },
+  /* Chanterelles en tube : aucune fenêtre de pluie ne tient, à aucun délai testé (0,50 d'un côté, 0,51
+     de l'autre : le hasard). J'avais ajouté en v25 l'exigence d'une pluie déclenchante pour elles ;
+     la mesure dit qu'elle n'a pas de fondement, donc elle part. L'eau passe par l'humidité du sol. */
+  chanterelle: { label: "Chanterelles en tube", rain: 40, t: [0, 4, 14, 20], season: [.3,.05,0,0,0,.09,.13,.39,.89,1,.9,.8],
+                 lag: [8, 25], wTrig: 0, wMoist: 1, edgeMul: 1.15, frostMin: -7, dil: [1, 0.6, 0.45] },
   /* Le plus accommodant des cinq : feuillus comme résineux, il tient le gel et reste bon vieux.
      Souvent là quand les trompettes ne sont pas au rendez-vous, et sans sosie dangereux. */
-  piedmouton:  { label: "Pieds-de-mouton", rain: 50, t: [2, 6, 17, 23], season: [0,0,0,0,0,0,.05,.25,.7,1,1,.6],
-                 lag: [8, 20], wTrig: 0.45, wMoist: 0.55, edgeMul: 1.1, frostMin: -5, dil: [1, 0.6, 0.45] }
+  /* Saison mesurée sur 700 observations françaises (banc du 23 nov. 2026), normalisée sur le mois le plus
+     fort : sept. et oct. à égalité, nov. à 56 %, août 32 %, déc. 23 %, janv. 12 %. Ma version précédente
+     sous-estimait septembre et surestimait novembre. Réserve : le comptage dépend aussi de quand les gens
+     marchent en forêt, donc la forme est fiable, pas les valeurs au centième.
+     La plage de température [2, 6, 17, 23] a été confirmée par les mêmes données : 10e centile 5,9 °C,
+     médiane 11,9 °C, 90e centile 17,2 °C, et 1,9 % seulement des trouvailles hors des bornes. Inchangée.
+     Le seuil de gel à -5 °C tient aussi : 0,9 % des trouvailles ont connu une nuit en dessous. */
+  piedmouton:  { label: "Pieds-de-mouton", rain: 50, t: [2, 6, 17, 23], season: [.15,.05,0,0,0,.12,.3,.52,1,.93,.85,.73],
+                 lag: [8, 20], wTrig: 0, wMoist: 1, edgeMul: 1.1, frostMin: -5, dil: [1, 0.6, 0.45] }
 };
 const RESULTS = ["Rien", "Quelques-uns", "Bonne récolte", "Grosse poussée"];
 const LEVELS = [
@@ -705,42 +727,66 @@ function save(key, value) {
 }
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
-let state = load(STORE_KEY, null);
-/* Installation neuve : aucun coin, et aucun secteur. Pas de coin d'exemple — un tableau de bord rempli
-   de chiffres qui ne sont pas les siens n'apprend rien à personne. L'écran d'accueil s'en charge. */
-if (!state) state = { version: 3, coins: [], logs: [], settings: {} };
 const STATE_VERSION = 3;
-let STATE_TOO_NEW = state && state.version > STATE_VERSION;
-if (STATE_TOO_NEW) state = { version: STATE_VERSION, coins: [], logs: [], settings: {} };   // on n'écrit rien par-dessus
-if (!STATE_TOO_NEW && (!state.version || state.version < STATE_VERSION)) {           // passage à la version 2 : mes espèces, accès, secteur du Bager
-  state.coins.forEach(c => { if (c.parking || (c.path && c.path.length)) c.example = false; });   // un coin d'exemple adopté n'est plus un exemple
-  state.coins = state.coins.filter(c => !c.example);
-  state.coins.forEach(c => {
-    c.species = c.species.filter(k => DEFAULTS[k]);
-    if (!c.species.length) c.species = ["cepe"];
-    c.parking = c.parking || null; c.path = c.path || [];
-  });
-  Object.keys(state.settings).forEach(k => { if (!DEFAULTS[k]) delete state.settings[k]; });
-  state.version = 2;
+let state = load(STORE_KEY, null);
+let STATE_TOO_NEW = !!(state && state.version > STATE_VERSION);
+if (STATE_TOO_NEW) {
+  /* Données écrites par une version plus récente. On n'y touche pas, mais on en garde une copie :
+     l'ancien code les mettait de côté en mémoire puis, comme l'appli se croyait neuve, le premier
+     geste possible les écrasait pour de bon. */
+  try { localStorage.setItem(STORE_KEY + "-recente", JSON.stringify(state)); } catch (e) {}
+  state = { version: STATE_VERSION, coins: [], logs: [], settings: {} };
 }
-if (!STATE_TOO_NEW && state.version < 3) {
-  // Déjà installée : on ne lui remontre pas l'accueil, et son secteur reste celui qu'il connaît.
-  if (!state.home) state.home = { ...HOME_DEF };
-  state.version = 3;
+/* Un JSON valide mais mal formé passait le chargement et faisait planter la migration : écran blanc,
+   aucun bandeau, aucun accès à « Copier mes données ». Le cas réaliste est une sauvegarde recopiée
+   depuis un courriel et tronquée. On valide la forme avant d'y toucher. */
+if (state && (typeof state !== "object" || !Array.isArray(state.coins))) {
+  try { localStorage.setItem(STORE_KEY + "-illisible", JSON.stringify(state)); } catch (e) {}
+  LOAD_CORRUPT = STORE_KEY + "-illisible"; state = null;
 }
-if (state.home && isFinite(state.home.lat) && isFinite(state.home.lon)) HOME = { ...HOME_DEF, ...state.home };
-const FIRST_RUN = !state.home;
+if (!state) state = { version: STATE_VERSION, coins: [], logs: [], settings: {} };
+if (!Array.isArray(state.logs)) state.logs = [];
+if (!state.settings || typeof state.settings !== "object") state.settings = {};
+/* Number.isFinite et pas isFinite : isFinite(null) vaut vrai (null devient 0), et un coin à latitude
+     nulle passait donc le filtre pour planter ensuite sur c.lat.toFixed(). */
+state.coins = state.coins.filter(c => c && Number.isFinite(c.lat) && Number.isFinite(c.lon));
+try {
+  if (!STATE_TOO_NEW && (!state.version || state.version < 2)) {
+    state.coins.forEach(c => { if (c.parking || (c.path && c.path.length)) c.example = false; });
+    state.coins = state.coins.filter(c => !c.example);
+    state.coins.forEach(c => {
+      c.species = Array.isArray(c.species) ? c.species.filter(k => DEFAULTS[k]) : [];
+      if (!c.species.length) c.species = ["cepe"];
+      c.parking = c.parking || null; c.path = Array.isArray(c.path) ? c.path : [];
+    });
+    Object.keys(state.settings).forEach(k => { if (!DEFAULTS[k]) delete state.settings[k]; });
+    state.version = 2;
+  }
+  state.coins.forEach(c => { if (!Array.isArray(c.species) || !c.species.length) c.species = ["cepe"]; });
+  if (!STATE_TOO_NEW && state.version < 3) state.version = 3;
+} catch (e) {
+  try { localStorage.setItem(STORE_KEY + "-illisible", JSON.stringify(state)); } catch (e2) {}
+  LOAD_CORRUPT = STORE_KEY + "-illisible";
+  state = { version: STATE_VERSION, coins: [], logs: [], settings: {} };
+}
+if (state.home && Number.isFinite(state.home.lat) && Number.isFinite(state.home.lon)) HOME = { ...HOME_DEF, ...state.home };
+/* L'accueil ne s'affiche que pour une vraie installation neuve. Sur des données plus récentes ou
+   illisibles, il masquait la barre d'onglets et ne laissait qu'un bouton, lequel écrasait tout. */
+const FIRST_RUN = !state.home && !STATE_TOO_NEW && !LOAD_CORRUPT;
 /* Un enregistrement raté ne doit jamais passer inaperçu : ce sont ses coins. */
 function persist() {
+  if (STATE_TOO_NEW) return false;       // données plus récentes en place : lecture seule, on n'écrase pas
   let ok = save(STORE_KEY, state);
   if (!ok) {                                  // mémoire pleine : le cache des secteurs se recalcule, pas les coins
     try { localStorage.removeItem("meteo-coins-tiles"); } catch (e) {}
     ok = save(STORE_KEY, state);
   }
   const w = document.getElementById("storeWarn");
-  if (w) {
+  /* Ce bandeau est partagé avec la proposition de reprise d'un chemin : on n'efface que le nôtre,
+     sinon un enregistrement réussi faisait disparaître la proposition sous les yeux de l'utilisateur. */
+  if (w && (!ok || w.dataset.kind === "store")) {
     w.hidden = ok;
-    if (!ok) w.innerHTML = `<p><b>Tes dernières modifications n'ont pas pu être enregistrées.</b> La mémoire du téléphone est pleine ou le navigateur bloque l'enregistrement. Va dans Réglages, touche « Copier mes données » et garde le texte ailleurs avant de fermer l'appli.</p>`;
+    if (!ok) { w.dataset.kind = "store"; w.innerHTML = `<p><b>Tes dernières modifications n'ont pas pu être enregistrées.</b> La mémoire du téléphone est pleine ou le navigateur bloque l'enregistrement. Va dans Réglages, touche « Enregistrer dans un fichier » et garde le fichier avant de fermer l'appli.</p>`; }
   }
   return ok;
 }
@@ -934,21 +980,94 @@ function scoreAt(w, R, i, spKey) {
     if (avg(w.tmean, j - 3, j - 1) - avg(w.tmean, j, j + 2) >= 3) { shock = true; break; }
   }
   let eau = sp.wTrig * trig + sp.wMoist * moist;
-  if (parHumidite(sp) && trig < RAIN_FLOOR) eau *= trig / RAIN_FLOOR;   // cf. RAIN_FLOOR
+  if (parHumidite(sp) && sp.wTrig > 0 && trig < RAIN_FLOOR) eau *= trig / RAIN_FLOOR;   // cf. RAIN_FLOOR ; wTrig 0 = espèce sans signal de pluie mesuré
   const raw = season * temp * frost * eau * (shock ? 1.15 : 1) * sp.scale;
-  return { score: Math.min(100, Math.round(100 * raw)), season, trig, trigMm, moist, t7, temp, frost, st7, sm, shock };
+  /* Plafonné à 99 : « 100 sur 100 » est une promesse de certitude, et ce chiffre ne note que les
+     conditions. « 97 sur 100 » dit la même chose sans rien promettre. */
+  return { score: Math.min(99, Math.round(100 * raw)), season, trig, trigMm, moist, t7, temp, frost, st7, sm, shock };
 }
 function level(s) { let l = 0; LEVELS.forEach((L, k) => { if (s >= L.min) l = k; }); return l; }
+
+/* Essence du bois sous un point précis, lue dans les secteurs déjà calculés. Une fois trouvée, elle est
+   retenue sur le coin : la forêt ne change pas, et ça évite d'en dépendre quand le cache est vidé.
+   On garde la case ET ses voisines sur 160 m, comme la carte : la BD Forêt ignore les petits bois et les
+   haies, et un repère n'est jamais posé au mètre près. Sans ce voisinage, un coin tombé sur un chemin ou
+   une clairière valait zéro pour toujours, alors que la carte colorait la même case. */
+function habAtPoint(lat, lon) {
+  const tx = Math.floor(lon / TILE_DLON), ty = Math.floor(lat / TILE_DLAT);
+  const c = tstore()[tx + "_" + ty];
+  const N = TILE_N + 2 * HAB_B;
+  if (!c || !Array.isArray(c.hab) || c.hab.length !== N * N) return null;
+  const b = tileBox(tx, ty), dLat = TILE_DLAT / TILE_N, dLon = TILE_DLON / TILE_N;
+  const i = Math.floor((lon - b.w) / dLon), j = Math.floor((b.n - lat) / dLat);
+  if (i < 0 || i >= TILE_N || j < 0 || j >= TILE_N) return null;
+  const codes = [];
+  for (let dj = -HAB_B; dj <= HAB_B; dj++) for (let di = -HAB_B; di <= HAB_B; di++)
+    codes.push(c.hab[(j + HAB_B + dj) * N + (i + HAB_B + di)]);
+  const own = decodeHab([codes[HAB_B * (2 * HAB_B + 1) + HAB_B]])[0];
+  return own ? { own, codes, src: own.src } : null;
+}
+let HAB_DIRTY = false;
+function coinHab(coin) {
+  /* On relit tant que la source n'est pas l'IGN : OpenStreetMap répond d'abord et ne donne qu'une essence
+     grossière, l'IGN affine ensuite. Et habv absent = valeur écrite par la 2.1, sans le voisinage. */
+  if (coin.hab && Array.isArray(coin.habv) && coin.habs === "ign") return coin.hab;
+  const h = habAtPoint(coin.lat, coin.lon);
+  if (h) { coin.hab = h.own; coin.habv = h.codes; coin.habs = h.src; HAB_DIRTY = true; }
+  return coin.hab || null;   // cache vidé : on garde ce qu'on savait déjà
+}
+/* Le bois qui compte pour ce coin, en une phrase. Sur le repère même, ou juste à côté quand la BD Forêt
+   ne voit rien sur place : c'est le voisinage qui fait le chiffre, autant le dire. */
+function boisTxt(coin, a) {
+  if (!a.hab) return "Le bois de ce coin n'est pas encore connu : ouvre la carte dessus une fois.";
+  const nom = h => KIND_TXT[h.kind] + (h.kind === "forest" ? " de " + (ESS_TXT[h.ess || "unknown"] || "essences non renseignées") : "");
+  if (a.hab.kind === "forest") return "Bois de ce coin : " + nom(a.hab).toLowerCase() + (a.hab.edge ? ", en lisière" : "") + ".";
+  const W = 2 * HAB_B + 1;
+  if (Array.isArray(coin.habv) && coin.habv.length === W * W) {
+    const g = decodeHab(coin.habv).filter(h => h.kind === "forest");
+    if (g.length) {
+      const c = {};
+      g.forEach(h => { c[h.ess || "unknown"] = (c[h.ess || "unknown"] || 0) + 1; });
+      const ess = Object.keys(c).sort((x, y) => c[y] - c[x])[0];
+      return "Pas de bois sur le repère même (" + nom(a.hab).toLowerCase() + "), mais des " + (ESS_TXT[ess] || "arbres") + " à moins de 160 m : c'est ce qui fait le chiffre.";
+    }
+  }
+  return "Bois de ce coin : " + nom(a.hab).toLowerCase() + ".";
+}
+/* Même facteur que la carte : la case elle-même, ou le meilleur bois des environs atténué par dil. */
+function coinHf(coin, sp) {
+  if (!coin.hab) return null;
+  let f = habitatFactor(sp, coin.hab);
+  const D = DEFAULTS[sp].dil, W = 2 * HAB_B + 1;
+  if (D && Array.isArray(coin.habv) && coin.habv.length === W * W) {
+    const g = decodeHab(coin.habv);
+    for (let dj = -HAB_B; dj <= HAB_B; dj++) for (let di = -HAB_B; di <= HAB_B; di++) {
+      const r = Math.round(Math.hypot(di, dj));
+      if (r < 1 || r > HAB_B || !D[r]) continue;
+      const v = D[r] * habitatFactor(sp, g[(dj + HAB_B) * W + (di + HAB_B)]);
+      if (v > f) f = v;
+    }
+  }
+  return f;
+}
 
 function analyse(coin, w) {
   const R = litterSeries(w);
   let ti = w.dates.indexOf(TODAY);
   if (ti < 0) ti = Math.min(30, w.dates.length - 1);
+  /* La fiche d'un coin ignorait l'essence du bois alors que la carte en tenait compte : le même endroit
+     affichait deux notes différentes, et un « 100 » pouvait tomber sur un bois qui ne convient pas. */
+  const hab = coinHab(coin);
   const perSp = coin.species.map(k => {
+    const hf = hab ? coinHf(coin, k) : null;
     const week = [];
-    for (let i = ti; i < Math.min(w.dates.length, ti + 7); i++) week.push({ date: w.dates[i], ...scoreAt(w, R, i, k) });
+    for (let i = ti; i < Math.min(w.dates.length, ti + 7); i++) {
+      const a = scoreAt(w, R, i, k);
+      if (hf != null) a.score = Math.min(99, Math.round(a.score * hf));
+      week.push({ date: w.dates[i], ...a });
+    }
     const best = week.reduce((a, b) => (b.score > a.score ? b : a), week[0]);
-    return { key: k, label: spConf(k).label, today: week[0], week, best };
+    return { key: k, label: spConf(k).label, today: week[0], week, best, hf };
   });
   const week = perSp[0].week.map((_, d) => {
     let top = perSp[0].week[d], who = perSp[0];
@@ -956,7 +1075,7 @@ function analyse(coin, w) {
     return { ...top, sp: who.label };
   });
   const lead = perSp.reduce((a, b) => (b.today.score > a.today.score ? b : a), perSp[0]);
-  return { R, ti, perSp, week, lead, rain14: sum(w.rain, ti - 13, ti), t7: avg(w.tmean, ti - 6, ti), moistNow: R[ti] / LITTER_CAP };
+  return { R, ti, perSp, week, lead, hab, rain14: sum(w.rain, ti - 13, ti), t7: avg(w.tmean, ti - 6, ti), moistNow: R[ti] / LITTER_CAP };
 }
 
 function explain(a) {
@@ -984,35 +1103,6 @@ function esc(s) { return String(s ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp
 let WEATHER = {};
 let ANALYSES = {};
 
-function rainChart(w, a) {
-  const from = Math.max(0, a.ti - 20), to = Math.min(w.dates.length - 1, a.ti + 6);
-  const vals = w.rain.slice(from, to + 1);
-  const max = Math.max(10, Math.ceil(Math.max(...vals) / 10) * 10);
-  const W = 560, H = 150, padL = 30, padB = 22, padT = 10, plotW = W - padL - 6, plotH = H - padB - padT;
-  const bw = plotW / vals.length;
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Pluie journalière sur 21 jours et prévision 7 jours">`;
-  [0, max / 2, max].forEach(v => {
-    const y = padT + plotH - (v / max) * plotH;
-    s += `<line x1="${padL}" x2="${W - 6}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
-    s += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
-  });
-  const lag = spConf(a.lead.key).lag, w0 = a.ti - lag[1] - from, w1 = a.ti - lag[0] - from;
-  if (w1 >= 0) {
-    const x0 = padL + Math.max(0, w0) * bw, x1 = padL + (w1 + 1) * bw;
-    s += `<rect x="${x0}" y="${padT}" width="${x1 - x0}" height="${plotH}" fill="var(--rain-soft)" opacity="0.35"/>`;
-    s += `<text x="${(x0 + x1) / 2}" y="${padT + 12}" text-anchor="middle" font-size="10" fill="var(--muted)">pluie déclenchante</text>`;
-  }
-  vals.forEach((v, k) => {
-    const i = from + k, h = (v / max) * plotH, x = padL + k * bw + 1.5, y = padT + plotH - h;
-    s += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 3)}" height="${h}" rx="2" fill="${i > a.ti ? "var(--rain-soft)" : "var(--rain)"}"/>`;
-    if (i === a.ti) s += `<line x1="${x + bw / 2 - 1.5}" x2="${x + bw / 2 - 1.5}" y1="${padT}" y2="${padT + plotH}" stroke="var(--fg)" stroke-dasharray="3 3"/>`;
-    if (i === a.ti || i === from || i === to) {
-      const lab = i === a.ti ? "auj." : i < a.ti ? "J" + (i - a.ti) : "J+" + (i - a.ti);
-      s += `<text x="${x + bw / 2 - 1.5}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${lab}</text>`;
-    }
-  });
-  return s + `</svg><p class="small muted">Pluie par jour en mm. Barres claires : prévision.</p>`;
-}
 
 function coinCard(c) {
   const w = WEATHER[wkey(c)], a = ANALYSES[c.id];
@@ -1046,6 +1136,7 @@ function coinCard(c) {
         <p class="tagline">${esc(a.lead.label)} en tête${elev}${c.note ? " · " + esc(c.note) : ""}</p>
       </div>
       <div class="score">
+        <div class="lab-top">Conditions</div>
         <div class="big lvl${lv}">${s}</div>
         <div class="lab lvl${lv}">${LEVELS[lv].label}</div>
       </div>
@@ -1055,15 +1146,15 @@ function coinCard(c) {
     <div class="facts">
       <div class="fact"><b>${Math.round(a.rain14)} mm</b><span>Pluie 14 j</span></div>
       <div class="fact"><b>${a.t7.toFixed(1)} °C</b><span>Moy. 7 j</span></div>
-      <div class="fact"><b>${Math.round(a.moistNow * 100)} %</b><span>Litière</span></div>
     </div>
+    <p class="small muted">${boisTxt(c, a)}</p>
+    ${a.hab && a.perSp.every(p => p.hf === 0) ? `<p class="banner" style="font-size:.9rem">La carte des forêts de l'IGN ne voit pas de bois ici, ni à 160 m autour : le chiffre reste donc à zéro. Si tu sais qu'il y en a, touche « Renommer, déplacer ou modifier » et déplace le repère de quelques mètres vers les arbres.</p>` : ""}
     ${acc ? `<p class="access-line">${esc(acc)}</p>` : `<p class="small muted">Pas encore d'accès noté : place le parking et trace le chemin depuis la carte.</p>`}
     ${actions}
     <details class="more">
-      <summary>Détail par espèce et pluviomètre</summary>
+      <summary>Détail par espèce</summary>
       <div class="more-body">
         <table class="sp-table"><thead><tr><th>Espèce</th><th style="text-align:right">Auj.</th><th>Meilleur jour</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="chart-box">${rainChart(w, a)}</div>
       </div>
     </details>
   </article>`;
@@ -1121,8 +1212,8 @@ function seasonOf(k) { return spConf(k).season || DEFAULTS[k].season; }
 /* Quand le score reste à zéro toute la semaine, dire pourquoi plutôt qu'afficher une date. */
 function seasonNote(k) {
   const s = seasonOf(k), now = new Date().getMonth();
-  if (s[now] > 0) return "rien cette semaine";
-  for (let i = 1; i <= 12; i++) { const m = (now + i) % 12; if (s[m] > 0) return "à partir de " + MONTH_LONG[m]; }
+  if (s[now] >= SEASON_MIN) return "rien cette semaine";
+  for (let i = 1; i <= 12; i++) { const m = (now + i) % 12; if (s[m] >= SEASON_MIN) return "à partir de " + MONTH_LONG[m]; }
   return "hors saison";
 }
 /* Place occupée par les fonds de carte gardés, et moyen de la rendre. */
@@ -1147,15 +1238,10 @@ function renderSeasonMemo() {
   const now = new Date().getMonth();
   box.innerHTML = Object.keys(DEFAULTS).map(k => {
     const s = seasonOf(k);
-    const cells = s.map((v, m) => `<span class="sm-c${v >= 0.8 ? " full" : v >= 0.3 ? " part" : v > 0 ? " low" : ""}${m === now ? " now" : ""}" title="${MONTH_LONG[m]} : ${Math.round(v * 100)} % du score possible">${MONTH_SHORT[m]}</span>`).join("");
     const full = s.map((v, m) => (v >= 0.8 ? m : -1)).filter(m => m >= 0);
-    const any = s.map((v, m) => (v > 0 ? m : -1)).filter(m => m >= 0);
-    const ici = s[now] > 0
-      ? `En ${MONTH_LONG[now]}, le score peut atteindre ${Math.round(s[now] * 100)} % de son maximum.`
-      : `En ${MONTH_LONG[now]}, le score reste à zéro : ${seasonNote(k)}.`;
-    const ou = LOOK[k] ? `<p class="sm-look"><b>Où regarder</b> ${esc(LOOK[k])}</p>` : "";
-    return `<div class="sm-row"><strong>${esc(DEFAULTS[k].label)}</strong><div class="sm-strip">${cells}</div>
-      <p class="small muted">Pleine saison : ${monthSpan(full)}. Possible : ${monthSpan(any)}. ${ici}</p>${ou}</div>`;
+    const any = s.map((v, m) => (v >= SEASON_MIN ? m : -1)).filter(m => m >= 0);
+    const ici = s[now] >= SEASON_MIN ? "" : ` En ${MONTH_LONG[now]}, c'est fermé : ${seasonNote(k)}.`;
+    return `<p class="sm-row"><strong>${esc(DEFAULTS[k].label)}</strong> — pleine saison ${monthSpan(full)}, possible ${monthSpan(any)}.${ici}</p>`;
   }).join("");
 }
 
@@ -1182,9 +1268,11 @@ function quickLog(id) {
   btn.closest(".coin").querySelector(".coin-head").after(box);
 }
 function saveQuick(c, sp, result, box) {
+  /* Le carnet note exactement le chiffre vu sur la fiche : sinon il garde une note sans le bois,
+     et la comparaison récolte / conditions, qui est tout l'intérêt du carnet, ne veut plus rien dire. */
   let score = null;
-  const w = WEATHER[wkey(c)];
-  if (w && !DEMO) { const i = w.dates.indexOf(TODAY); if (i >= 0) score = scoreAt(w, litterSeries(w), i, sp).score; }
+  const an = ANALYSES[c.id], ps = an && an.perSp.find(x => x.key === sp);
+  if (ps && !DEMO) score = ps.today.score;
   state.logs.push({ id: uid(), date: TODAY, coin: c.id, sp, result, note: "", score });
   if (!persist()) { box.innerHTML = `<p class="msg err">Enregistrement impossible : la mémoire du téléphone est pleine. Libère de la place, puis recommence.</p>`; return; }
   box.remove();
@@ -1232,21 +1320,12 @@ function initMap() {
   const ign = (layer, fmt) => `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=normal&FORMAT=${fmt}&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
   layers = {
     plan: L.tileLayer(ign("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", "image/png"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" }),
-    photo: L.tileLayer(ign("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" }),
-    /* Le relief venait d'OpenTopoMap, des serveurs bénévoles qui découragent le trafic d'une appli
-       diffusée. Il vient maintenant du même fournisseur que les deux autres fonds. Si la couche ne
-       répond pas, le bouton l'enlève de lui-même du cycle plutôt que d'afficher un fond vide. */
-    topo: L.tileLayer(ign("ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW", "image/png"), { maxNativeZoom: 17, maxZoom: 20, attribution: "© IGN" })
+    /* Deux fonds, pas trois : le relief ombré de l'IGN n'a ni route ni nom de lieu, on ne s'oriente
+       pas avec. Un bouton qui fait défiler deux choix est aussi deux fois plus rapide à l'usage. */
+    photo: L.tileLayer(ign("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), { maxNativeZoom: 19, maxZoom: 20, attribution: "© IGN" })
   };
   Object.values(layers).forEach(l => l.on("tileerror", () => { if (!tileFailed) { tileFailed = true; showMapNote(); } }));
   layers.plan.addTo(map);
-  /* Si un fond ne sert rien, le bouton le retire du cycle au lieu de laisser l'utilisateur sur un écran vide. */
-  let topoFails = 0;
-  layers.topo.on("tileerror", () => {
-    if (++topoFails < 4 || typeof baseOk === "undefined" || !baseOk[2]) return;
-    baseOk[2] = false;
-    if (baseIdx === 2) { setBase(0); zMsg("Le fond « Relief » ne répond pas : retour au Plan IGN."); }
-  });
   map.createPane("zones");
   map.getPane("zones").style.zIndex = 350;
   map.getPane("zones").style.pointerEvents = "none";
@@ -1264,7 +1343,7 @@ function initMap() {
 function showMapNote() {
   const n = $("mapNote");
   n.hidden = !tileFailed;
-  n.textContent = "Le fond de carte ne se charge pas ici. Il s'affichera une fois l'appli ouverte depuis son adresse à toi. Les coins et chemins restent utilisables.";
+  n.textContent = "Le fond de carte ne se charge pas. Tes coins et tes chemins restent utilisables ; la carte reviendra avec le réseau.";
 }
 
 function fitAll() {
@@ -1484,7 +1563,7 @@ function renderSheet(msg) {
   sh.innerHTML = `
     <div class="coin-head">
       <div><h2 class="coin-name">${esc(c.name)}</h2><p class="tagline">${c.species.map(k => DEFAULTS[k].label).join(", ")}${c.note ? " · " + esc(c.note) : ""}</p></div>
-      ${s != null ? `<div class="score"><div class="big lvl${level(s)}">${s}</div><div class="lab lvl${level(s)}">${LEVELS[level(s)].label}</div></div>` : ""}
+      ${s != null ? `<div class="score"><div class="lab-top">Conditions</div><div class="big lvl${level(s)}">${s}</div><div class="lab lvl${level(s)}">${LEVELS[level(s)].label}</div></div>` : ""}
     </div>
     ${msg ? `<p class="msg">${esc(msg)}</p>` : ""}
     <dl class="kv">
@@ -1535,6 +1614,7 @@ function saveEditor() {
     const c = coinById(ui.sel);
     const moved = c.lat !== data.lat || c.lon !== data.lon;
     Object.assign(c, data, { example: false });
+    if (moved) { delete c.hab; delete c.habv; delete c.habs; }   // autre endroit, autre bois
     if (moved && c.path && c.path.length > 1) c.path[c.path.length - 1] = [data.lat, data.lon];
     persist(); ui.mode = null; ui.draft = null;
     refresh(false, "Coin modifié.");
@@ -1556,6 +1636,7 @@ function offerResume() {
   if (!w) return;
   w.hidden = false;
   w.className = "banner";
+  w.dataset.kind = "resume";
   w.innerHTML = `<p><b>Un chemin en cours a été interrompu</b> à « ${esc(c.name)} » : ${r.path.length} points, ${fmtDist(pathLength(r.path))}. Tu peux le garder ou le jeter.</p>
     <div class="row"><button class="btn primary" type="button" id="recKeep">Garder ce chemin</button><button class="btn ghost" type="button" id="recDrop">Jeter</button></div>`;
   document.getElementById("recKeep").onclick = () => {
@@ -1623,8 +1704,10 @@ async function startRecording(c) {
   );
   drawMap(); renderSheet();
 }
-function stopRecording() {
-  try { localStorage.removeItem(REC_KEY); } catch (e) {}
+function stopRecording(oublier) {
+  // Cinq des six appels passent false pour dire « garde la marche en cours » ; l'argument était ignoré,
+  // et toucher un parking en cours d'enregistrement effaçait la montée sans rien demander.
+  if (oublier !== false) { try { localStorage.removeItem(REC_KEY); } catch (e) {} }
   if (ui.rec != null) { navigator.geolocation.clearWatch(ui.rec); ui.rec = null; }
   if (ui.wake) { try { ui.wake.release(); } catch (e) {} ui.wake = null; }
 }
@@ -1637,23 +1720,25 @@ function stopRecording() {
    suit donc le test réellement appliqué : sans ça, le score regarderait une chose et le critère une autre. */
 const CRIT = [
   { bit: 1, nom: "Saison" },
-  { bit: 2, nom: "Pluie déclenchante" },
+  { bit: 2, nom: "Eau" },
   { bit: 4, nom: "Températures" },
   { bit: 8, nom: "Terrain" }
 ];
-/* Espèce portée par l'humidité durable plutôt que par l'averse. */
+/* Espèce portée par l'humidité durable plutôt que par l'averse. Le critère s'appelle « Eau » pour
+   toutes : le détail (averse déclenchante ou humidité qui dure) appartient aux chiffres juste en
+   dessous, pas au nom du critère — sinon les quatre mots à retenir ne sont pas les mêmes partout. */
 const parHumidite = c => (c.wMoist ?? 0.45) > (c.wTrig ?? 0.55);
-function critsDe(spKey) {
-  const c = CRIT.slice();
-  if (parHumidite(spConf(spKey))) c[1] = { bit: 2, nom: "Sol humide" };
-  return c;
-}
+/* Poids de saison minimum pour que le critère « Saison » soit coché. Sans ce plancher, un mois à 0,05
+   — c'est-à-dire « pas impossible » — passait pour « en saison », et le filtre allumait la carte en juillet. */
+const SEASON_MIN = 0.25;
+/* Le mémo des saisons doit utiliser ce même seuil, sinon un mois s'affiche « possible » alors que
+   le filtre ne s'allumera jamais. */
 function critMask(a, hfOwn, spKey) {
   const c = spConf(spKey);
   /* Dans les deux cas il faut un minimum d'eau réellement tombée : un sol « pas sec » en novembre,
      c'est l'état par défaut du Béarn, pas une bonne nouvelle. */
-  const eau = parHumidite(c) ? (a.moist >= 0.7 && a.trig >= RAIN_FLOOR) : (a.trig >= 0.8);
-  return (a.season > 0 ? 1 : 0) | (eau ? 2 : 0) | (a.temp >= 0.6 && a.frost >= 1 ? 4 : 0) | (hfOwn >= 0.6 ? 8 : 0);
+  const eau = parHumidite(c) ? (a.moist >= 0.7 && (c.wTrig === 0 || a.trig >= RAIN_FLOOR)) : (a.trig >= 0.8);
+  return (a.season >= SEASON_MIN ? 1 : 0) | (eau ? 2 : 0) | (a.temp >= 0.6 && a.frost >= 1 ? 4 : 0) | (hfOwn >= 0.6 ? 8 : 0);
 }
 const critCount = m => CRIT.reduce((n, c) => n + ((m & c.bit) ? 1 : 0), 0);
 
@@ -1736,7 +1821,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "1.3 · 23 nov. 2026";
+const APP_VERSION = "2.2 · 23 nov. 2026 · saisons mesurées";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -1792,8 +1877,11 @@ function diagText() {
   lines.push("Message : " + ($("zonesMsg").textContent || "-"));
   return lines.join("\n");
 }
-window.addEventListener("error", e => { DIAG.errors.push((e.message || "erreur") + (e.lineno ? " (ligne " + e.lineno + ")" : "")); renderDiag(); });
-window.addEventListener("unhandledrejection", e => { const r = e.reason; if (r && r.name === "AbortError") return; DIAG.errors.push("Promesse : " + describeErr(r)); renderDiag(); });
+/* Une erreur dans un gestionnaire de carte se répète à chaque déplacement : sans plafond, le diagnostic
+   qu'on me copie devient illisible juste quand il servirait. */
+function logErr(t) { DIAG.errors.push(t); while (DIAG.errors.length > 50) DIAG.errors.shift(); renderDiag(); }
+window.addEventListener("error", e => logErr((e.message || "erreur") + (e.lineno ? " (ligne " + e.lineno + ")" : "")));
+window.addEventListener("unhandledrejection", e => { const r = e.reason; if (r && r.name === "AbortError") return; logErr("Promesse : " + describeErr(r)); });
 setInterval(() => { if (Object.values(DIAG.src).some(d => d.state === "wait")) renderDiag(); }, 1000);
 
 /* ---------- Barre de progression ---------- */
@@ -1837,7 +1925,12 @@ function makeProg(title, defs) {
 }
 const tick = () => new Promise(r => setTimeout(r, 0));
 
-function zMsg(t, err) { const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+function zMsg(t, err) {
+  /* #zonesMsg vit dans le corps de la feuille : invisible au cran replié, et caché dès qu'une fiche
+     de coin est ouverte. Un avertissement réseau partait donc dans le vide. On ouvre pour le montrer. */
+  if (t) { const b = $("zsBody"), z = $("zSheet");
+    if (b && b.hidden) { ui.sel = null; ROUTE = null; renderSheet(); }
+    if (z && z.dataset.snap === "peek") snapSheet("half"); } const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
 
 /* ---------- D'où vient la météo ----------
    Un seul endroit à changer selon la route retenue pour la vente :
@@ -2356,10 +2449,11 @@ function refineLater(list, bg, WG, box, batch, ready) {
   refining++;
   if (ZONES) renderSources();
   Promise.all([Promise.allSettled(bg), ready]).then(() => {      // attend aussi la fin du premier calcul
-    tstoreSave();
-    const mine = minePts();
-    list.forEach(t => { const m = TILE_MEM.get(t.id); if (m && m.batch === batch) scoreTile(t, terrOf(t.id), WG, box, mine, false, batch); });
-    refining--;
+    try {
+      tstoreSave();
+      const mine = minePts();
+      list.forEach(t => { const m = TILE_MEM.get(t.id); if (m && m.batch === batch) scoreTile(t, terrOf(t.id), WG, box, mine, false, batch); });
+    } finally { refining--; }   // sinon « Affinage en cours… » reste à l'écran et la carte ne se redessine plus
     if (zonesOn && ZONES && !zonesBusy) { stitch(ZONES.range); drawZones(); drawObs(); renderSources(); renderAccBtn(); }
     else if (ZONES) renderSources();
   });
@@ -2504,11 +2598,11 @@ function scoreTile(t, terr, WG, box, mine, demo, batch) {
       ext[sp] = hf > habitatFactor(sp, hab[k]) + 1e-6;
       days.forEach((_, d) => {
         const a = scoreAt(cw, R, ti + d, sp);
-        scores[sp][d][k] = hf > 0 ? Math.min(100, a.score * hf * bonus) : 0;
+        scores[sp][d][k] = hf > 0 ? Math.min(99, a.score * hf * bonus) : 0;
         crit[sp][d][k] = critMask(a, habitatFactor(sp, hab[k]), sp);   // la case elle-même, pas le bois voisin
       });
       // Potentiel du terrain, sans la météo : essences, lisières, exposition fraîche, observations
-      pot[sp][k] = Math.min(100, 80 * hf * bonus * (1 + 0.1 * Math.cos(aspect) * Math.min(slope / 20, 1)));
+      pot[sp][k] = Math.min(99, 80 * hf * bonus * (1 + 0.1 * Math.cos(aspect) * Math.min(slope / 20, 1)));
     });
     const inf = { z, slope, aspect, flat: !E, hab: hab[k], acc: terr.acc ? terr.acc[k] : null, near, ext,
       st7: soil ? avg(cw.soilT, ti - 6, ti) : null, sm: soil ? avg(cw.soilM, ti - 2, ti) : null };
@@ -2557,15 +2651,15 @@ function stitch(r) {
   const src = { n: tiles.length, elev: tiles.filter(m => m.hasElev).length, ign: tiles.filter(m => m.srcIgn).length, osm: tiles.filter(m => m.srcOsm).length,
     gbif: tiles.some(m => m.obsOk) ? obs.length : null, accN, acc: accN === tiles.length, soil: tiles.every(m => m.soil), missing: r.list.length - tiles.length };
   ZONES = { s, w, n, e, nx, ny, cell: CELL_M, days, scores, pot, crit, info, pts, obs, src, range: r, tiles: tiles.map(m => m.tx + "_" + m.ty),
-    wg: (tiles.find(m => m.wg) || {}).wg || null,
+    wgOf: new Map(tiles.filter(m => m.wg).map(m => [m.tx + "_" + m.ty, m.wg])),   // par secteur : sinon on lit la météo d'un point jusqu'à 2 km à côté
     demo: tiles.some(m => m.demo), forestOk: tiles.every(m => m.habOk), at: Math.min(...tiles.map(m => m.at)), day: TODAY };
   return true;
 }
 
-function showZonesUI(on) {
+function showZonesUI(on, manuel) {
   ["zonesLegend", "zonesHide"].forEach(id => { const e = $(id); if (e) e.hidden = !on; });
   $("zonesBtn").textContent = on ? "Recalculer ici" : "Chercher ici";
-  if (on) snapSheet("half");
+  if (on && manuel) snapSheet("half");   // seulement sur un geste volontaire, pas à chaque déplacement
 }
 const hhmmOf = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 
@@ -2602,7 +2696,7 @@ async function ensureView(manual, force) {
     if (ZONES.days.join() !== prevDays) {
       $("zonesDay").innerHTML = ZONES.days.map((d, k) => `<option value="${k}">${k === 0 ? "Aujourd'hui" : longDate(d)}</option>`).join("");
     } else if (prevDay) $("zonesDay").value = prevDay;
-    showZonesUI(true); renderAccBtn(); drawZones(); drawObs(); renderSources();
+    showZonesUI(true, manual); renderAccBtn(); drawZones(); drawObs(); renderSources();
     if (!failed) {
       const nS = ZONES.src.n;
       zMsg(ZONES.demo
@@ -2675,8 +2769,11 @@ function renderSpChips() {
   }
 }
 /* Mode effectif : « Potentiel du terrain » si choisi, ou en secours quand la météo ne donne rien à l'écran */
-function effMode() { if (filterOn()) return "abs"; return ZONES && ZONES.fallback ? "pot" : $("zonesMode").value; }
-const filterOn = () => { const e = $("zonesFilter"); return !!(e && e.checked && !e.disabled); };
+/* Un seul langage de couleurs : le filtre. Le potentiel du terrain reste joignable, mais
+   par un bouton proposé au moment où rien ne passe — pas par un commutateur permanent. */
+let VOIR_TERRAIN = false;
+function effMode() { return VOIR_TERRAIN ? "pot" : "abs"; }
+const filterOn = () => !VOIR_TERRAIN;
 /* Mode filtre : une case ne s'allume que si elle remplit les conditions, et le dégradé disparaît.
    4 conditions sur 4 = couleur pleine, 3 sur 4 = couleur faible, moins = rien du tout. */
 function filterGrid(d) {
@@ -2720,24 +2817,13 @@ function zoneThresholds(out) {
   let vmax = 0, bk = -1;
   out.forEach((v, k) => { if (vis[k] && (bk < 0 || v > vmax)) { vmax = v; bk = k; } });
   if (filterOn()) return { t: [25, 50, 75], labels: ["—", "3 conditions sur 4", "Les 4 conditions"], rel: false, vmax, bk };
-  if (effMode() === "abs") return { t: [25, 50, 75], labels: ["Possible", "Favorable", "Très favorable"], rel: false, vmax, bk };
-  const floor = Math.max(1, 0.3 * vmax), vals = [];
-  out.forEach((v, k) => { if (vis[k] && v > 0) vals.push(v); });
-  vals.sort((a, b) => a - b);
-  const q = p => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))] : Infinity);
-  const t = vmax < 1 ? [Infinity, Infinity, Infinity] : [Math.max(floor, q(0.70)), Math.max(floor, q(0.85)), Math.max(floor, q(0.95))];
-  return { t, labels: ["Top 30 %", "Top 15 %", "Top 5 %"], rel: true, vmax, bk };
+  return { t: [25, 50, 75], labels: ["Terrain moyen", "Bon terrain", "Très bon terrain"], rel: false, vmax, bk };
 }
 function zClass(v, t) { return v >= t[2] ? 3 : v >= t[1] ? 2 : v >= t[0] ? 1 : 0; }
 function drawZones() {
   if (!ZONES || !map) return;
   // Si la météo ne donne rien nulle part à l'écran, on montre le potentiel du terrain plutôt qu'une carte vide
   ZONES.fallback = false;
-  if ($("zonesMode").value !== "pot" && !filterOn()) {
-    const g = zoneGrid(), vis = visibleMask();
-    let m = 0; g.out.forEach((v, k) => { if (vis[k] && v > m) m = v; });
-    if (m < 1) ZONES.fallback = true;
-  }
   const { nx, ny } = ZONES, { out, who } = zoneGrid(), th = zoneThresholds(out);
   ZONES.th = th;
   // Image affinée : interpolation des scores entre les cases, puis 3 couleurs nettes avec un liseré
@@ -2814,7 +2900,7 @@ function renderFilter() {
       return Math.round(m);
     });
     [res, spotBox].forEach(e => { if (e) e.hidden = true; });
-    title.hidden = false; title.textContent = "Meilleur score de la vue, sur 100";
+    title.hidden = false; title.textContent = "Potentiel du terrain, hors météo";
     dayBox.hidden = false;
     dayBox.innerHTML = ZONES.days.map((iso, dd) =>
       `<button type="button" class="zd ${dd === d ? "on " : ""}${best[dd] ? "has" : "zero"}" data-fday="${dd}">
@@ -2824,7 +2910,7 @@ function renderFilter() {
     });
     return;
   }
-  title.hidden = false; title.textContent = "Cases qui remplissent les 4 conditions";
+  title.hidden = false; title.textContent = "Endroits qui remplissent les 4 conditions";
   const qual = dd => {
     const out = [];
     const g = filterGrid(dd);
@@ -2845,7 +2931,7 @@ function renderFilter() {
   res.hidden = false;
   if (here.length) {
     res.className = "filtres";
-    res.textContent = here.length + (here.length > 1 ? " cases remplissent" : " case remplit") + " les 4 conditions dans cette vue.";
+    res.textContent = here.length + (here.length > 1 ? " endroits remplissent" : " endroit remplit") + " les 4 conditions dans cette vue.";
   } else {
     res.className = "filtres none";
     const manque = {};
@@ -2853,7 +2939,7 @@ function renderFilter() {
     SP_SEL.forEach(sp => {
       const c = ZONES.crit && ZONES.crit[sp] && ZONES.crit[sp][d];
       if (!c) return;
-      const cr = critsDe(sp);   // « Sol humide » ou « Pluie déclenchante » selon l'espèce
+      const cr = CRIT;
       cr.forEach(x => { if (manque[x.nom] == null) manque[x.nom] = 0; });
       for (let k = 0; k < c.length; k++) {
         if (!vis[k] || ZONES.info[k].missing) continue;
@@ -2862,23 +2948,28 @@ function renderFilter() {
     });
     const pire = Object.keys(manque).sort((a, b) => manque[b] - manque[a])[0];
     const mieux = counts.map((v, i) => [v, i]).filter(x => x[0] > 0).sort((a, b) => b[0] - a[0])[0];
-    res.textContent = "Aucune case ne remplit les 4 conditions ce jour-là. "
-      + (mieux ? "En revanche, " + dayName(ZONES.days[mieux[1]]) + " : " + mieux[0] + " cases passent."
-               : "Rien sur les 7 jours ici" + (n && pire ? ", il manque surtout : " + pire.toLowerCase() + "." : "."));
+    res.innerHTML = esc("Aucun endroit ne remplit les 4 conditions ce jour-là. "
+      + (mieux ? "En revanche, " + dayName(ZONES.days[mieux[1]]) + " : " + mieux[0] + " endroits passent."
+               : "Rien sur les 7 jours ici" + (n && pire ? ", il manque surtout : " + pire.toLowerCase() + "." : ".")))
+      + ` <button type="button" class="btn small lien" id="voirTerrain">Montre-moi les meilleurs terrains quand même</button>`;
+    const vt = $("voirTerrain");
+    if (vt) vt.onclick = () => { setView("terrain"); zMsg("La carte montre le potentiel du terrain : les meilleurs endroits où chercher quand les conditions reviendront."); };
   }
   // Coins à essayer : les plus proches d'une route d'abord
-  const hasAcc = here.some(([k]) => ZONES.info[k].acc != null);
+  const hasAcc = here.some(([k]) => ZONES.info[k].acc != null && ZONES.info[k].acc >= 0);
+  const accKey = r => (r.acc == null || r.acc < 0) ? 1e9 : r.acc;
   const rows = here.map(([k, sp]) => ({ k, sp, acc: ZONES.info[k].acc, inf: ZONES.info[k] }))
-    .sort((a, b) => (hasAcc ? (a.acc ?? 1e9) - (b.acc ?? 1e9) : 0) || 0).slice(0, 8);
+    .sort((a, b) => (accKey(a) - accKey(b)) || (a.k - b.k)).slice(0, 8);   // -1 = hors d'atteinte, donc en dernier
   spotBox.hidden = !rows.length;
   if (rows.length) {
     spotBox.innerHTML = `<p class="small muted" style="margin:6px 0 4px">À essayer en premier${hasAcc ? ", du plus proche d'une route" : ""} :</p>
       <div class="spotlist">` + rows.map(r => {
         const h = r.inf.hab, mil = h.kind === "forest" ? (ESS_TXT[h.ess] || "forêt") : "hors forêt";
-        const acc = r.acc == null ? "" : "<b>" + fmtDist(r.acc) + "</b> de la route · ";
+        const acc = r.acc == null ? "" : r.acc < 0 ? "<b>loin de toute route</b> · " : "<b>" + fmtDist(r.acc) + "</b> de la route · ";
         return `<button type="button" class="spot" data-fspot="${r.k}">
           <span>${acc}${esc(mil)}<span class="sp-why"> · ${Math.round(r.inf.z)} m · ${esc(DEFAULTS[r.sp].label.toLowerCase())}</span></span></button>`;
-      }).join("") + `</div>`;
+      }).join("") + `</div>` + (LOOK[rows[0].sp]
+        ? `<p class="sm-look"><b>Où regarder — ${esc(DEFAULTS[rows[0].sp].label.toLowerCase())}</b> ${esc(LOOK[rows[0].sp])}</p>` : "");
     spotBox.querySelectorAll("[data-fspot]").forEach(b => {
       b.onclick = () => {
         const p = ZONES.pts[Number(b.dataset.fspot)];
@@ -2890,6 +2981,10 @@ function renderFilter() {
 }
 
 function setZonesOpacity() { if (zonesLayer) zonesLayer.eachLayer(l => { if (l.setOpacity) l.setOpacity(Number($("zonesOp").value)); }); }
+/* La couche des observations publiées a été retirée de la carte : trois espèces sur six y étaient
+   du même gris, un relevé de 2019 s'affichait comme un fait du jour, et surtout des points posés
+   « sur les champignons » disent exactement l'inverse de ce que l'appli promet. Le bonus de
+   proximité reste dans le score, et la bulle continue de citer l'observation la plus proche. */
 function drawObs() {
   if (obsLayer) { map.removeLayer(obsLayer); obsLayer = null; }
   if (!ZONES || !ZONES.obs.length || !$("zonesObs").checked) return;
@@ -2935,7 +3030,7 @@ function zonePopup(ll) {
   const v = Math.round(out[k]);
   const dSel = Number($("zonesDay").value || 0), spSel = who[k] || SP_SEL[0];
   const mask = ZONES.crit && ZONES.crit[spSel] && ZONES.crit[spSel][dSel] ? ZONES.crit[spSel][dSel][k] : null;
-  const critHtml = mask == null ? "" : '<div class="critlist">' + critsDe(spSel).map(c =>
+  const critHtml = mask == null ? "" : '<div class="critlist">' + CRIT.map(c =>
     `<span class="${(mask & c.bit) ? "ok" : "ko"}">${(mask & c.bit) ? "✓" : "✕"} ${c.nom}</span>`).join("") + '</div>';
   const dirs = ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"];
   const az = ((inf.aspect * 180 / Math.PI) + 360) % 360;
@@ -2947,9 +3042,10 @@ function zonePopup(ll) {
      elle a comptée, sinon la coche est un verdict et non une observation — et c'est tout le contraire
      de ce que fait cette appli. Recalculé à la demande depuis la grille météo de la vue. */
   let faits = "";
-  if (Z.wg && spSel) {
+  const W = Z.wgOf && Z.wgOf.get(Math.floor(ll.lng / TILE_DLON) + "_" + Math.floor(ll.lat / TILE_DLAT));
+  if (W && spSel) {
     try {
-      const W = Z.wg, gx2 = W.gx, gy2 = W.gy;
+      const gx2 = W.gx, gy2 = W.gy;
       const fx = clamp((ll.lng - W.box.w) / (W.box.e - W.box.w), 0, 1) * (gx2 - 1);
       const fy = clamp((W.box.n - ll.lat) / (W.box.n - W.box.s), 0, 1) * (gy2 - 1);
       const zG = interpSeries(W.WG, gx2, gy2, fx, fy, "elevation"), corr = (zG - inf.z) * LAPSE;
@@ -2957,7 +3053,7 @@ function zonePopup(ll) {
         rain: interpSeries(W.WG, gx2, gy2, fx, fy, "rain"),
         tmean: interpSeries(W.WG, gx2, gy2, fx, fy, "tmean").map(v => v + corr),
         tmin: interpSeries(W.WG, gx2, gy2, fx, fy, "tmin").map(v => v + corr),
-        et0: interpSeries(W.WG, gx2, gy2, fx, fy, "et0") };
+        et0: interpSeries(W.WG, gx2, gy2, fx, fy, "et0").map(v => v * (1 + 0.3 * Math.cos(inf.aspect - Math.PI) * Math.min(inf.slope / 20, 1))) };   // même correction de pente que le calcul
       if (W.soil) {
         cw.soilT = interpSeries(W.WG, gx2, gy2, fx, fy, "soilT").map(v => v + corr);
         cw.soilM = interpSeries(W.WG, gx2, gy2, fx, fy, "soilM");
@@ -2965,9 +3061,10 @@ function zonePopup(ll) {
       const a = scoreAt(cw, litterSeries(cw), W.ti + dSel, spSel), cf = spConf(spSel);
       const lag = cf.lagK ? "autour de J−" + cf.lagK[0] : "entre J−" + cf.lag[1] + " et J−" + cf.lag[0];
       faits = `<div class="faits">
-        <span><b>${Math.round(a.trigMm)} mm</b> de pluie utile ${lag}, il en faut ${cf.rain}</span>
-        <span><b>${fr1(a.t7)} °C</b> de moyenne sur 7 jours${a.st7 != null ? `, sol à ${fr1(a.st7)} °C` : ""}</span>
-        <span>litière et sol humides à <b>${Math.round(a.moist * 100)} %</b></span>
+        <span>${cf.wTrig > 0
+          ? `<b>${Math.round(a.trigMm)} mm</b> de pluie utile ${lag}, il en faut ${cf.rain}`
+          : `sol <b>${a.moist > 0.7 ? "bien humide" : a.moist > 0.45 ? "moyennement humide" : "sec"}</b> — pour cette espèce c'est l'humidité qui compte, pas une grosse pluie`}</span>
+        <span><b>${fr1(a.t7)} °C</b> de moyenne sur 7 jours</span>
         ${a.frost < 1 ? `<span class="ko">gelée sous ${cf.frostMin} °C ces trois derniers jours</span>` : ""}
       </div>`;
     } catch (e) { faits = ""; }
@@ -3049,7 +3146,7 @@ function setTrails(on) {
   const b = $("trailsBtn");
   b.setAttribute("aria-pressed", on ? "true" : "false");
   b.textContent = on ? "Masquer les chemins" : "Afficher les chemins";
-  const c = $("trailsChk"); if (c && c.checked !== on) c.checked = on;   // la case du menu Couches suit
+  const c = $("trailsChk"); if (c && c.checked !== on) c.checked = on;
   if (on && map) map.attributionControl.addAttribution("Chemins © OpenStreetMap");
   drawTrails();
 }
@@ -3267,8 +3364,9 @@ function renderSettings() {
     const s = spConf(k);
     return `<fieldset class="panel" style="margin:0">
       <legend class="small muted" style="padding:0 6px">${s.label}</legend>
+      ${s.wTrig > 0 ? "" : `<p class="small muted" style="margin:0 0 6px">Pour cette espèce, aucune pluie déclenchante n'a pu être mesurée : l'appli regarde l'humidité du sol à la place. Le seuil de pluie est donc sans effet.</p>`}
       <div class="grid3">
-        <label class="f">Pluie déclenchante (mm)<input type="number" min="5" max="200" step="1" id="set-${k}-rain" value="${s.rain}"></label>
+        <label class="f">${s.wTrig > 0 ? "Pluie déclenchante (mm)" : "Pluie (sans effet ici)"}<input type="number" min="5" max="200" step="1" id="set-${k}-rain" value="${s.rain}"${s.wTrig > 0 ? "" : " disabled"}></label>
         <label class="f">Idéal dès (°C)<input type="number" min="-5" max="30" step="0.5" id="set-${k}-t1" value="${s.t[1]}"></label>
         <label class="f">Idéal jusqu'à (°C)<input type="number" min="0" max="35" step="0.5" id="set-${k}-t2" value="${s.t[2]}"></label>
       </div>
@@ -3286,7 +3384,7 @@ function renderStatus() {
   if (DEMO) {
     chip.className = "chip demo"; chip.textContent = "Météo d'exemple";
     b.hidden = false;
-    b.innerHTML = `<p><b>Les scores affichés sont calculés sur une météo d'exemple.</b> La météo réelle n'a pas pu se charger : pas de réseau, ou aperçu Claude. Elle s'affichera dès que la connexion revient, depuis l'adresse de ton appli.</p><button class="btn small" type="button" id="retryBtn">Réessayer</button>`;
+    b.innerHTML = `<p><b>Les chiffres affichés viennent d'une météo d'exemple.</b> La météo réelle n'a pas pu se charger, faute de réseau. Elle reviendra dès que la connexion revient.</p><button class="btn small" type="button" id="retryBtn">Réessayer</button>`;
     $("retryBtn").onclick = () => refresh(true);
   } else {
     if (OFFLINE) {
@@ -3303,7 +3401,9 @@ function renderStatus() {
 
 function computeAll() {
   ANALYSES = {};
+  HAB_DIRTY = false;
   state.coins.forEach(c => { const w = WEATHER[wkey(c)]; if (w && c.species.length) ANALYSES[c.id] = analyse(c, w); });
+  if (HAB_DIRTY) { HAB_DIRTY = false; persist(); }   // le bois trouvé est retenu une fois, pas une fois par coin
 }
 function renderAll(msg) { computeAll(); renderStatus(); renderCoins(); renderLogForm(); renderLogs(); renderSeasonMemo(); renderMapsInfo(); drawMap(); renderSheet(msg); }
 
@@ -3339,8 +3439,8 @@ function showTab(name) {
 document.querySelectorAll("nav.tabs button").forEach(btn => { btn.onclick = () => showTab(btn.dataset.tab); });
 
 /* Un seul bouton rond au lieu de trois segments de 34 px : il fait défiler les fonds. */
-const BASES = [["plan", "IGN", "Plan IGN"], ["photo", "Photo", "Photo aérienne"], ["topo", "Relief", "Relief ombré"]];
-let baseIdx = 0, baseOk = [true, true, true];
+const BASES = [["plan", "IGN", "Plan IGN"], ["photo", "Photo", "Photo aérienne"]];   // le relief ombré n'a ni route ni toponyme : on ne s'oriente pas avec
+let baseIdx = 0, baseOk = [true, true];
 function setBase(i) {
   if (!map) return;
   baseIdx = i;
@@ -3355,11 +3455,6 @@ $("baseBtn").onclick = () => {
   setBase(i);
 };
 
-$("layersBtn").onclick = () => {
-  const m = $("layersMenu"), open = m.hidden;
-  m.hidden = !open; $("layersBtn").setAttribute("aria-expanded", String(open));
-};
-$("trailsChk").onchange = () => toggleTrails();
 /* Le chevron promettait une liste déroulante qui n'existait pas. Il devient un vrai bascule :
    il ouvre le choix des espèces, il le referme, et il pivote pour dire dans quel sens il va. */
 $("spSummary").onclick = () => {
@@ -3390,36 +3485,19 @@ $("zonesSpChips").addEventListener("click", ev => {
 });
 $("zonesDay").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Jour changé : relance la recherche de chemin."); } };
 $("trailsBtn").onclick = toggleTrails;
-$("routeBtn").onclick = () => {
-  if (!ZONES) { tMsg("Calcule d'abord les zones favorables, puis cherche le chemin.", true); return; }
-  stopRecording(); ui.sel = null; ui.mode = "route"; tMsg(""); drawMap(); renderSheet();
-};
+$("trailsChk").onchange = () => toggleTrails();
 $("diagCopy").onclick = async () => {
   const t = diagText(), ta = $("diagText");
-  try { await navigator.clipboard.writeText(t); $("diagMsg").textContent = "Copié. Colle-le dans ton message à Claude."; }
+  try { await navigator.clipboard.writeText(t); $("diagMsg").textContent = "Copié. Tu peux le coller dans un message au support."; }
   catch (e) { ta.hidden = false; ta.value = t; ta.focus(); ta.select(); $("diagMsg").textContent = "Texte sélectionné : copie-le à la main."; }
 };
 renderDiag();
-/* Un seul endroit nomme le langage des couleurs, et il est toujours visible en tête de feuille.
-   « Ce qui passe » = le filtre, deux paliers, aucun nombre sur 100 peint.
-   « Les meilleures » = le score, trois paliers, réglage fin en Réglages. */
-$("zonesFilter").onchange = () => { drawZones(); };
+/* Bascule vers le potentiel du terrain, proposée seulement quand rien ne passe. */
 function setView(v) {
-  const f = v === "filtre";
-  $("zonesFilter").checked = f;
-  document.querySelectorAll("#zView button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  VOIR_TERRAIN = (v === "terrain");
   drawZones();
 }
-document.querySelectorAll("#zView button").forEach(b => { b.onclick = () => setView(b.dataset.view); });
-$("zonesAcc").onchange = () => { drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Réglage changé : relance la recherche de chemin."); } };
-$("zonesObs").onchange = drawObs;
 $("accBtn").onclick = computeAccess;
-$("zonesOp").oninput = setZonesOpacity;
-try { const m = localStorage.getItem(MODE_KEY); if (m === "abs" || m === "rel") $("zonesMode").value = m; } catch (e) {}
-$("zonesMode").onchange = () => {
-  try { localStorage.setItem(MODE_KEY, $("zonesMode").value); } catch (e) {}
-  drawZones(); if (ROUTE) { ROUTE = null; drawRoute(); renderSheet(); tMsg("Couleurs changées : relance la recherche de chemin."); }
-};
 $("coinList").addEventListener("click", ev => {
   const q = ev.target.closest("[data-log]");
   if (q) { quickLog(q.dataset.log); return; }
@@ -3436,7 +3514,10 @@ $("logForm").addEventListener("submit", ev => {
   const date = $("logDate").value, sp = $("logSpecies").value;
   let score = null;
   const w = WEATHER[wkey(coin)];
-  if (w && !DEMO) { const i = w.dates.indexOf(date); if (i >= 0) score = scoreAt(w, litterSeries(w), i, sp).score; }
+  if (w && !DEMO) { const i = w.dates.indexOf(date); if (i >= 0) {
+    const s0 = scoreAt(w, litterSeries(w), i, sp).score, hf = coinHab(coin) ? coinHf(coin, sp) : null;
+    score = hf != null ? Math.min(99, Math.round(s0 * hf)) : s0;
+  } }
   state.logs.push({ id: uid(), date, coin: coin.id, sp, result: Number($("logResult").value), note: $("logNote").value.trim(), score });
   persist(); $("logNote").value = "";
   $("logMsg").className = "msg"; $("logMsg").textContent = "Sortie ajoutée.";
@@ -3454,11 +3535,20 @@ $("logList").addEventListener("click", ev => {
 });
 
 $("setSave").onclick = () => {
+  /* Avant, une valeur refusée était silencieusement remise à l'ancienne, et le message disait quand même
+     « enregistré » : on voyait son chiffre s'effacer sans savoir s'il fallait recommencer. */
+  const refuses = [];
   Object.keys(DEFAULTS).forEach(k => {
-    const rain = Number($("set-" + k + "-rain").value), t1 = Number($("set-" + k + "-t1").value), t2 = Number($("set-" + k + "-t2").value);
+    const rf = $("set-" + k + "-rain"), rain = rf.disabled ? spConf(k).rain : Number(rf.value);
+    const t1 = Number($("set-" + k + "-t1").value), t2 = Number($("set-" + k + "-t2").value);
     if (rain > 0 && t2 > t1) state.settings[k] = { rain, t: [t1 - 4, t1, t2, t2 + 5] };
+    else refuses.push(DEFAULTS[k].label);
   });
-  persist(); $("setMsg").className = "msg"; $("setMsg").textContent = "Réglages enregistrés, scores recalculés.";
+  persist();
+  $("setMsg").className = refuses.length ? "msg err" : "msg";
+  $("setMsg").textContent = refuses.length
+    ? "Pas enregistré pour " + refuses.join(", ") + " : « idéal jusqu'à » doit être plus grand que « idéal dès », et la pluie plus grande que 0."
+    : "Réglages enregistrés, scores recalculés.";
   renderSettings(); renderAll();
 };
 let resetArmed = false;
@@ -3479,6 +3569,32 @@ $("exportBtn").onclick = async () => {
   try { await navigator.clipboard.writeText(txt); $("backupMsg").textContent = "Copié. Colle-le dans une note ou un mail."; }
   catch (e) { ta.focus(); ta.select(); $("backupMsg").textContent = "Texte sélectionné : copie-le à la main."; }
 };
+/* Le presse-papier ne survit pas à un téléphone qu'on repose. Un fichier part dans Téléchargements,
+   donc dans la sauvegarde du téléphone : c'est ce qui sépare « mes coins sont chez moi » de « mes coins
+   ont disparu ». Rien ne sort du téléphone : c'est un fichier local, pas un envoi. */
+$("saveFileBtn").onclick = () => {
+  const txt = JSON.stringify({ version: STATE_VERSION, coins: state.coins, logs: state.logs, settings: state.settings, home: state.home });
+  try {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([txt], { type: "application/json" }));
+    a.download = "mes-coins-" + TODAY + ".json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    $("backupMsg").className = "msg";
+    $("backupMsg").textContent = "Fichier mes-coins-" + TODAY + ".json enregistré dans tes téléchargements.";
+  } catch (e) {
+    $("backupMsg").className = "msg err";
+    $("backupMsg").textContent = "Enregistrement du fichier impossible. Utilise « Copier mes données ».";
+  }
+};
+$("loadFileBtn").onclick = () => $("loadFile").click();
+$("loadFile").onchange = async () => {
+  const f = $("loadFile").files && $("loadFile").files[0];
+  if (!f) return;
+  try { $("backupText").value = await f.text(); $("backupMsg").className = "msg"; $("backupMsg").textContent = "Fichier lu. Touche « Restaurer » pour remplacer tes données."; }
+  catch (e) { $("backupMsg").className = "msg err"; $("backupMsg").textContent = "Ce fichier n'a pas pu être lu."; }
+  $("loadFile").value = "";
+};
 let importArmed = false;
 $("importBtn").onclick = () => {
   const m = $("backupMsg");
@@ -3487,9 +3603,19 @@ $("importBtn").onclick = () => {
   if (!Array.isArray(data.coins)) { m.className = "msg err"; m.textContent = "Sauvegarde incomplète : aucun coin trouvé."; return; }
   if (!importArmed) { importArmed = true; $("importBtn").textContent = "Confirmer : remplacer mes données"; setTimeout(() => { importArmed = false; $("importBtn").textContent = "Restaurer"; }, 5000); return; }
   importArmed = false; $("importBtn").textContent = "Restaurer";
+  /* Le chargement au démarrage filtre les coins abîmés ; l'import doit en faire autant. Sans ça, une
+     sauvegarde recopiée d'un mail et tronquée figeait l'appli au moment même où on récupère ses données. */
+  const avant = data.coins.length;
+  data.coins = data.coins.filter(c => c && Number.isFinite(c.lat) && Number.isFinite(c.lon));
+  if (!data.coins.length) { m.className = "msg err"; m.textContent = "Aucun coin lisible dans cette sauvegarde. Rien n'a été remplacé."; return; }
   data.coins.forEach(c => { c.species = (c.species || []).filter(k => DEFAULTS[k]); if (!c.species.length) c.species = ["cepe"]; c.parking = c.parking || null; c.path = c.path || []; });
-  state = { version: STATE_VERSION, coins: data.coins, logs: data.logs || [], settings: data.settings || {}, home: data.home || state.home };
-  persist(); m.className = "msg"; m.textContent = "Données restaurées.";
+  data.logs = Array.isArray(data.logs) ? data.logs.filter(l => l && typeof l.date === "string") : [];
+  state = { version: STATE_VERSION, coins: data.coins, logs: data.logs, settings: data.settings || {}, home: data.home || state.home };
+  if (state.home && Number.isFinite(state.home.lat) && Number.isFinite(state.home.lon)) HOME = { ...HOME_DEF, ...state.home };
+  persist(); m.className = "msg";
+  m.textContent = avant > data.coins.length
+    ? data.coins.length + " coin(s) restauré(s). " + (avant - data.coins.length) + " étaient illisibles et ont été laissés de côté."
+    : "Données restaurées.";
   ui.sel = null; ui.mode = null; ui.draft = null; ui.path = [];
   renderSettings(); refresh(true);
 };
@@ -3516,7 +3642,7 @@ function snapSheet(to) {
 (() => {
   const g = $("zsGrab"), sheet = $("zSheet"), head = document.querySelector(".zs-head"), body = $("zsBody");
   if (!g || !sheet) return;
-  g.onclick = () => { const i = SNAPS.indexOf(sheet.dataset.snap); snapSheet(SNAPS[(i + 1) % 3]); };
+  g.onclick = () => snapSheet(sheet.dataset.snap === "peek" ? "half" : "peek");
 
   /* On peut tirer la feuille par la barrette ET par son en-tête, et la rabattre en tirant son contenu
      vers le bas quand il est déjà en haut. C'est le geste que tout le monde fait ; avant, le contenu
@@ -3546,7 +3672,13 @@ function snapSheet(to) {
     if (e.target.closest("button, input, label, select, a")) return;
     snapSheet(sheet.dataset.snap === "peek" ? "half" : "peek");
   });
-  window.addEventListener("resize", () => snapSheet(sheet.dataset.snap || "peek"));
+  window.addEventListener("resize", () => {
+    /* Le clavier Android déclenche resize. Sans ce garde-fou, le bouton « Enregistrer le coin »
+       partait sous le clavier pendant qu'on tapait le nom du coin. */
+    const a = document.activeElement;
+    if (a && a.matches && a.matches("input, textarea, select")) return;
+    snapSheet(sheet.dataset.snap || "peek");
+  });
 })();
 
 /* Retour du réseau : on relance ce qui avait été refusé, sans que l'utilisateur ait à y penser. */
@@ -3607,16 +3739,19 @@ function setHome(lat, lon, label) {
   state.home = { lat, lon, label, zoom: HOME.zoom };
   TILE_DLON = tileDlon();                       // la grille suit la latitude du nouveau secteur
   try { TSTORE = {}; localStorage.removeItem(TILES_KEY); } catch (e) {}   // les identifiants de secteurs en dérivent
+  TILE_MEM.clear();                              // ... et la copie en mémoire, sinon on relit un secteur décalé
   persist();
   const w = $("welcome"); if (w) w.hidden = true;
   document.body.classList.remove("welcoming");
   if (map) setTimeout(() => map.invalidateSize(), 60);
   if (map) map.setView([lat, lon], HOME.zoom);
   refresh(true);
+  zonesOn = true; try { save(ZONES_ON_KEY, true); } catch (e) {}
+  setTimeout(() => ensureView(true), 500);
 }
 async function townSearch(q) {
   const url = GEO_HOST + "/v1/search?count=6&language=fr&format=json&country=FR&name=" + encodeURIComponent(q);
-  const r = await fetch(url);
+  const r = await fetchRetry(url, {}, 2, 8000);
   if (!r.ok) throw new Error("recherche indisponible");
   return (await r.json()).results || [];
 }
@@ -3640,6 +3775,9 @@ function initWelcome() {
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
   };
+
+  const plusTard = $("wLater");
+  if (plusTard) plusTard.onclick = () => setHome(HOME_DEF.lat, HOME_DEF.lon, "À choisir");
 
   let tmr = null;
   const chercher = async () => {
@@ -3679,7 +3817,9 @@ refresh(false);
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
   let reloaded = false;
+  const AVAIT_SW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!AVAIT_SW) return;            // première installation : il n'y a pas de « nouvelle » version à annoncer
     if (reloaded) return;
     reloaded = true;
     const b = document.getElementById("updBanner");

@@ -1,11 +1,12 @@
 // Garde l'appli en mémoire sur le téléphone pour qu'elle s'ouvre même sans réseau.
 // La météo, le relief, les forêts et les chemins viennent toujours d'Internet.
-const CACHE = "meteo-coins-v1-3";
+const CACHE = "meteo-coins-v2-2";
 const MAPS = "meteo-coins-fonds";      // fonds de carte déjà regardés
 const MAPS_MAX = 2500;                 // environ 60 Mo au pire ; au-delà, on jette les plus anciens
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 // La carte vient d'un CDN : si elle manque à l'installation, l'appli s'installe quand même.
-const EXTRA = ["https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"];
+const EXTRA = ["https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js",
+  "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE)
@@ -43,11 +44,11 @@ self.addEventListener("fetch", e => {
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     })));
+    return;                                  // sans ce retour, la requête pouvait être traitée deux fois
   }
   // Fonds de carte : on garde ceux qu'il a déjà regardés, pour qu'ils soient là sans réseau.
   // Une tuile de carte ne change jamais : la copie gardée passe donc avant le réseau.
-  if (url.hostname === "data.geopf.fr" && url.searchParams.get("REQUEST") === "GetTile"
-      || url.hostname.endsWith("tile.opentopomap.org")) {
+  if (url.hostname === "data.geopf.fr" && url.searchParams.get("REQUEST") === "GetTile") {
     e.respondWith(caches.open(MAPS).then(c => c.match(req).then(hit => hit || fetch(req).then(res => {
       // Une tuile demandée par <img> revient « opaque » : on ne peut pas lire son code HTTP,
       // mais on peut la garder. Le bouton des Réglages permet de tout vider si une tuile est abîmée.

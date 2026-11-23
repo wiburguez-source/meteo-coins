@@ -1,11 +1,11 @@
 {
   "name": "Météo des Coins",
   "short_name": "Mes Coins",
-  "description": "Score de pousse des cèpes, girolles et morilles pour mes coins, zones favorables et chemins.",
+  "description": "Où et quand les conditions sont réunies pour chercher les champignons. Tes coins restent sur ton téléphone.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "any",
   "background_color": "#eef2ea",
   "theme_color": "#2f5a35",
@@ -24,7 +24,6 @@
     }
   ],
   "display_override": [
-    "fullscreen",
     "standalone"
   ]
 }
