@@ -130,9 +130,12 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .filtres { font-size: 1.05rem; font-weight: 700; }
 .filtres.none { color: var(--muted); font-weight: 400; }
 .zdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.zd { display: grid; gap: 2px; justify-items: center; padding: 6px 2px; border: 0; border-radius: 8px; background: var(--sunk); color: inherit; font: inherit; cursor: pointer; min-height: 56px; }
+.zd { display: grid; gap: 1px; justify-items: center; padding: 6px 2px; border: 0; border-radius: 8px; background: var(--sunk); color: inherit; font: inherit; cursor: pointer; min-height: 60px; }
+.zd i { font-size: .62rem; font-style: normal; color: var(--muted); line-height: 1; text-transform: lowercase; }
 .zd b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-.zd span { font-size: .82rem; color: var(--muted); }
+.zd span { font-size: .8rem; color: var(--muted); }
+/* Le titre de la bande dit ce que compte le chiffre : « 731 » se lisait comme une note sur 100. */
+#daysTitle { font-weight: 700; color: var(--fg); margin: 2px 0 0; }
 .zd.on { outline: 2px solid var(--accent); }
 .zd.has b { color: var(--accent); }
 .zd.zero b { color: var(--muted); font-weight: 400; }
@@ -245,10 +248,15 @@ body.sheet-full .map-fab { display: none; }
 .zsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 510; background: var(--surface);
   border-top: 1px solid var(--line-ctrl); border-radius: 16px 16px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.18);
   display: flex; flex-direction: column; overflow: hidden; transition: height .18s ease; }
-.zsheet[data-snap="peek"] { height: 76px; }
 .zsheet[data-snap="half"] { height: min(400px, 62%); }
 .zsheet[data-snap="full"] { height: calc(100% - 104px); }   /* la poignée reste toujours visible et atteignable */
 .zsheet[data-snap="peek"] .zs-sp, .zsheet[data-snap="peek"] .zs-body { display: none; }
+/* Reste visible au cran replié : c'est le seul endroit où un avertissement peut se montrer sans
+   faire bouger la feuille sous les doigts. */
+.zs-alert { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit;
+  font-size: .82rem; color: var(--danger); padding: 0; margin: -2px 0 0; min-height: 24px; }
+.zsheet[data-snap="peek"] { height: 76px; }
+.zsheet[data-snap="peek"]:has(.zs-alert:not([hidden])) { height: 100px; }
 .zsheet:not([data-snap="full"]) .zs-more { display: none; }
 .zs-grab { height: 48px; border: 0; background: none; display: grid; place-items: center; flex: 0 0 auto; width: 100%; }
 .zs-grab::before { content: ""; width: 44px; height: 5px; border-radius: 3px; background: var(--line-ctrl); }
@@ -464,6 +472,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
           <span class="zs-titre">Ce qui passe aujourd'hui</span>
           <span id="dataChip2" class="chip">Chargement…</span>
         </div>
+        <button type="button" id="zsAlert" class="zs-alert" hidden aria-live="polite"></button>
         <button type="button" id="spSummary" class="zs-sp" aria-expanded="false"><span id="spSummaryTxt">Toutes les espèces</span> <span class="zs-chev" aria-hidden="true">⌄</span></button>
       </div>
       <div id="zsBody" class="zs-body">
@@ -1821,7 +1830,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "2.2 · 23 nov. 2026 · saisons mesurées";
+const APP_VERSION = "2.3 · 23 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -1926,11 +1935,16 @@ function makeProg(title, defs) {
 const tick = () => new Promise(r => setTimeout(r, 0));
 
 function zMsg(t, err) {
-  /* #zonesMsg vit dans le corps de la feuille : invisible au cran replié, et caché dès qu'une fiche
-     de coin est ouverte. Un avertissement réseau partait donc dans le vide. On ouvre pour le montrer. */
-  if (t) { const b = $("zsBody"), z = $("zSheet");
-    if (b && b.hidden) { ui.sel = null; ROUTE = null; renderSheet(); }
-    if (z && z.dataset.snap === "peek") snapSheet("half"); } const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
+  /* #zonesMsg vit dans le corps de la feuille, invisible au cran replié. Avant, un message faisait
+     remonter la feuille tout seul — y compris à chaque déplacement de carte, ce qui masquait la carte
+     sans qu'on ait rien demandé. La feuille ne bouge plus que sur un geste : les erreurs s'affichent
+     à la place sur une ligne de l'en-tête, visible même replié, et qui ouvre la feuille si on la touche. */
+  if (t) { const b = $("zsBody");
+    if (b && b.hidden) { ui.sel = null; ROUTE = null; renderSheet(); } }
+  const m = $("zonesMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t;
+  const al = $("zsAlert");
+  if (al) { al.hidden = !(t && err); al.textContent = t && err ? t : ""; }
+}
 
 /* ---------- D'où vient la météo ----------
    Un seul endroit à changer selon la route retenue pour la vente :
@@ -2900,17 +2914,17 @@ function renderFilter() {
       return Math.round(m);
     });
     [res, spotBox].forEach(e => { if (e) e.hidden = true; });
-    title.hidden = false; title.textContent = "Potentiel du terrain, hors météo";
+    title.hidden = false; title.textContent = "Meilleure case de la vue, sur 100";
     dayBox.hidden = false;
     dayBox.innerHTML = ZONES.days.map((iso, dd) =>
       `<button type="button" class="zd ${dd === d ? "on " : ""}${best[dd] ? "has" : "zero"}" data-fday="${dd}">
-         <b>${best[dd]}</b><span>${esc(dayName(iso))} ${Number(iso.slice(8))}</span></button>`).join("");
+         <b>${best[dd]}</b><i>sur 100</i><span>${esc(dayName(iso))} ${Number(iso.slice(8))}</span></button>`).join("");
     dayBox.querySelectorAll("[data-fday]").forEach(b => {
       b.onclick = () => { $("zonesDay").value = b.dataset.fday; drawZones(); };
     });
     return;
   }
-  title.hidden = false; title.textContent = "Endroits qui remplissent les 4 conditions";
+  title.hidden = false; title.textContent = "Nombre d'endroits qui passent les 4 conditions";
   const qual = dd => {
     const out = [];
     const g = filterGrid(dd);
@@ -2923,7 +2937,7 @@ function renderFilter() {
   dayBox.hidden = false;
   dayBox.innerHTML = ZONES.days.map((iso, dd) =>
     `<button type="button" class="zd ${dd === d ? "on " : ""}${counts[dd] ? "has" : "zero"}" data-fday="${dd}">
-       <b>${counts[dd]}</b><span>${esc(dayName(iso))} ${Number(iso.slice(8))}</span></button>`).join("");
+       <b>${counts[dd]}</b><i>${counts[dd] === 1 ? "endroit" : "endroits"}</i><span>${esc(dayName(iso))} ${Number(iso.slice(8))}</span></button>`).join("");
   dayBox.querySelectorAll("[data-fday]").forEach(b => {
     b.onclick = () => { $("zonesDay").value = b.dataset.fday; drawZones(); };
   });
@@ -3071,12 +3085,20 @@ function zonePopup(ll) {
   }
   const th = Z.th || zoneThresholds(out), zc = zClass(out[k], th.t);
 const nOk = mask == null ? 0 : critCount(mask);
+  /* Le chiffre sur 100 vient de la même grille que la couleur de la case : pas recalculé, donc jamais
+     en désaccord avec la carte. En mode filtre il manquait, et seul « 3 conditions sur 4 » s'affichait. */
+  const sc = spSel && ZONES.scores[spSel] && ZONES.scores[spSel][dSel] ? Math.round(ZONES.scores[spSel][dSel][k]) : null;
   const lines = filterOn()
-    ? [`<b>${nOk}</b> conditions sur 4${spSel ? " pour les " + DEFAULTS[spSel].label.toLowerCase() : ""}`]
+    ? [(sc != null ? `Conditions : <b class="lvl${level(sc)}">${sc}</b> sur 100<br>` : "") +
+       `<b>${nOk}</b> conditions sur 4 remplies${spSel ? " pour les " + DEFAULTS[spSel].label.toLowerCase() : ""}`]
     : effMode() === "pot"
     ? [`Potentiel du terrain <b>${v}</b>/100${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`]
     : [`<b class="lvl${level(v)}">${v}</b>/100 · ${LEVELS[level(v)].label}${who[k] && v > 0 ? " (" + DEFAULTS[who[k]].label.toLowerCase() + ")" : ""}`];
   if (critHtml) lines.push(critHtml);
+  /* 4 sur 4 avec un chiffre bas n'est pas une contradiction : les quatre critères sont des seuils
+     franchis ou non, le chiffre dit à quel point c'est bon. En arrière-saison la saison plafonne
+     le chiffre même quand tout passe. Sans cette phrase, ça se lit comme une erreur de l'appli. */
+  if (filterOn() && nOk === 4 && sc != null && sc < 50) lines.push("<i>Les quatre conditions sont franchies, mais on n'est pas en pleine saison : c'est ce qui retient le chiffre.</i>");
   if (faits) lines.push(faits);
   if (zc && th.rel) lines.push("Dans le " + th.labels[zc - 1].toLowerCase() + " de la vue");
   lines.push(inf.flat ? "Relief pas encore chargé : pente et exposition non prises en compte" : `${Math.round(inf.z)} m · ${expo}`, esc(hab));
@@ -3628,7 +3650,8 @@ const SNAPS = ["peek", "half", "full"];
    et le bouton flottant doit se replacer tout de suite, sinon il recouvre l'en-tête de la feuille. */
 function sheetTarget(to) {
   const tab = $("tab-carte"), H = tab ? tab.getBoundingClientRect().height : 800;
-  return to === "peek" ? 76 : to === "half" ? Math.min(400, Math.round(H * 0.62)) : Math.round(H - 72);
+  const al = $("zsAlert"), peek = al && !al.hidden ? 100 : 76;
+  return to === "peek" ? peek : to === "half" ? Math.min(400, Math.round(H * 0.62)) : Math.round(H - 72);
 }
 function snapSheet(to) {
   const e = $("zSheet"); if (!e) return;
@@ -3643,6 +3666,7 @@ function snapSheet(to) {
   const g = $("zsGrab"), sheet = $("zSheet"), head = document.querySelector(".zs-head"), body = $("zsBody");
   if (!g || !sheet) return;
   g.onclick = () => snapSheet(sheet.dataset.snap === "peek" ? "half" : "peek");
+  const al = $("zsAlert"); if (al) al.onclick = () => snapSheet("half");
 
   /* On peut tirer la feuille par la barrette ET par son en-tête, et la rabattre en tirant son contenu
      vers le bas quand il est déjà en haut. C'est le geste que tout le monde fait ; avant, le contenu
