@@ -41,9 +41,12 @@
   --danger: #a2321f;
   --me: #2b6fd6;
   --trail: #e06a12;         /* sentiers et pistes */
-  --z1: #f4a9cf;            /* zones : bonnes */
-  --z2: #9a6fb0;            /* zones : très bonnes (palier incomplet en mode filtre, hachuré) */
-  --z3: #e0117f;            /* zones : meilleures — le résultat, donc le plus visible */
+  /* Cinq paliers de zones, du plus clair au plus foncé. La clarté décroît régulièrement (91 → 26) pour
+     que l'ordre se lise même sans voir les couleurs ; l'écart entre deux paliers voisins reste à 10,4 ΔE
+     pour un daltonien deutan. Rose-violet et pas bleu : le bleu est pris par « moi » et les chemins.
+     Cinq paliers veut dire des écarts plus petits qu'à trois — le palier le plus haut garde donc son
+     liseré blanc, et le plus bas son hachurage en mode filtre : deux repères qui ne sont pas la couleur. */
+  --z1: #fcdcee; --z2: #f5a8d4; --z3: #d977c4; --z4: #9e4aae; --z5: #5b1f7a;
   --route: #6a2bd6;         /* chemin proposé */
   --font-display: "Bricolage Grotesque", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
@@ -53,14 +56,14 @@
   :root:not([data-theme="light"]) {
     --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
     --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #9a6fb0; --z3: #e0117f;
+    --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #fcdcee; --z2: #f5a8d4; --z3: #d977c4; --z4: #9e4aae; --z5: #5b1f7a;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121611; --surface: #1b2119; --sunk: #242b21; --fg: #e6ebe1; --muted: #9aa592; --line: #333c2f;
   --accent: #8cc27f; --accent-fg: #10170f; --bark: #d7a670; --rain: #7fb0de; --rain-soft: #34506b;
-  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #f4a9cf; --z2: #9a6fb0; --z3: #e0117f;
+  --s0: #7d8777; --s1: #e0aa4c; --s2: #8cc27f; --s3: #b8e8a6; --warn-bg: #3a2f17; --warn-fg: #f1d397; --danger: #ef8a73; --me: #6aa7ff; --trail: #ff9a3d; --route: #c4a5ff; --z1: #fcdcee; --z2: #f5a8d4; --z3: #d977c4; --z4: #9e4aae; --z5: #5b1f7a;
   color-scheme: dark;
 }
 
@@ -116,7 +119,10 @@ header.top { padding-top: 22px; display: flex; flex-direction: column; gap: 6px;
 .sm-c.part { background: color-mix(in srgb, var(--s2) 35%, var(--sunk)); color: inherit; }
 .sm-c.full { background: var(--s3); color: var(--accent-fg); font-weight: 700; }
 .sm-c.now { border-color: var(--fg); }
-.sm-look { font-size: .92rem; line-height: 1.45; background: var(--sunk); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 8px 10px; margin-top: 2px !important; }
+.sm-look { font-size: .92rem; line-height: 1.45; background: var(--sunk); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 8px 10px; margin: 2px 0 0 !important; }
+.look { margin-top: 6px; }
+.look > summary { min-height: 48px; display: flex; align-items: center; font-size: .86rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--muted); cursor: pointer; }
 .sm-look b { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 2px; }
 .day .sp1 { display: none; font-size: .82rem; color: var(--muted); line-height: 1; }
 .quick-box { display: grid; gap: 8px; margin: 8px 0; padding: 10px; background: var(--sunk); border-radius: 10px; }
@@ -326,10 +332,11 @@ details.diag summary { cursor: pointer; font-weight: 700; color: var(--muted); }
 .diag-list li { display: grid; grid-template-columns: 1.4em 1fr; gap: 4px; }
 .diag-list li > span:last-child { min-width: 0; overflow-wrap: anywhere; }
 .d-ok { color: var(--s2); } .d-fail { color: var(--danger); } .d-wait { color: var(--s1); } .d-mem { color: var(--muted); }
-.sw.z1, .sw.z2, .sw.z3 { box-shadow: 0 0 0 1px var(--line); }
-.sw.z1 { background: var(--z1); opacity: 1; }
-.sw.z2.hach { background: repeating-linear-gradient(45deg, var(--z2) 0 3px, transparent 3px 9px), var(--surface); }
-.sw.z3 { box-shadow: 0 0 0 2px #fff inset, 0 0 0 3px var(--line-ctrl); } .sw.z2 { background: var(--z2); opacity: 1; } .sw.z3 { background: var(--z3); opacity: 1; }
+.sw.z1, .sw.z2, .sw.z3, .sw.z4, .sw.z5 { box-shadow: 0 0 0 1px var(--line); opacity: 1; }
+.sw.z1 { background: var(--z1); } .sw.z2 { background: var(--z2); } .sw.z3 { background: var(--z3); }
+.sw.z4 { background: var(--z4); } .sw.z5 { background: var(--z5); }
+.sw.z1.hach { background: repeating-linear-gradient(45deg, var(--z1) 0 3px, transparent 3px 9px), var(--surface); }
+.sw.z5 { box-shadow: 0 0 0 2px #fff inset, 0 0 0 3px var(--line-ctrl); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.84rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { display: inline-block; width: 16px; height: 12px; border-radius: 3px; opacity: .8; }
@@ -482,6 +489,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
         <p class="small muted" id="daysTitle" hidden></p>
         <div id="filtDays" class="zdays" hidden></div>
         <div id="filtSpots" hidden></div>
+        <div id="lookBox" hidden></div>
         <p class="msg" id="zonesMsg" aria-live="polite"></p>
         <p class="msg" id="trailsMsg" aria-live="polite"></p>
         <div class="zs-more" id="zsMore">
@@ -489,9 +497,11 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
             <div class="spchips grid2col" id="zonesSpChips" role="group" aria-labelledby="spLabel"></div>
           </div>
           <div class="legend" id="zonesLegend" hidden>
-            <span><i class="sw z1"></i><b id="lg1">Top 30 %</b></span>
-            <span><i class="sw z2"></i><b id="lg2">Top 15 %</b></span>
-            <span><i class="sw z3"></i><b id="lg3">Top 5 %</b></span>
+            <span><i class="sw z1"></i><b id="lg1"></b></span>
+            <span><i class="sw z2"></i><b id="lg2"></b></span>
+            <span><i class="sw z3"></i><b id="lg3"></b></span>
+            <span><i class="sw z4"></i><b id="lg4"></b></span>
+            <span><i class="sw z5"></i><b id="lg5"></b></span>
           </div>
           <div class="legend"><span><i class="sw trail"></i>Chemin</span><span><i class="sw route"></i>Chemin proposé</span></div>
           <div class="row">
@@ -1830,7 +1840,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "2.3 · 23 nov. 2026";
+const APP_VERSION = "2.4 · 24 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -2790,13 +2800,19 @@ function effMode() { return VOIR_TERRAIN ? "pot" : "abs"; }
 const filterOn = () => !VOIR_TERRAIN;
 /* Mode filtre : une case ne s'allume que si elle remplit les conditions, et le dégradé disparaît.
    4 conditions sur 4 = couleur pleine, 3 sur 4 = couleur faible, moins = rien du tout. */
+/* Valeur d'une case en mode filtre : 0 = recalée, 10 = trois conditions sur quatre, et 100 + le chiffre
+   sur 100 quand les quatre passent. Le seuil « >= 100 » garde donc exactement le même sens qu'avant
+   (passe ou ne passe pas), mais les cases qui passent portent leur chiffre : elles peuvent se nuancer
+   entre elles, au lieu d'être toutes de la même couleur de 41 à 95. */
 function filterGrid(d) {
   const out = new Float32Array(ZONES.nx * ZONES.ny), who = new Array(out.length);
   SP_SEL.forEach(sp => {
     const c = ZONES.crit && ZONES.crit[sp] && ZONES.crit[sp][d];
     if (!c) return;
+    const sc = ZONES.scores && ZONES.scores[sp] && ZONES.scores[sp][d];
     for (let i = 0; i < out.length; i++) {
-      const n = critCount(c[i]), v = n >= 4 ? 100 : n === 3 ? 60 : 0;
+      const n = critCount(c[i]);
+      const v = n >= 4 ? 100 + (sc ? sc[i] : 0) : n === 3 ? 10 : 0;
       if (v > out[i]) { out[i] = v; who[i] = sp; }
     }
   });
@@ -2826,14 +2842,48 @@ function visibleMask() {
   if (!m.some(x => x)) m.fill(1);
   return m;
 }
+/* Cinq paliers. En vue terrain ils sont fixes, sur le chiffre : on peut comparer deux jours ou deux
+   secteurs. En mode filtre ils sont découpés dans les cases qui passent, par quarts : sinon, en
+   arrière-saison, tous les endroits qui passent tomberaient dans le même palier et la carte
+   redeviendrait plate — ce qui est précisément le reproche. Le palier le plus bas reste « 3 sur 4 ». */
 function zoneThresholds(out) {
   const vis = visibleMask();
   let vmax = 0, bk = -1;
   out.forEach((v, k) => { if (vis[k] && (bk < 0 || v > vmax)) { vmax = v; bk = k; } });
-  if (filterOn()) return { t: [25, 50, 75], labels: ["—", "3 conditions sur 4", "Les 4 conditions"], rel: false, vmax, bk };
-  return { t: [25, 50, 75], labels: ["Terrain moyen", "Bon terrain", "Très bon terrain"], rel: false, vmax, bk };
+  if (filterOn()) {
+    const passe = [];
+    out.forEach((v, k) => { if (vis[k] && v >= 100) passe.push(v); });
+    passe.sort((a, b) => a - b);
+    /* Découpage par rang, pas par valeur : chaque couleur reçoit à peu près autant de cases, donc le
+       dégradé se voit quelle que soit la saison. Les seuils sont posés sur des valeurs qui EXISTENT
+       (uniq), et jamais inventés au-dessus du maximum : un seuil hors d'atteinte viderait le palier le
+       plus haut, celui cerné de blanc — c'est-à-dire exactement l'information qu'on vient chercher.
+       Quand les cases qui passent se ressemblent trop, on affiche moins de paliers plutôt que des
+       nuances qui ne veulent rien dire. */
+    const uniq = [...new Set(passe)].filter(v => v > 100);     // > 100 : au-dessus du seuil « passe »
+    const lab = ["3 sur 4", "Passe", "Bien", "Mieux", "Le mieux ici"];
+    const cuts = [];
+    if (uniq.length > 1) {
+      const pris = new Set();
+      [0.45, 0.75, 0.92].forEach(f => {
+        const v = passe[Math.min(passe.length - 1, Math.floor(f * passe.length))];
+        // la valeur visée, ou la plus proche encore libre — en cherchant vers le haut PUIS vers le bas,
+        // sinon un seuil tombé sur une valeur déjà prise était abandonné et le palier perdu
+        let i = uniq.findIndex(u => u >= v); if (i < 0) i = uniq.length - 1;
+        let j = i;
+        while (j < uniq.length && pris.has(uniq[j])) j++;
+        if (j >= uniq.length) { j = i; while (j >= 0 && pris.has(uniq[j])) j--; }
+        if (j >= 0 && j < uniq.length) { pris.add(uniq[j]); cuts.push(uniq[j]); }
+      });
+      cuts.sort((x, y) => x - y);
+    }
+    const t = [10, 100, ...cuts];
+    return { t, labels: lab.slice(0, t.length), rel: false, vmax, bk };
+  }
+  return { t: [20, 35, 50, 65, 80],
+    labels: ["20 sur 100", "35 sur 100", "50 sur 100", "65 sur 100", "80 sur 100"], rel: false, vmax, bk };
 }
-function zClass(v, t) { return v >= t[2] ? 3 : v >= t[1] ? 2 : v >= t[0] ? 1 : 0; }
+function zClass(v, t) { let c = 0; for (let i = 0; i < t.length; i++) if (v >= t[i]) c = i + 1; return c; }
 function drawZones() {
   if (!ZONES || !map) return;
   // Si la météo ne donne rien nulle part à l'écran, on montre le potentiel du terrain plutôt qu'une carte vide
@@ -2854,19 +2904,19 @@ function drawZones() {
   }
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d"), img = ctx.createImageData(W, H);
-  const pal = [css("--z1"), css("--z2"), css("--z3")].map(c => hexRgb(c || "#cc3399"));
-  const alpha = [0, 110, 150, 217];
-  /* En mode filtre, seules deux classes sortent (3 sur 4 → 60, les 4 → 100). Le palier incomplet est
-     hachuré : un canal qui ne dépend pas de la couleur, donc lisible par un daltonien et à travers une
-     goutte d'eau, et qui le laisse murmurer au lieu de crier plus fort que le résultat. */
+  const pal = [css("--z1"), css("--z2"), css("--z3"), css("--z4"), css("--z5")].map(c => hexRgb(c || "#cc3399"));
+  const alpha = [0, 95, 125, 155, 190, 225];
+  /* Le palier incomplet du mode filtre (3 sur 4) est hachuré : un canal qui ne dépend pas de la couleur,
+     donc lisible par un daltonien et à travers une goutte d'eau, et qui le laisse murmurer au lieu de
+     crier plus fort que les endroits qui passent vraiment. */
   const hachure = filterOn();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const p = y * W + x, c = cls[p];
     if (!c) continue;
-    if (hachure && c === 2 && (x + y) % 9 >= 3) continue;
+    if (hachure && c === 1 && (x + y) % 9 >= 3) continue;
     const edge = (x > 0 && cls[p - 1] < c) || (x < W - 1 && cls[p + 1] < c) || (y > 0 && cls[p - W] < c) || (y < H - 1 && cls[p + W] < c);
-    // Le résultat qui compte est cerné de blanc : il tient sur l'orthophoto sombre comme sur le plan clair.
-    if (edge && c === 3) { img.data[p * 4] = 255; img.data[p * 4 + 1] = 255; img.data[p * 4 + 2] = 255; img.data[p * 4 + 3] = 255; continue; }
+    // Le meilleur palier est cerné de blanc : il tient sur l'orthophoto sombre comme sur le plan clair.
+    if (edge && c === 5) { img.data[p * 4] = 255; img.data[p * 4 + 1] = 255; img.data[p * 4 + 2] = 255; img.data[p * 4 + 3] = 255; continue; }
     const col = pal[c - 1], k = edge ? 0.6 : 1;
     img.data[p * 4] = col[0] * k; img.data[p * 4 + 1] = col[1] * k; img.data[p * 4 + 2] = col[2] * k; img.data[p * 4 + 3] = edge ? 255 : alpha[c];
   }
@@ -2880,9 +2930,16 @@ function drawZones() {
   ]).addTo(map);
   renderFilter();
   // Légende et meilleur score
-  th.labels.forEach((l, i) => { $("lg" + (i + 1)).textContent = l; });
+  /* Moins de paliers que de pastilles : on masque les pastilles qui ne servent pas, sinon la légende
+     annonce des couleurs absentes de la carte. */
+  for (let i = 1; i <= 5; i++) {
+    const b2 = $("lg" + i), sp = b2 && b2.parentElement;
+    const l = th.labels[i - 1];
+    if (b2) b2.textContent = l || "";
+    if (sp) sp.hidden = !l;
+  }
   // La pastille du palier incomplet est hachurée comme sur la carte, et seulement en mode filtre.
-  const sw2 = document.querySelector(".sw.z2"); if (sw2) sw2.classList.toggle("hach", filterOn());
+  const sw1 = document.querySelector(".sw.z1"); if (sw1) sw1.classList.toggle("hach", filterOn());
   const bk = Math.max(0, th.bk);
   const best = $("zonesBest"); best.hidden = filterOn();
   const lv = level(Math.round(th.vmax));
@@ -2897,11 +2954,28 @@ function drawZones() {
       (th.rel && th.vmax < 50 ? ". Les couleurs montrent les meilleures zones de la vue, pas des conditions idéales." : ".");
   }
 }
+/* Le mémo « où regarder », une fiche par espèce choisie. Il ne dépend ni du jour ni de ce que le filtre
+   a trouvé : c'est ce qu'on lit avec les yeux une fois sur place, et c'est utile surtout les jours où
+   la carte ne montre rien. Avant, il était accroché à la liste des endroits qui passent : il s'effaçait
+   donc exactement quand il servait le plus, et ne parlait que d'une espèce sur les six. */
+function renderLook() {
+  const box = $("lookBox");
+  if (!box) return;
+  const sel = (SP_SEL.length ? SP_SEL : Object.keys(DEFAULTS)).filter(k => LOOK[k]);
+  box.hidden = !sel.length;
+  if (!sel.length) return;
+  box.innerHTML = sel.map(k =>
+    `<details class="look"${sel.length === 1 ? " open" : ""}>
+       <summary>Où regarder — ${esc(DEFAULTS[k].label.toLowerCase())}</summary>
+       <p class="sm-look">${esc(LOOK[k])}</p>
+     </details>`).join("");
+}
 /* Ce que le filtre a trouvé : le compte du jour, les sept jours, et les coins à essayer en premier. */
 function renderFilter() {
   const res = $("filtResult"), dayBox = $("filtDays"), spotBox = $("filtSpots");
   if (!res) return;
   const title = $("daysTitle");
+  renderLook();
   if (!ZONES) { [res, dayBox, spotBox, title].forEach(e => { if (e) e.hidden = true; }); return; }
   const d = Number($("zonesDay").value || 0), vis = visibleMask();
   /* Le select « Jour » a disparu : la bande des 7 jours est le seul moyen de changer de jour,
@@ -2982,8 +3056,7 @@ function renderFilter() {
         const acc = r.acc == null ? "" : r.acc < 0 ? "<b>loin de toute route</b> · " : "<b>" + fmtDist(r.acc) + "</b> de la route · ";
         return `<button type="button" class="spot" data-fspot="${r.k}">
           <span>${acc}${esc(mil)}<span class="sp-why"> · ${Math.round(r.inf.z)} m · ${esc(DEFAULTS[r.sp].label.toLowerCase())}</span></span></button>`;
-      }).join("") + `</div>` + (LOOK[rows[0].sp]
-        ? `<p class="sm-look"><b>Où regarder — ${esc(DEFAULTS[rows[0].sp].label.toLowerCase())}</b> ${esc(LOOK[rows[0].sp])}</p>` : "");
+      }).join("") + `</div>`;
     spotBox.querySelectorAll("[data-fspot]").forEach(b => {
       b.onclick = () => {
         const p = ZONES.pts[Number(b.dataset.fspot)];
