@@ -1840,7 +1840,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "2.4 · 24 nov. 2026";
+const APP_VERSION = "2.5 · 24 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
@@ -3184,7 +3184,12 @@ const nOk = mask == null ? 0 : critCount(mask);
     else if (inf.near[sp].obs < 2000) lines.push(DEFAULTS[sp].label + " observés à " + fmtDist(inf.near[sp].obs) + " (GBIF)");
   }
   if (Z.demo) lines.push("<i>Données fictives</i>");
-  L.popup({ maxWidth: 260 }).setLatLng(ll).setContent(`<div class="zone-pop">${lines.join("<br>")}</div>`).openOn(map);
+  /* Le maillon qui manquait : de la case colorée jusqu'à un endroit où laisser la voiture. */
+  const pop = L.popup({ maxWidth: 260 }).setLatLng(ll)
+    .setContent(`<div class="zone-pop">${lines.join("<br>")}<div class="row" style="margin-top:8px"><button class="btn small primary" type="button" data-park="${k}">Où se garer ?</button></div></div>`)
+    .openOn(map);
+  const b = pop.getElement() && pop.getElement().querySelector("[data-park]");
+  if (b) b.onclick = () => { map.closePopup(pop); showParking(k); };
 }
 
 /* ---------- 8 ter. Chemins (OpenStreetMap) et itinéraire vers les zones ---------- */
@@ -3196,18 +3201,39 @@ let TRAILS = null, trailsLayer = null, trailsOn = false, trailsBusy = false, ROU
 function tMsg(t, err) { const m = $("trailsMsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = t; }
 function covers(T, s, w, n, e) { return T && T.s <= s && T.w <= w && T.n >= n && T.e >= e; }
 
+/* Peut-on y amener la voiture ? OpenStreetMap est fiable sur les routes et bien plus approximatif
+   sur les pistes forestières. On reste donc prudent : interdit explicite = jamais proposé, piste
+   carrossable = proposée mais annoncée comme à vérifier sur place. */
+const NO_CAR = ["private", "no", "agricultural", "forestry", "permit", "customers", "delivery"];
+function driveKind(t) {
+  if (NO_CAR.includes(t.access) || NO_CAR.includes(t.motor_vehicle) || NO_CAR.includes(t.vehicle)) return null;
+  if (ROAD_KINDS.includes(t.highway)) return "route";
+  if (t.highway !== "track") return null;
+  if (["grade4", "grade5"].includes(t.tracktype)) return null;               // ornières, herbe : non
+  if (["sand", "mud", "grass", "ground", "dirt", "earth"].includes(t.surface)) return null;
+  return "piste";
+}
+/* Une barrière coupe la voiture, sauf si elle est explicitement ouverte à tous. */
+const BARRIERS = ["gate", "lift_gate", "bollard", "block", "chain", "cycle_barrier", "swing_gate", "jersey_barrier", "log", "yes"];
 async function fetchTrails(s, w, n, e) {
   const re = "^(" + TRAIL_KINDS.concat(ROAD_KINDS).join("|") + ")$";
-  const q = `[out:json][timeout:30];way["highway"~"${re}"](${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)});out body;>;out skel qt;`;
+  const bb = `(${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)})`;
+  const q = `[out:json][timeout:30];(way["highway"~"${re}"]${bb};node["barrier"]${bb};);out body;>;out skel qt;`;
   const j = await overpass(q);
-  const nodes = new Map(), ways = [];
-  for (const el of j.elements || []) if (el.type === "node") nodes.set(el.id, [el.lat, el.lon]);
+  const nodes = new Map(), ways = [], bars = new Set();
+  for (const el of j.elements || []) if (el.type === "node") {
+    nodes.set(el.id, [el.lat, el.lon]);
+    const t = el.tags || {};
+    if (t.barrier && BARRIERS.includes(t.barrier) && !["yes", "permissive", "designated"].includes(t.access) && !["yes", "permissive"].includes(t.motor_vehicle)) bars.add(el.id);
+  }
   for (const el of j.elements || []) if (el.type === "way" && el.nodes) {
     const t = el.tags || {};
+    if (!t.highway) continue;
     const priv = ["private", "no"].includes(t.access) || ["private", "no"].includes(t.foot);
-    ways.push({ nodes: el.nodes.filter(id => nodes.has(id)), trail: TRAIL_KINDS.includes(t.highway), priv, kind: t.highway });
+    ways.push({ nodes: el.nodes.filter(id => nodes.has(id)), trail: TRAIL_KINDS.includes(t.highway), priv,
+                kind: t.highway, drive: priv ? null : driveKind(t), nom: t.name || t.ref || "" });
   }
-  return { s, w, n, e, nodes, ways, demo: false };
+  return { s, w, n, e, nodes, ways, bars, demo: false };
 }
 
 function demoTrails(s, w, n, e) {
@@ -3275,16 +3301,40 @@ async function toggleTrails() {
 
 function buildGraph(T) {
   const idx = new Map(), pts = [], adj = [], road = new Set(), track = new Set();
-  const ix = id => { let k = idx.get(id); if (k === undefined) { k = pts.length; idx.set(id, k); pts.push(T.nodes.get(id)); adj.push([]); } return k; };
-  for (const wy of T.ways) {
-    if (wy.priv) continue;
+  /* Deuxième réseau, superposé : celui où la voiture passe. Il sert à savoir où se garer.
+     drv[k] = "route" ou "piste" ; dadj = ses liaisons, coupées à chaque barrière. */
+  const drv = [], dadj = [], bar = new Set(), dway = [];
+  const ix = id => {
+    let k = idx.get(id);
+    if (k === undefined) { k = pts.length; idx.set(id, k); pts.push(T.nodes.get(id)); adj.push([]); drv.push(null); dadj.push([]); dway.push(-1); 
+      if (T.bars && T.bars.has(id)) bar.add(k); }
+    return k;
+  };
+  T.ways.forEach((wy, wi) => {
+    if (wy.priv) return;
     for (let i = 1; i < wy.nodes.length; i++) {
       const a = ix(wy.nodes[i - 1]), b = ix(wy.nodes[i]), d = dist(pts[a], pts[b]);
       adj[a].push([b, d]); adj[b].push([a, d]);
       if (!wy.trail) { road.add(a); road.add(b); } else if (wy.kind === "track") { track.add(a); track.add(b); }
+      if (wy.drive) {
+        if (drv[a] !== "route") drv[a] = wy.drive;
+        if (drv[b] !== "route") drv[b] = wy.drive;
+        if (!bar.has(a) && !bar.has(b)) { dadj[a].push(b); dadj[b].push(a); }   // la barrière coupe la voiture
+        if (dway[a] < 0) dway[a] = wi;
+        if (dway[b] < 0) dway[b] = wi;
+        if (wy.nom) { if (!pts[a].nom) pts[a].nom = wy.nom; if (!pts[b].nom) pts[b].nom = wy.nom; }
+      }
     }
-  }
-  return { pts, adj, road: [...road], track: [...track] };
+  });
+  return { pts, adj, road: [...road], track: [...track], drv, dadj, bar, dway };
+}
+/* Points où la voiture peut VRAIMENT arriver : ceux reliés à une vraie route sans barrière.
+   Une piste carrossable isolée du réseau routier n'est pas une option, quoi qu'en dise OSM. */
+function carReachable(G) {
+  const ok = new Uint8Array(G.pts.length), q = [];
+  G.pts.forEach((_, k) => { if (G.drv[k] === "route" && !G.bar.has(k)) { ok[k] = 1; q.push(k); } });
+  for (let h = 0; h < q.length; h++) for (const v of G.dadj[q[h]]) if (!ok[v]) { ok[v] = 1; q.push(v); }
+  return ok;
 }
 function dijkstra(G, src) {
   const srcs = Array.isArray(src) ? src : [src];
@@ -3375,15 +3425,131 @@ function drawRoute() {
   if (routeLayer) routeLayer.clearLayers(); else routeLayer = L.layerGroup().addTo(map);
   if (!ROUTE) return;
   const r = ROUTE.opts[ROUTE.sel], col = css("--route") || "#6a2bd6", cas = css("--surface") || "#ffffff";
+  const st = ROUTE.park ? r.park : ROUTE.start;        // en mode « où se garer », le départ suit l'option choisie
   L.polyline(r.coords, { pane: "route", color: cas, weight: 9, opacity: 0.9, interactive: false }).addTo(routeLayer);
   L.polyline(r.coords, { pane: "route", color: col, weight: 5, interactive: false }).addTo(routeLayer);
   if (r.off) L.polyline([r.coords[r.coords.length - 1], r.target], { pane: "route", color: col, weight: 4, dashArray: "1 9", lineCap: "round", interactive: false }).addTo(routeLayer);
-  if (ROUTE.snapDist > 15) L.polyline([ROUTE.start, ROUTE.snap], { pane: "route", color: col, weight: 3, dashArray: "1 8", lineCap: "round", interactive: false }).addTo(routeLayer);
-  L.circleMarker(ROUTE.start, { pane: "route", radius: 7, color: cas, weight: 3, fillColor: col, fillOpacity: 1, interactive: false }).addTo(routeLayer);
+  if (!ROUTE.park && ROUTE.snapDist > 15) L.polyline([ROUTE.start, ROUTE.snap], { pane: "route", color: col, weight: 3, dashArray: "1 8", lineCap: "round", interactive: false }).addTo(routeLayer);
+  if (ROUTE.park) L.marker(st, { interactive: false, icon: L.divIcon({ className: "", iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="park">P</div>` }) }).addTo(routeLayer);
+  else L.circleMarker(st, { pane: "route", radius: 7, color: cas, weight: 3, fillColor: col, fillOpacity: 1, interactive: false }).addTo(routeLayer);
   L.marker(r.target, { interactive: false, icon: L.divIcon({ className: "", iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="tgt">${r.v}</div>` }) }).addTo(routeLayer);
 }
 
+/* ---------- Où se garer pour une zone ----------
+   On retourne la question que posait « Trouver un chemin » : au lieu de partir d'un point de départ
+   pour trouver la meilleure zone, on part de la zone pour trouver les meilleurs points de départ.
+   La marche est mesurée sur le réseau piéton ; la voiture, elle, doit pouvoir arriver au point. */
+const MAX_PARK_WALK = 5000;
+async function parkingFor(target, v, sp) {
+  const pad = 0.035;                                   // ~3,5 km autour : de quoi trouver une route
+  const s = target[0] - pad, n2 = target[0] + pad, w = target[1] - pad * 1.4, e = target[1] + pad * 1.4;
+  await loadTrails(s, w, n2, e);
+  const G = buildGraph(TRAILS);
+  if (!G.pts.length) return { err: "Aucun chemin ni route connus autour de cette zone." };
+  let src = 0, sd = Infinity;
+  G.pts.forEach((p, k) => { const d = dist(p, target); if (d < sd) { sd = d; src = k; } });
+  if (sd > 600) return { err: "Cette zone est à plus de " + fmtDist(sd) + " de tout chemin connu : aucun accès à proposer." };
+  const { D, P } = dijkstra(G, src);                    // distance à pied depuis la zone
+  const car = carReachable(G);
+  const cand = [];
+  for (let k = 0; k < G.pts.length; k++) {
+    if (!car[k] || !G.drv[k] || !(D[k] <= MAX_PARK_WALK)) continue;
+    cand.push({ node: k, d: D[k], kind: G.drv[k] });
+  }
+  if (!cand.length) return { err: "Aucun endroit où se garer n'est relié à cette zone par un chemin connu." };
+  cand.sort((a, b) => a.d - b.d);
+  /* Un seul point par voie, le plus avancé : se garer 400 m plus haut sur la même piste n'est pas
+     une option, on roulerait jusqu'au bout. Les choix proposés doivent être des accès différents. */
+  const parVoie = new Map();
+  cand.forEach(c => { const v = G.dway[c.node]; if (!parVoie.has(v)) parVoie.set(v, c); });
+  const uniq = [...parVoie.values()].sort((a, b) => a.d - b.d);
+  const pick = [];
+  const loin = c => pick.every(x => dist(G.pts[x.node], G.pts[c.node]) > 250);
+  const add = c => { if (c && !pick.includes(c) && loin(c) && pick.length < 3) pick.push(c); };
+  add(uniq[0]);
+  if (uniq[0] && uniq[0].kind === "piste") add(uniq.find(c => c.kind === "route"));   // toujours une option sûre
+  uniq.forEach(add);
+  const opts = pick.map((c, idx) => {
+    const coords = [];
+    for (let u = c.node; u !== -1; u = P[u]) coords.push(G.pts[u]);   // du parking vers la zone
+    const off = sd > 20 ? sd : 0;
+    return { label: idx === 0 ? "Le plus proche" : c.kind === "route" ? "Par la route" : "Autre départ",
+             coords, len: c.d, off, target, v, sp, kind: c.kind,
+             nom: G.pts[c.node].nom || "", park: [+G.pts[c.node][0].toFixed(5), +G.pts[c.node][1].toFixed(5)] };
+  });
+  return { opts, demo: TRAILS.demo };
+}
+function parkSheet(sh, msg) {
+  const r = ROUTE.opts[ROUTE.sel], total = r.len + r.off;
+  const choice = ROUTE.opts.length > 1
+    ? `<div class="seg" role="group" aria-label="Où se garer">${ROUTE.opts.map((o, k) =>
+        `<button type="button" data-ropt="${k}" aria-pressed="${k === ROUTE.sel}">${esc(o.label)} · ${walkMin(o.len + o.off)} min</button>`).join("")}</div>`
+    : "";
+  const notes = [
+    r.nom ? "Le long de : " + r.nom + "." : "",
+    r.off ? "Dont " + fmtDist(r.off) + " hors sentier pour finir (pointillés)." : "",
+    ROUTE.demo ? "Chemins fictifs (aperçu)." : ""
+  ].filter(Boolean).join(" ");
+  /* La mise en garde n'est pas décorative : OSM se trompe souvent sur les pistes, et une barrière
+     posée depuis la dernière mise à jour ne s'y voit pas. */
+  const garde = r.kind === "piste"
+    ? `<p class="banner" style="font-size:.9rem"><b>Piste forestière, à vérifier sur place.</b> D'après OpenStreetMap elle est carrossable et sans barrière, mais ces informations sont souvent incomplètes. Si elle est barrée ou trop abîmée, gare-toi avant et finis à pied.</p>`
+    : "";
+  sh.innerHTML = `
+    <h2>Où se garer</h2>
+    ${choice}
+    <p class="access-line">${fmtDist(total)} · environ ${walkMin(total)} min à pied jusqu'à la zone ${r.v}${r.sp ? " (" + DEFAULTS[r.sp].label.toLowerCase() + ")" : ""}</p>
+    <p class="small muted">Départ sur ${r.kind === "route" ? "une route" : "une piste"}${notes ? " · " + esc(notes) : "."}</p>
+    ${garde}
+    ${msg ? `<p class="msg">${esc(msg)}</p>` : ""}
+    <div class="row">
+      <a class="btn access" href="${gmDirections(r.park[0], r.park[1])}" target="_blank" rel="noopener">Y aller en voiture (Google Maps)</a>
+      <button class="btn primary" type="button" id="rtSave">Enregistrer comme coin</button>
+    </div>
+    <div class="row"><button class="btn small ghost" type="button" id="rtClear">Effacer</button></div>`;
+  sh.querySelectorAll("[data-ropt]").forEach(b => { b.onclick = () => { ROUTE.sel = Number(b.dataset.ropt); drawRoute(); renderSheet();
+    const o = ROUTE.opts[ROUTE.sel]; map.fitBounds(o.coords.concat([o.park, o.target]), { padding: [40, 40], maxZoom: 17 }); }; });
+  $("rtClear").onclick = () => { ROUTE = null; drawRoute(); renderSheet(); };
+  $("rtSave").onclick = () => {
+    const rd = p => [+p[0].toFixed(5), +p[1].toFixed(5)];
+    const path = r.coords.concat(r.off ? [r.target] : []).map(rd);
+    const c = { id: uid(),
+      name: "Zone " + (r.sp ? DEFAULTS[r.sp].label.toLowerCase() + " " : "") + "du " + new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
+      lat: r.target[0], lon: r.target[1], species: r.sp ? [r.sp] : Object.keys(DEFAULTS),
+      note: "Repérée sur la carte" + (r.kind === "piste" ? " · départ sur une piste, à vérifier" : ""),
+      parking: { lat: r.park[0], lon: r.park[1] }, path };
+    state.coins.push(c); persist();
+    ROUTE = null; drawRoute(); ui.sel = c.id;
+    refresh(false, "Coin enregistré avec son parking et le chemin à pied. Renomme-le avec « Renommer, déplacer ou modifier ».");
+  };
+}
+
+async function showParking(k) {
+  if (!ZONES) return;
+  const { out, who } = zoneGrid(), target = cellCenter(k), v = Math.round(out[k]), sp = who[k];
+  ui.sel = null; ui.mode = null;
+  tMsg("Recherche d'un endroit où se garer…");
+  const job = makeProg("Où se garer", { trails: { w: 3, label: "routes et pistes", creep: true }, calc: { w: 1, label: "calcul" } });
+  let ok = false;
+  try {
+    job.begin("trails");
+    const r = await parkingFor(target, v, sp);
+    job.done("trails"); job.begin("calc"); await tick(); job.done("calc");
+    if (r.err) { ROUTE = null; drawRoute(); renderSheet(); tMsg(r.err, true); return; }
+    ok = true;
+    setTrails(true);
+    ROUTE = { park: true, start: r.opts[0].park, snap: r.opts[0].park, snapDist: 0, opts: r.opts, sel: 0, demo: r.demo, labels: [] };
+    tMsg(""); drawRoute(); snapSheet("half"); renderSheet();
+    const o = r.opts[0];
+    map.fitBounds(o.coords.concat([o.park, o.target]), { padding: [40, 40], maxZoom: 17 });
+  } catch (err) {
+    ROUTE = null; drawRoute(); renderSheet();
+    tMsg("Les routes et chemins n'ont pas pu se charger (réseau faible ou serveur saturé). Réessaie dans un instant.", true);
+  } finally { job.end(ok); }
+}
+
 function routeSheet(sh, msg) {
+  if (ROUTE.park) return parkSheet(sh, msg);
   const r = ROUTE.opts[ROUTE.sel], total = r.len + r.off;
   const choice = ROUTE.opts.length > 1
     ? `<div class="seg" role="group" aria-label="Zone visée">${ROUTE.opts.map((o, k) => `<button type="button" data-ropt="${k}" aria-pressed="${k === ROUTE.sel}">${o.label} · ${o.v}</button>`).join("")}</div>`
