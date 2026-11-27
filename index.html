@@ -230,8 +230,12 @@ body.on-carte #banner:not([hidden]), body.on-carte #updBanner:not([hidden]), bod
 .fab b { font-size: .84rem; font-weight: 700; }
 .fab i { font-style: normal; font-size: .58rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
 .fab[aria-pressed="true"] i { color: inherit; }
-.fab-me b { font-size: 1.15rem; color: var(--me); }
-.fab-me[aria-pressed="true"] b { color: inherit; }
+/* Celui-ci porte ses mots en clair : « ◉ moi » ne se comprenait pas. Il s'élargit vers la gauche,
+   garde ses 54 px de hauteur pour le doigt, et le viseur dit ce qu'il fait avant même qu'on lise. */
+.fab-me { width: auto; min-width: 54px; border-radius: 27px; padding: 0 15px 0 12px;
+  grid-auto-flow: column; justify-content: center; gap: 8px; align-self: flex-end; color: var(--me); }
+.fab-me i { font-size: .74rem; font-weight: 700; color: var(--fg); text-transform: none; letter-spacing: 0; }
+.fab-me[aria-pressed="true"], .fab-me[aria-pressed="true"] i { color: var(--accent-fg); }
 .fab[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .fab-menu { position: absolute; top: 10px; right: 66px; z-index: 505; background: var(--surface);
   border: 1px solid var(--line-ctrl); border-radius: 12px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.22);
@@ -313,7 +317,17 @@ body.welcoming #map { height: calc(100dvh - 128px); }
 .mode-bar { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 500; background: var(--bark); color: var(--surface); font-weight: 700; font-size: 0.9rem; padding: 8px 12px; border-radius: 10px; }
 .leaflet-container { font-family: var(--font-body); }
 .prog { display: flex; flex-direction: column; gap: 6px; }
-.map-prog { position: absolute; left: 54px; right: 10px; top: 10px; z-index: 650; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+/* Le bandeau passait sous les boutons ronds et les masquait — supportable sur un chargement court,
+   pénible sur un long. Il devient un trait fin collé au bord haut de la carte, qui ne couvre rien,
+   plus une pastille de texte posée juste au-dessus de « Chercher ici », là où la place est libre. */
+.map-prog { position: absolute; inset: 0; z-index: 650; background: none; border: 0; box-shadow: none;
+  padding: 0; pointer-events: none; }
+.map-prog .prog-bar { position: absolute; left: 0; right: 0; top: 0; height: 4px; border-radius: 0;
+  background: rgba(0, 0, 0, .12); }
+.map-prog .prog-bar i { border-radius: 0; }
+.map-prog .prog-top { position: absolute; left: 10px; right: 10px; bottom: calc(var(--sheeth) + 76px);
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 12px; font-size: .78rem; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
 .prog-top { display: flex; justify-content: space-between; gap: 10px; font-size: .82rem; font-weight: 700; }
 .prog-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prog-pct { font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
@@ -346,19 +360,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .sw.trail { background: var(--trail); height: 4px; border-radius: 2px; opacity: 1; }
 .sw.route { background: var(--route); height: 5px; border-radius: 3px; opacity: 1; }
 .zone-pop b { font-family: var(--font-display); font-size: 1.05rem; }
-/* Repère d'un coin : un champignon. Le chapeau garde la couleur du niveau et le chiffre ; le pied
-   descend jusqu'au point exact du coin (c'est là que pointe iconAnchor). */
-.pin { position: relative; width: 38px; height: 38px; }
-.pin .cap { position: absolute; left: 0; top: 0; width: 38px; height: 23px; box-sizing: border-box;
-  border-radius: 19px 19px 8px 8px / 21px 21px 6px 6px;
-  border: 2.5px solid var(--surface); display: grid; place-items: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,.35); }
-.pin .cap span { color: var(--surface); font-weight: 800; font-size: .8rem; line-height: 1; font-family: var(--font-display); }
-.pin .stem { position: absolute; left: 13.5px; top: 20px; width: 11px; height: 18px; box-sizing: border-box;
-  background: var(--surface); border: 1.5px solid rgba(0, 0, 0, .22);
-  border-radius: 2px 2px 5px 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
-.pin.sel .cap, .pin.sel .stem { box-shadow: 0 0 0 2.5px var(--fg), 0 1px 4px rgba(0, 0, 0, .35); }
-.pin.new .cap { background: var(--accent); }
+/* Repère d'un coin : un cèpe, dessiné en SVG — les formes en CSS étaient trop grossières.
+   Le chapeau porte la couleur du niveau et le chiffre, le bas du pied est le point exact du coin
+   (c'est là que pointe iconAnchor). Quand le coin est sélectionné, un trait sombre est tracé
+   DERRIÈRE chaque forme, plus large que le liseré blanc : il dépasse juste assez pour se voir. */
+.pin { line-height: 0; }
+.pin svg { display: block; overflow: visible; }
+.pin text { font-family: var(--font-display); font-weight: 800; fill: #fff; }
+.pin.new { color: var(--accent); }
 .park { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; background: var(--bark); color: var(--surface); font-weight: 800; border: 2px solid var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.35); font-family: var(--font-display); }
 .me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--me); border: 3px solid #fff; box-shadow: 0 0 0 6px color-mix(in srgb, var(--me) 25%, transparent); }
 .vtx { width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 3px solid var(--bark); }
@@ -456,7 +465,7 @@ nav.tabs button[aria-selected="true"] { color: var(--accent); border-top-color: 
       <div id="mapNote" class="map-note" hidden></div>
       <div class="map-fab">
         <button id="baseBtn" class="fab" type="button" aria-label="Fond de carte : Plan IGN"><b>IGN</b><i>fond</i></button>
-        <button id="locateBtn" class="fab fab-me" type="button" aria-label="Me localiser" aria-pressed="false"><b>◉</b><i>moi</i></button>
+        <button id="locateBtn" class="fab fab-me" type="button" aria-label="Me localiser" aria-pressed="false"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 1.3v3.3M12 19.4v3.3M1.3 12h3.3M19.4 12h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><i>Me localiser</i></button>
       </div>
       <button id="zonesBtn" class="fab-go" type="button">Chercher ici</button>
       <div class="prog map-prog" hidden><div class="prog-top"><span class="prog-label"></span><span class="prog-pct"></span></div><div class="prog-bar" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
@@ -1380,11 +1389,26 @@ function fitAll() {
   if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
 }
 
+/* Le dessin du cèpe. `sel` ajoute le cerne sombre, `txt` est ce qui s'écrit sur le chapeau. */
+const PIED_D = "M13.2 19.5 C12.6 25 11 29 12.4 33 C13.6 36.2 24.4 36.2 25.6 33 C27 29 25.4 25 24.8 19.5 Z";
+const CHAP_D = "M2.6 14.4 C2.6 6.6 9.9 1.6 19 1.6 C28.1 1.6 35.4 6.6 35.4 14.4 C35.4 18.4 29.8 20.6 19 20.6 C8.2 20.6 2.6 18.4 2.6 14.4 Z";
+function cepeSvg(txt, sel) {
+  const cerne = d => sel ? `<path d="${d}" fill="none" stroke="var(--fg)" stroke-width="6" stroke-linejoin="round"/>` : "";
+  const t = String(txt);
+  return `<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+    <defs><filter id="pinO" x="-45%" y="-45%" width="190%" height="195%"><feDropShadow dx="0" dy="1" stdDeviation="1.1" flood-opacity=".42"/></filter></defs>
+    <g filter="url(#pinO)">
+      ${cerne(PIED_D)}<path d="${PIED_D}" fill="#fcf8ee" stroke="#fff" stroke-width="2"/>
+      ${cerne(CHAP_D)}<path d="${CHAP_D}" fill="currentColor" stroke="#fff" stroke-width="2.2"/>
+      <path d="M7.6 8 C10 5.3 13.8 3.9 17.6 3.8" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none" opacity=".3"/>
+      <text x="19" y="15.8" text-anchor="middle" font-size="${t.length > 2 ? 9.5 : 11.5}">${esc(t)}</text>
+    </g></svg>`;
+}
 function coinIcon(c, selected) {
   const a = ANALYSES[c.id], s = a ? a.lead.today.score : null;
-  const cls = s == null ? "bg0" : "bg" + level(s);
+  const cls = s == null ? "lvl0" : "lvl" + level(s);   // lvl* donne la couleur du texte, donc currentColor
   return L.divIcon({ className: "", iconSize: [38, 38], iconAnchor: [19, 38],
-    html: `<div class="pin${selected ? " sel" : ""}"><div class="cap ${cls}"><span>${s == null ? "?" : s}</span></div><div class="stem"></div></div>` });
+    html: `<div class="pin ${cls}${selected ? " sel" : ""}">${cepeSvg(s == null ? "?" : s, selected)}</div>` });
 }
 const parkIcon = () => L.divIcon({ className: "", iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="park">P</div>` });
 const vtxIcon = () => L.divIcon({ className: "", iconSize: [12, 12], iconAnchor: [6, 6], html: `<div class="vtx"></div>` });
@@ -1427,7 +1451,7 @@ function drawMap() {
   });
   if (ui.mode === "add" && ui.draft && ui.draft.lat != null) {
     L.marker([ui.draft.lat, ui.draft.lon], { draggable: true,
-      icon: L.divIcon({ className: "", iconSize: [38, 38], iconAnchor: [19, 38], html: `<div class="pin new"><div class="cap"><span>+</span></div><div class="stem"></div></div>` }) })
+      icon: L.divIcon({ className: "", iconSize: [38, 38], iconAnchor: [19, 38], html: `<div class="pin new">${cepeSvg("+", false)}</div>` }) })
       .on("dragend", e => { const p = e.target.getLatLng(); ui.draft.lat = +p.lat.toFixed(5); ui.draft.lon = +p.lng.toFixed(5); $("edCoords").value = ui.draft.lat + ", " + ui.draft.lon; })
       .addTo(overlay);
   }
@@ -1849,7 +1873,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "2.6 · 25 nov. 2026";
+const APP_VERSION = "2.9 · 27 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
