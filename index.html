@@ -346,10 +346,19 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .sw.trail { background: var(--trail); height: 4px; border-radius: 2px; opacity: 1; }
 .sw.route { background: var(--route); height: 5px; border-radius: 3px; opacity: 1; }
 .zone-pop b { font-family: var(--font-display); font-size: 1.05rem; }
-.pin { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); border: 3px solid var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
-.pin span { transform: rotate(45deg); color: var(--surface); font-weight: 800; font-size: 0.82rem; font-family: var(--font-display); }
-.pin.sel { outline: 3px solid var(--fg); outline-offset: 1px; }
-.pin.new { background: var(--accent); }
+/* Repère d'un coin : un champignon. Le chapeau garde la couleur du niveau et le chiffre ; le pied
+   descend jusqu'au point exact du coin (c'est là que pointe iconAnchor). */
+.pin { position: relative; width: 38px; height: 38px; }
+.pin .cap { position: absolute; left: 0; top: 0; width: 38px; height: 23px; box-sizing: border-box;
+  border-radius: 19px 19px 8px 8px / 21px 21px 6px 6px;
+  border: 2.5px solid var(--surface); display: grid; place-items: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.pin .cap span { color: var(--surface); font-weight: 800; font-size: .8rem; line-height: 1; font-family: var(--font-display); }
+.pin .stem { position: absolute; left: 13.5px; top: 20px; width: 11px; height: 18px; box-sizing: border-box;
+  background: var(--surface); border: 1.5px solid rgba(0, 0, 0, .22);
+  border-radius: 2px 2px 5px 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.pin.sel .cap, .pin.sel .stem { box-shadow: 0 0 0 2.5px var(--fg), 0 1px 4px rgba(0, 0, 0, .35); }
+.pin.new .cap { background: var(--accent); }
 .park { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; background: var(--bark); color: var(--surface); font-weight: 800; border: 2px solid var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.35); font-family: var(--font-display); }
 .me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--me); border: 3px solid #fff; box-shadow: 0 0 0 6px color-mix(in srgb, var(--me) 25%, transparent); }
 .vtx { width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 3px solid var(--bark); }
@@ -1374,8 +1383,8 @@ function fitAll() {
 function coinIcon(c, selected) {
   const a = ANALYSES[c.id], s = a ? a.lead.today.score : null;
   const cls = s == null ? "bg0" : "bg" + level(s);
-  return L.divIcon({ className: "", iconSize: [36, 36], iconAnchor: [18, 36],
-    html: `<div class="pin ${cls}${selected ? " sel" : ""}"><span>${s == null ? "?" : s}</span></div>` });
+  return L.divIcon({ className: "", iconSize: [38, 38], iconAnchor: [19, 38],
+    html: `<div class="pin${selected ? " sel" : ""}"><div class="cap ${cls}"><span>${s == null ? "?" : s}</span></div><div class="stem"></div></div>` });
 }
 const parkIcon = () => L.divIcon({ className: "", iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="park">P</div>` });
 const vtxIcon = () => L.divIcon({ className: "", iconSize: [12, 12], iconAnchor: [6, 6], html: `<div class="vtx"></div>` });
@@ -1418,7 +1427,7 @@ function drawMap() {
   });
   if (ui.mode === "add" && ui.draft && ui.draft.lat != null) {
     L.marker([ui.draft.lat, ui.draft.lon], { draggable: true,
-      icon: L.divIcon({ className: "", iconSize: [36, 36], iconAnchor: [18, 36], html: `<div class="pin new"><span>+</span></div>` }) })
+      icon: L.divIcon({ className: "", iconSize: [38, 38], iconAnchor: [19, 38], html: `<div class="pin new"><div class="cap"><span>+</span></div><div class="stem"></div></div>` }) })
       .on("dragend", e => { const p = e.target.getLatLng(); ui.draft.lat = +p.lat.toFixed(5); ui.draft.lon = +p.lng.toFixed(5); $("edCoords").value = ui.draft.lat + ", " + ui.draft.lon; })
       .addTo(overlay);
   }
@@ -1840,7 +1849,7 @@ function decodeHab(codes) {
 }
 
 /* ---------- Diagnostic : ce que chaque service a répondu ---------- */
-const APP_VERSION = "2.5 · 24 nov. 2026";
+const APP_VERSION = "2.6 · 25 nov. 2026";
 /* Android efface les données des sites quand le téléphone manque de place. Une appli installée
    obtient en général cette protection sans rien demander à l'utilisateur. */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
